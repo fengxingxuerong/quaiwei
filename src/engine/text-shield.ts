@@ -114,3 +114,91 @@ export function citedTitleSpans(text: string): TextSpan[] {
 export function guardFor(text: string): (idx: number) => boolean {
   return spanGuard(structuredSpans(text));
 }
+
+/* ------------------------------------------------------------------ *
+ * v0.9.54+：Markdown 围栏代码块（``` / ~~~）
+ *
+ * 起因（2026-10-17 追 realcase C9「段落 6→7」时实测抓出）：
+ *   humanize 的段落切分是 `text.split(/\n+/)` + `join("\n\n")`——
+ *   **每一行都被当成独立段落，段间距被统一拉成双换行**。后果有两层：
+ *     ① 代码块被逐行炸开（行与行之间凭空多出空行）；
+ *     ② 更要紧的是每行独立跑 humanizeSingle，围栏里的**中文注释被当正文改写**
+ *        （实测「此外，需要说明的是」→「再说，需要说明的是」）。
+ *
+ * 代码是**事实性内容**，与 URL / 邮箱 / 书名号同性质：改它不叫去味，叫篡改。
+ * 这里按既有惯例给出区间（不动原文、不占字符），由调用方整块跳过。
+ *
+ * ⚠️ 为什么不用正则一次匹配整块：围栏的闭合行要求「同种字符且长度 ≥ 开口」，
+ * 一条正则写下来既难读又容易在 `[^]` 类字符上踩坑（本项目有 check:regex 专门查）。
+ * 逐行扫描只有十来行，判据一眼可核对。
+ * ------------------------------------------------------------------ */
+
+/** 行首（允许缩进）的三个及以上反引号 / 波浪号 */
+const FENCE_RE = /^[ \t]*(`{3,}|~{3,})/;
+
+/** 围栏代码块的区间，**含开口行与闭合行本身**（不含闭合行之后的换行）。未闭合则到文末。 */
+export function fencedCodeSpans(text: string): TextSpan[] {
+  if (!text) return [];
+  const out: TextSpan[] = [];
+  let off = 0;
+  let start = -1;
+  let fence = "";
+  for (const line of text.split("\n")) {
+    const m = FENCE_RE.exec(line);
+    if (m) {
+      if (start < 0) {
+        start = off;
+        fence = m[1];
+      } else if (m[1][0] === fence[0] && m[1].length >= fence.length) {
+        out.push({ start, end: off + line.length });
+        start = -1;
+        fence = "";
+      }
+    }
+    off += line.length + 1; // +1 补回被 split 吃掉的 \n
+  }
+  if (start >= 0) out.push({ start, end: text.length });
+  return out;
+}
+
+/**
+ * 段落级判定：这一段是不是围栏代码块（**不需要偏移，只看文本形状**）。
+ *
+ * 为什么还要有这个：段落级冻结靠 `fencedCodeSpans` 的偏移，但结构层 / 节奏层跑在
+ * **已被改写**的 result 上，原文偏移早已对不上。而围栏开口行是稳定的文本特征——
+ * 只要段首是 ``` / ~~~，这一整段就是代码，不管前面几步把它改成什么样。
+ *
+ * 判据刻意只看首行：围栏块内可以出现缩进的 ```（嵌套围栏），那不该被当成新开口。
+ */
+export function isFencedBlock(para: string): boolean {
+  const first = para.split("\n", 1)[0] ?? "";
+  return FENCE_RE.test(first);
+}
+
+/** 带原文偏移与原始分隔符的段落切分——冻结块要能按**原样**拼回去 */
+export interface ParaChunk {
+  text: string;
+  /** 该段首字符在原文中的下标（用来问 spanGuard） */
+  start: number;
+  /** 该段**之后**的原始分隔符；最后一段为 "" */
+  sep: string;
+}
+
+/**
+ * 按 `\n+` 切段，同时保留偏移与分隔符。
+ *
+ * 与 `text.split(/\n+/)` 等价（同样丢空段），但多带两个字段——冻结块（代码块）
+ * 要靠 `sep` 拼回原文的行间距，靠 `start` 判断自己是否落在保护区里。
+ */
+export function splitParagraphChunks(text: string): ParaChunk[] {
+  const out: ParaChunk[] = [];
+  const re = /\n+/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    out.push({ text: text.slice(last, m.index), start: last, sep: m[0] });
+    last = m.index + m[0].length;
+  }
+  out.push({ text: text.slice(last), start: last, sep: "" });
+  return out.filter((c) => c.text.trim());
+}

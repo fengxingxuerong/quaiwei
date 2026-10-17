@@ -11,7 +11,15 @@
  * 4. 切句联动：`humanize-text.splitSentences` 保真 + 纯中文语料的回归对照
  */
 import { describe, it, expect } from "vitest";
-import { structuredSpans, spanGuard, guardFor, type TextSpan } from "./text-shield";
+import {
+  structuredSpans,
+  spanGuard,
+  guardFor,
+  fencedCodeSpans,
+  isFencedBlock,
+  splitParagraphChunks,
+  type TextSpan,
+} from "./text-shield";
 import { splitSentences } from "./humanize-text";
 
 /** 朴素实现：线性扫描，用来对照二分 */
@@ -146,5 +154,118 @@ describe("切句联动（humanize-text.splitSentences）", () => {
     expect(splitSentences("第一段。\n第二段！\n")).toEqual(["第一段。", "第二段！"]);
     // 空段被滤掉
     expect(splitSentences("前面。；；；后面。")).toEqual(["前面。；；；", "后面。"]);
+  });
+});
+
+describe("fencedCodeSpans（Markdown 围栏代码块区间 · v0.9.54）", () => {
+  it("空输入 / 无围栏 → 空数组", () => {
+    expect(fencedCodeSpans("")).toEqual([]);
+    expect(fencedCodeSpans("今天天气不错，我们去公园。")).toEqual([]);
+    expect(fencedCodeSpans("行内 `code` 不是围栏。")).toEqual([]);
+  });
+
+  it("区间含开口行与闭合行本身，且不含闭合行之后的换行", () => {
+    const text = "前文。\n```\nconst a = 1;\n```\n后文。";
+    const spans = fencedCodeSpans(text);
+    expect(spans).toHaveLength(1);
+    expect(text.slice(spans[0].start, spans[0].end)).toBe("```\nconst a = 1;\n```");
+    // 闭合行之后那个 \n 不在区间内
+    expect(text[spans[0].end]).toBe("\n");
+  });
+
+  it("波浪号围栏同样纳入", () => {
+    const text = "~~~\nconst b = 2;\n~~~";
+    const spans = fencedCodeSpans(text);
+    expect(spans).toHaveLength(1);
+    expect(text.slice(spans[0].start, spans[0].end)).toBe(text);
+  });
+
+  it("未闭合 → 到文末（不返回空，否则调用方会把它当正文改写）", () => {
+    const text = "前面。\n```\nconst c = 3;";
+    const spans = fencedCodeSpans(text);
+    expect(spans).toHaveLength(1);
+    expect(text.slice(spans[0].start, spans[0].end)).toBe("```\nconst c = 3;");
+  });
+
+  it("闭合行必须同种字符且长度 ≥ 开口（不同种 / 更短都不算闭合）", () => {
+    // 开口 ``` 却用 ~~~ 收：不闭合 ⇒ 整段到文末
+    const mixed = "```\nconst d = 4;\n~~~\n后文。";
+    const s1 = fencedCodeSpans(mixed);
+    expect(s1).toHaveLength(1);
+    expect(mixed.slice(s1[0].start, s1[0].end)).toBe(mixed);
+    // 开口 4 个反引号、闭合 3 个：不够长 ⇒ 不闭合
+    const short = "````\nconst e = 5;\n```\n后文。";
+    const s2 = fencedCodeSpans(short);
+    expect(s2).toHaveLength(1);
+    expect(short.slice(s2[0].start, s2[0].end)).toBe(short);
+    // 闭合更长：正常闭合
+    const longer = "```\nconst f = 6;\n`````\n后文。";
+    const s3 = fencedCodeSpans(longer);
+    expect(longer.slice(s3[0].start, s3[0].end)).toBe("```\nconst f = 6;\n`````");
+  });
+
+  it("多个块各自成区间，按起点升序、互不重叠", () => {
+    const text = "甲。\n```\n1\n```\n中间。\n~~~\n2\n~~~\n乙。";
+    const spans = fencedCodeSpans(text);
+    expect(spans).toHaveLength(2);
+    expect(text.slice(spans[0].start, spans[0].end)).toBe("```\n1\n```");
+    expect(text.slice(spans[1].start, spans[1].end)).toBe("~~~\n2\n~~~");
+    expect(spans[1].start).toBeGreaterThanOrEqual(spans[0].end);
+  });
+
+  it("区间偏移可直接喂给 spanGuard：块内每行命中、块外不命中", () => {
+    const text = "前文。\n```\n第一行\n第二行\n```\n后文。";
+    const g = spanGuard(fencedCodeSpans(text));
+    expect(g(text.indexOf("前文"))).toBe(false);
+    expect(g(text.indexOf("```"))).toBe(true);
+    expect(g(text.indexOf("第一行"))).toBe(true);
+    expect(g(text.indexOf("第二行"))).toBe(true);
+    expect(g(text.indexOf("后文"))).toBe(false);
+  });
+});
+
+describe("isFencedBlock（段落级判定 · v0.9.54）", () => {
+  it("只看首行：首行是围栏 → true", () => {
+    expect(isFencedBlock("```\nconst a = 1;\n```")).toBe(true);
+    expect(isFencedBlock("~~~\nconst b = 2;\n~~~")).toBe(true);
+    expect(isFencedBlock("  ```js\nconsole.log(1);\n```")).toBe(true);
+  });
+
+  it("首行不是围栏 → false（块内的缩进围栏不该被当成新开口）", () => {
+    expect(isFencedBlock("这是一段正文。")).toBe(false);
+    expect(isFencedBlock("说明：\n```\ncode\n```")).toBe(false);
+    expect(isFencedBlock("")).toBe(false);
+  });
+});
+
+describe("splitParagraphChunks（带偏移与分隔符的切段 · v0.9.54）", () => {
+  it("文本序列与 text.split(/\\n+/) + 滤空段 逐项一致（不引入新的切法）", () => {
+    const cases = [
+      "一段。",
+      "甲。\n乙。",
+      "甲。\n\n乙。\n\n\n丙。",
+      "甲。\n```\ncode\n```\n乙。",
+      "\n\n开头有空行。\n\n",
+    ];
+    for (const t of cases) {
+      const expectParas = t.split(/\n+/).filter((p) => p.trim());
+      expect(splitParagraphChunks(t).map((c) => c.text)).toEqual(expectParas);
+    }
+  });
+
+  it("start 是段首在原文中的下标（slice 出来必须是这一段本身）", () => {
+    const text = "甲。\n\n```\ncode\n```\n\n乙。";
+    for (const c of splitParagraphChunks(text)) {
+      expect(text.startsWith(c.text, c.start)).toBe(true);
+    }
+  });
+
+  it("sep 保留原始分隔符：单换行不会被统一拉成双换行", () => {
+    const chunks = splitParagraphChunks("甲。\n\n```\ncode\n```\n\n乙。");
+    expect(chunks.map((c) => c.sep)).toEqual(["\n\n", "\n", "\n", "\n\n", ""]);
+  });
+
+  it("空输入 → 单个空段、sep 为空串", () => {
+    expect(splitParagraphChunks("")).toEqual([]);
   });
 });
