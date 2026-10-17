@@ -202,3 +202,47 @@ export function splitParagraphChunks(text: string): ParaChunk[] {
   out.push({ text: text.slice(last), start: last, sep: "" });
   return out.filter((c) => c.text.trim());
 }
+
+/* ------------------------------------------------------------------ *
+ * v0.9.54+：紧凑 Markdown 结构行（表格 / 列表项 / 引用行）
+ *
+ * 与围栏**同源但不同治**：围栏是「不许改内容」，这里是「内容照改、但**不许插空行**」。
+ *
+ * 起因（2026-10-18 实测，与围栏同一次追查）：段落切分把每一行当独立段落、
+ * 再 `join("\n\n")` 统一拉成双换行，于是——
+ *   · 表格：表头 `| a | b |` 与分隔行 `| --- | --- |` 之间被塞进空行
+ *     ⇒ CommonMark/GFM 表格**直接失效**，渲染成一堆竖线文本；
+ *   · 列表：三个 `- 项` 之间被塞进空行 ⇒ 紧凑列表变松散列表（`<li>` 各自包 `<p>`），
+ *     行距与作者原意不符；
+ *   · 引用：连续 `>` 行被拆成多个独立 blockquote。
+ *
+ * 这些行的内容**仍要去味**（列表项是正文，不是代码），所以走的是
+ * 「保留原文分隔符」而不是「整块冻结」——见 humanize.ts 的 join 循环。
+ *
+ * ⚠️ 判据刻意只认**行首标记**，且不含围栏（``` / ~~~ 由 fencedCodeSpans 管）：
+ * 缩进代码块、行内 `code` 都不在此列，避免判据过宽误伤普通段落。
+ * ------------------------------------------------------------------ */
+
+const MD_STRUCT_RE = /^[ \t]*(?:\||>|[-*+][ \t]|\d+[.)][ \t])/;
+
+/**
+ * 这一段是不是「紧凑 Markdown 结构行」——表格行 / 列表项 / 引用行。
+ * 是的话它与相邻同类行之间要沿用**原文分隔符**，不能被统一拉成 `\n\n`。
+ */
+export function isMarkdownStructLine(para: string): boolean {
+  return MD_STRUCT_RE.test(para);
+}
+
+/**
+ * 下游层（结构重排 / 节奏切句 / 语气密度 / 段落重组）的**整段跳过**判据。
+ *
+ * 比段落级冻结宽一档——围栏块（不许改内容）与紧凑结构行（内容照改、不许插空行）
+ * 在这四个层里待遇相同：它们内部都跑 `splitSentences` + `join("")`，
+ * 一行一个列表项 / 一行一个表格行，进去就变成连写的一坨。
+ *
+ * ⚠️ 与 `frozen` 的区别只在 humanize() 主流程：那里结构行仍要过 humanizeSingle 去味，
+ * 只有围栏块整块不动。
+ */
+export function isProtectedBlock(para: string): boolean {
+  return isFencedBlock(para) || isMarkdownStructLine(para);
+}

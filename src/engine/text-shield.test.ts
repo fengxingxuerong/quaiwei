@@ -17,6 +17,8 @@ import {
   guardFor,
   fencedCodeSpans,
   isFencedBlock,
+  isMarkdownStructLine,
+  isProtectedBlock,
   splitParagraphChunks,
   type TextSpan,
 } from "./text-shield";
@@ -267,5 +269,32 @@ describe("splitParagraphChunks（带偏移与分隔符的切段 · v0.9.54）", 
 
   it("空输入 → 单个空段、sep 为空串", () => {
     expect(splitParagraphChunks("")).toEqual([]);
+  });
+});
+
+describe("isMarkdownStructLine / isProtectedBlock（紧凑结构行 · v0.9.54 续）", () => {
+  it("表格行 / 列表项 / 引用行 → true", () => {
+    expect(isMarkdownStructLine("| 参数 | 说明 |")).toBe(true);
+    expect(isMarkdownStructLine("| --- | --- |")).toBe(true);
+    expect(isMarkdownStructLine("- 首先，接口层做了重构。")).toBe(true);
+    expect(isMarkdownStructLine("* 星号列表项")).toBe(true);
+    expect(isMarkdownStructLine("1. 先完成数据迁移。")).toBe(true);
+    expect(isMarkdownStructLine("2) 括号编号项")).toBe(true);
+    expect(isMarkdownStructLine("> 这是引用行")).toBe(true);
+    expect(isMarkdownStructLine("  - 缩进的列表项")).toBe(true);
+  });
+
+  it("普通段落 / 标题 / 围栏开口 → false（判据不许过宽）", () => {
+    expect(isMarkdownStructLine("这是一段普通正文。")).toBe(false);
+    expect(isMarkdownStructLine("# 一级标题")).toBe(false);
+    expect(isMarkdownStructLine("```\nconst a = 1;\n```")).toBe(false);
+    expect(isMarkdownStructLine("")).toBe(false);
+  });
+
+  it("isProtectedBlock = 围栏块 ∪ 紧凑结构行（下游层整段跳过判据）", () => {
+    expect(isProtectedBlock("```\nconst a = 1;\n```")).toBe(true);
+    expect(isProtectedBlock("| a | b |")).toBe(true);
+    expect(isProtectedBlock("- 列表项")).toBe(true);
+    expect(isProtectedBlock("普通段落。")).toBe(false);
   });
 });

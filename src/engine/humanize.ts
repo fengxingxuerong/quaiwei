@@ -92,7 +92,13 @@ import { classifyGenre, AutoGenre, suppressSelfQA } from "./classify-genre.ts";
 // v0.9.53 拆分阶段 1b：朱雀增强 + 本地引擎单遍主体搬到 humanize-zhuque-apply.ts
 import { applyZhuqueFeatures, humanizeSingle, injectDialect } from "./humanize-zhuque-apply.ts";
 // v0.9.54：围栏代码块整块冻结（判据与区间表都在 text-shield.ts）
-import { fencedCodeSpans, isFencedBlock, spanGuard, splitParagraphChunks } from "./text-shield.ts";
+import {
+  fencedCodeSpans,
+  isMarkdownStructLine,
+  isProtectedBlock,
+  spanGuard,
+  splitParagraphChunks,
+} from "./text-shield.ts";
 export { wouldCascade, DIR_MODIFIER_VERB_CLASH_RE, FORMAL_FORBIDDEN_SUBSTITUTES };
 // scripts/scan-bugs.ts 的未然从句补「了」探针与引擎守卫共用同一条正则（v0.9.53 起住在 humanize-replace.ts）
 export { PURPOSE_LE_RE, NORMATIVE_LE_RE } from "./humanize-replace.ts";
@@ -350,6 +356,9 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   const chunks = splitParagraphChunks(text);
   const codeGuard = spanGuard(fencedCodeSpans(text));
   const frozen = chunks.map((c) => codeGuard(c.start));
+  // v0.9.54（续）：紧凑 Markdown 结构行（表格 / 列表项 / 引用行）——内容照改，
+  // 但与相邻同类行之间必须沿用**原文分隔符**，否则表格会被插空行插到失效。
+  const mdStruct = chunks.map((c) => isMarkdownStructLine(c.text));
   const paragraphs = chunks.map((c) => c.text);
   const tPara = nowMs();
   let result: string;
@@ -378,7 +387,9 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
         joined = parts[i];
         continue;
       }
-      joined += (frozen[i] && frozen[i - 1] ? chunks[i - 1].sep : "\n\n") + parts[i];
+      // 冻结段（代码块）与紧凑结构行（表格/列表/引用）都沿用原文分隔符
+      const tight = (k: number): boolean => frozen[k] || mdStruct[k];
+      joined += (tight(i) && tight(i - 1) ? chunks[i - 1].sep : "\n\n") + parts[i];
     }
     result = joined;
   }
@@ -472,7 +483,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     result = result
       .split(/\n\n+/)
       // v0.9.54：围栏块整段跳过——结构重排会把它内部的换行吃掉（splitSentences + join("")）
-      .map((p) => (isFencedBlock(p) ? p : structuralShuffleParagraph(p, structRng, intensity, structOpts)))
+      .map((p) => (isProtectedBlock(p) ? p : structuralShuffleParagraph(p, structRng, intensity, structOpts)))
       .join("\n\n");
     // v0.9.8 P0 收敛（六·续）：段落重排只对论说/公文生效。
     //
@@ -569,7 +580,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
           // ⚠️ 变异检验实测：与 boost2（下方）一并拆掉，本文件用例仍绿——
           // 结构层与上一处 burst 的保护先一步生效。保留作纵深防御：
           // 三处切句兜底的触发条件（强度阈值 / CV 红线）各不相同，不该只赌其中一处。
-          .map((p) => (isFencedBlock(p) ? p : burstCut(p, 0.55, 8)))
+          .map((p) => (isProtectedBlock(p) ? p : burstCut(p, 0.55, 8)))
           .join("\n\n")
       : burstCut(result, 0.55, 8);
   }
@@ -714,7 +725,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
           // ⚠️ 变异检验实测：**单独**拆掉这一处的保护，本文件全部用例仍绿
           // （rhythm 与 boost2 两处的保护先一步生效，代码段 CV 已被拉高 ⇒ 这里直接 break）。
           // 保留作纵深防御——三处切句兜底走的是不同阈值与触发条件，不该只赌其中两处。
-          .map((p) => (isFencedBlock(p) ? p : burstCut(p, knobs.burstTarget, 8)))
+          .map((p) => (isProtectedBlock(p) ? p : burstCut(p, knobs.burstTarget, 8)))
           .join("\n\n")
       : burstCut(result, knobs.burstTarget, 8);
   }
@@ -739,7 +750,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
         ? result
             .split(/\n\n+/)
             // v0.9.54：同上（CV 红线触发的最后一刀切句兜底），同属纵深防御
-            .map((p) => (isFencedBlock(p) ? p : burstCut(p, 0.55, 8)))
+            .map((p) => (isProtectedBlock(p) ? p : burstCut(p, 0.55, 8)))
             .join("\n\n")
         : burstCut(result, 0.55, 8);
   }

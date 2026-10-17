@@ -13,7 +13,7 @@ import { fragmentCanStand } from "../humanize-vocab.ts";
 import { keepOnlyIfDetectDrops } from "../detector.ts";
 import { classifyExpositionScore } from "./fingerprint.ts";
 import { isSpecTableParagraph } from "../anti-fingerprint.ts";
-import { isFencedBlock } from "../text-shield.ts";
+import { isProtectedBlock } from "../text-shield.ts";
 
 /** 承接词黑名单：以这些词开头的句子「必须」等在前句之后，不能参与重排（否则出病句） */
 const SEQUENCE_HEAD_RE =
@@ -251,7 +251,7 @@ export function resegmentParagraphsAggressive(
     //   (a) 合并会把它和相邻正文焊成一段，还会在中间塞「懂吧。」这类碎碎念桥接；
     //   (b) 拆分走 splitSentences + join("")，块内换行会被**整块吃掉**
     //       （实测 4 行等长注释的围栏：6 → 4 换行，代码被压成两坨）。
-    if (isFencedBlock(cur)) {
+    if (isProtectedBlock(cur)) {
       out.push(cur);
       i++;
       continue;
@@ -263,7 +263,7 @@ export function resegmentParagraphsAggressive(
       // 把代码当正文的邻接段处理。⚠️ 当前样本未能构造出触发它的用例
       // （合并只在中间插一个独立桥接段，代码块本身仍独立成段，内容不变），
       // 保留作防御性守卫。
-      !isFencedBlock(next) &&
+      !isProtectedBlock(next) &&
       ps.sentences >= 2 &&
       ps.sentences <= 4 &&
       ps.chars >= 50 &&
@@ -923,7 +923,7 @@ export function capParticleSentenceDensity(
       // `splitSentences` 会把代码里的换行当句间空白剥掉、`out.join("")` 再拼回去 ⇒
       // 一个 5 行的代码块被压成一行（实测「``` // …注释 const a = 1; …```」）。
       // 内容与 URL/邮箱同性质，这里不受「语气句密度」管辖。
-      if (isFencedBlock(para)) return para;
+      if (isProtectedBlock(para)) return para;
       const sents = splitSentences(para);
       // v0.9 长尾：整段只剩短碎句（重切/桥接把正文抽走后留下「道理是这个道理。行。」
       // 式空段）→ 整段丢弃（全段句子均 ≤8 字即视为无正文残留）
