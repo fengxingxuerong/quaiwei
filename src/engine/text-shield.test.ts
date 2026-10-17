@@ -19,6 +19,9 @@ import {
   isFencedBlock,
   isMarkdownStructLine,
   isProtectedBlock,
+  isIndentedBlock,
+  isFrontmatterBlock,
+  frontmatterSpans,
   splitParagraphChunks,
   type TextSpan,
 } from "./text-shield";
@@ -291,10 +294,46 @@ describe("isMarkdownStructLine / isProtectedBlock（紧凑结构行 · v0.9.54 �
     expect(isMarkdownStructLine("")).toBe(false);
   });
 
-  it("isProtectedBlock = 围栏块 ∪ 紧凑结构行（下游层整段跳过判据）", () => {
+  it("isProtectedBlock = 围栏块 ∪ 紧凑结构行 ∪ 缩进块 ∪ frontmatter", () => {
     expect(isProtectedBlock("```\nconst a = 1;\n```")).toBe(true);
     expect(isProtectedBlock("| a | b |")).toBe(true);
     expect(isProtectedBlock("- 列表项")).toBe(true);
+    expect(isProtectedBlock("    const a = 1;")).toBe(true);
+    expect(isProtectedBlock("---\ntitle: 周报\n---")).toBe(true);
     expect(isProtectedBlock("普通段落。")).toBe(false);
+  });
+});
+
+describe("frontmatterSpans / isIndentedBlock / isFrontmatterBlock（v0.9.54 第三、四形态）", () => {
+  it("frontmatter：首行 --- 到闭合行，含首尾两行", () => {
+    const text = "---\ntitle: 周报\ndate: 2026-10-18\n---\n正文。";
+    const spans = frontmatterSpans(text);
+    expect(spans).toHaveLength(1);
+    expect(text.slice(spans[0].start, spans[0].end)).toBe("---\ntitle: 周报\ndate: 2026-10-18\n---");
+  });
+
+  it("闭合行可以是 ...（YAML 另一种写法）", () => {
+    const text = "---\ntitle: 周报\n...\n正文。";
+    expect(text.slice(0, frontmatterSpans(text)[0].end)).toBe("---\ntitle: 周报\n...");
+  });
+
+  it("无闭合 / 不在文首 → 不算 frontmatter（避免把正文里的分割线当元数据）", () => {
+    expect(frontmatterSpans("---\ntitle: 周报\n正文。")).toEqual([]);
+    expect(frontmatterSpans("正文。\n---\ntitle: 周报\n---")).toEqual([]);
+    expect(frontmatterSpans("")).toEqual([]);
+  });
+
+  it("isIndentedBlock：4 空格或 tab 开头 → true，普通段落 → false", () => {
+    expect(isIndentedBlock("    const a = 1;")).toBe(true);
+    expect(isIndentedBlock("\tconst a = 1;")).toBe(true);
+    expect(isIndentedBlock("  三个空格不够")).toBe(false);
+    expect(isIndentedBlock("普通段落。")).toBe(false);
+  });
+
+  it("isFrontmatterBlock 只看首行是不是 ---", () => {
+    expect(isFrontmatterBlock("---\ntitle: 周报\n---")).toBe(true);
+    expect(isFrontmatterBlock("---")).toBe(true);
+    expect(isFrontmatterBlock("title: 周报\n---")).toBe(false);
+    expect(isFrontmatterBlock("普通段落。")).toBe(false);
   });
 });

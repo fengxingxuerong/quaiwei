@@ -244,5 +244,74 @@ export function isMarkdownStructLine(para: string): boolean {
  * 只有围栏块整块不动。
  */
 export function isProtectedBlock(para: string): boolean {
-  return isFencedBlock(para) || isMarkdownStructLine(para);
+  return (
+    isFencedBlock(para) ||
+    isMarkdownStructLine(para) ||
+    isIndentedBlock(para) ||
+    isFrontmatterBlock(para)
+  );
+}
+
+/**
+ * YAML frontmatter 块（拼回后是一整段，首行是 `---`）。
+ *
+ * 必须单独有一条：frontmatter 拼回后段内带 `\n`，下游层若不整段跳过，
+ * `splitSentences` + `join("")` 会把换行全吃掉
+ * （实测：`---title: 项目周报---date: 2026-10-18`）。
+ * 水平分割线（单独一行 `---`）落进同一判据也无害——它同样是结构标记，不该被改写。
+ */
+const FRONTMATTER_HEAD_RE = /^---[ \t]*\r?$/;
+
+export function isFrontmatterBlock(para: string): boolean {
+  return FRONTMATTER_HEAD_RE.test(para.split("\n", 1)[0] ?? "");
+}
+
+/* ------------------------------------------------------------------ *
+ * v0.9.54+（第三形态）：缩进块——CommonMark 缩进代码块 **与** 列表项续行
+ *
+ * 判据只有一条：段首是 4 个空格或一个 tab。
+ *
+ * 这一个判据同时覆盖两种东西，而它们要的处理恰好**一样**：
+ *   · 缩进代码块（`    const a = 1;`）：代码是事实性内容，且缩进本身是块身份——
+ *     实测引擎会先把缩进 trim 掉再把注释里的套话改掉（「此外」→「再说」），
+ *     缩进没了，代码块也就不再是代码块；
+ *   · 列表项续行（`- 项` 的下一行 `    续行…`）：它**不属于独立段落**，
+ *     被切成独立段落后行距、语义都错。
+ *
+ * 两者都不该进 humanizeSingle，也不该被插空行 ⇒ 按围栏块待遇：**整块冻结**。
+ *
+ * ⚠️ 误判代价很低：普通中文段落几乎不会以 4 空格/tab 开头；真误判也只是
+ * 那一段不去味，不会产出病句。反向（不判）的代价是代码被改写 + 缩进丢失。
+ * ------------------------------------------------------------------ */
+
+const INDENT_RE = /^(?: {4}|\t)/;
+
+/** 段首是 4 空格 / tab —— 缩进代码块或列表项续行，整块冻结 */
+export function isIndentedBlock(para: string): boolean {
+  return INDENT_RE.test(para);
+}
+
+/* ------------------------------------------------------------------ *
+ * v0.9.54+（第四形态）：YAML frontmatter（`---` … `---`）
+ *
+ * 实测：frontmatter 被逐行炸开成 `---⏎⏎title: 项目周报⏎⏎date: 2026-10-18⏎⏎---`，
+ * 空行一插进去 frontmatter 就不再是 frontmatter（渲染器把它当普通正文），
+ * 且 `title:` 这种元数据被改属于篡改事实——与代码、URL 同性质。
+ *
+ * 判据按 YAML 标准：首行必须是 `---`，闭合行是 `---` 或 `...`。
+ * 找不到闭合就不算（避免把正文里的水平分割线误判成 frontmatter）。
+ * ------------------------------------------------------------------ */
+
+export function frontmatterSpans(text: string): TextSpan[] {
+  if (!text) return [];
+  const lines = text.split("\n");
+  if (!/^---[ \t]*\r?$/.test(lines[0] ?? "")) return [];
+  let off = lines[0].length + 1;
+  for (let i = 1; i < lines.length; i++) {
+    if (/^(?:---|\.\.\.)[ \t]*\r?$/.test(lines[i])) {
+      return [{ start: 0, end: off + lines[i].length }];
+    }
+    off += lines[i].length + 1;
+  }
+  return [];
 }

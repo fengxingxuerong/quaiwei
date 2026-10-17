@@ -92,6 +92,30 @@ describe("紧凑 Markdown 结构行：不许被插空行（v0.9.54 续）", () =
     expect(changed).toBeGreaterThan(0);
   });
 
+  it("YAML frontmatter 四行保持连续且逐字不变（插空行 frontmatter 就废了）", () => {
+    const fm = ["---", "title: 项目周报", "date: 2026-10-18", "---"].join("\n");
+    for (const intensity of LEVELS) {
+      for (const seed of SEEDS) {
+        const out = humanize(`${fm}\n\n${HEAD}\n\n${TAIL}`, { intensity, seed });
+        expect(out.includes(fm), `i=${intensity} seed=${seed} frontmatter 被改动`).toBe(true);
+      }
+    }
+  });
+
+  it("缩进代码块：缩进、换行、注释内容三者都不许动", () => {
+    const indented = [
+      "    const client = new Client(); // 此外，需要说明的是，这是缩进代码块",
+      "    await client.connect(); // 综上所述，建立连接",
+    ].join("\n");
+    for (const intensity of LEVELS) {
+      for (const seed of SEEDS) {
+        const out = humanize(`${HEAD}\n\n${indented}\n\n${TAIL}`, { intensity, seed });
+        // 缩进被 trim 掉、注释被改写、换行被拼成一坨，这三条任一发生都会让 includes 失败
+        expect(out.includes(indented), `i=${intensity} seed=${seed} 缩进块被破坏`).toBe(true);
+      }
+    }
+  });
+
   it("反向断言②：普通段落之间仍是 \\n\\n（零回归）", () => {
     for (const intensity of LEVELS) {
       for (const seed of SEEDS) {

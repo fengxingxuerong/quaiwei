@@ -94,6 +94,8 @@ import { applyZhuqueFeatures, humanizeSingle, injectDialect } from "./humanize-z
 // v0.9.54：围栏代码块整块冻结（判据与区间表都在 text-shield.ts）
 import {
   fencedCodeSpans,
+  frontmatterSpans,
+  isIndentedBlock,
   isMarkdownStructLine,
   isProtectedBlock,
   spanGuard,
@@ -354,8 +356,10 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   // 冻结 = 该段不进 humanizeSingle，且相邻两个冻结段之间沿用**原文分隔符**。
   // 无围栏输入：frozen 全 false ⇒ 分隔符恒为 "\n\n"，与改动前逐字一致（零回归）。
   const chunks = splitParagraphChunks(text);
-  const codeGuard = spanGuard(fencedCodeSpans(text));
-  const frozen = chunks.map((c) => codeGuard(c.start));
+  // 三类整块冻结：围栏代码块 / YAML frontmatter（都是事实性内容 + 结构一散就失效）
+  const codeGuard = spanGuard(fencedCodeSpans(text).concat(frontmatterSpans(text)));
+  // 缩进块（缩进代码块 / 列表项续行）只能看段首形状——它没有成对标记可用
+  const frozen = chunks.map((c) => codeGuard(c.start) || isIndentedBlock(c.text));
   // v0.9.54（续）：紧凑 Markdown 结构行（表格 / 列表项 / 引用行）——内容照改，
   // 但与相邻同类行之间必须沿用**原文分隔符**，否则表格会被插空行插到失效。
   const mdStruct = chunks.map((c) => isMarkdownStructLine(c.text));
