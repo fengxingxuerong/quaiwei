@@ -371,7 +371,23 @@ async function main(): Promise<void> {
 
   // ---- 判定 ----
   const problems: string[] = [];
-  if (failedTests && Number(failedTests) > 0) problems.push(`有 ${failedTests} 个用例失败`);
+  if (failedTests && Number(failedTests) > 0) {
+    problems.push(`有 ${failedTests} 个用例失败`);
+    // 失败必须报出名字，不能只给个数字：只给数字等于让人重跑一遍撞运气——
+    // 而 flaky 用例恰恰是「重跑就绿、不重跑不知道是谁」的那类。判据没变（仍按
+    // 失败数判红），这里只是把已经拿到手的信息打出来。
+    const FAIL_LINE_RE = /^\s*(?:×|FAIL\+?)\s/;
+    const names = out
+      .split("\n")
+      .filter((l) => FAIL_LINE_RE.test(l))
+      .map((l) => l.trim());
+    if (names.length) {
+      console.error(`  失败用例（${names.length} 行，仅打印，不影响判定）：`);
+      for (const n of [...new Set(names)].slice(0, 30)) console.error(`    ${n}`);
+    } else {
+      console.error("  ⓘ 未能从输出里解析出失败用例名（vitest 输出格式可能变了，值得修本文件）");
+    }
+  }
   if (unexplained > 0)
     problems.push(`有 ${unexplained} 处无法归因的 Unhandled Error（退出码 ${run.code}）`);
   const th = COVERAGE_THRESHOLDS as CoverageThresholds;

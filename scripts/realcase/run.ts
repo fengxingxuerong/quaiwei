@@ -10,7 +10,15 @@
  *      长度失控、占位符残留、黑话泄漏。这些不需要语言直觉，机器说了算。
  *   B. 软缺陷（必须人读）：通顺度、语义是否走样。脚本只负责把 before/after 落盘方便逐篇看。
  *
- * 用法：npx tsx scripts/realcase/run.ts [--only C3-tech-popular]
+ * 用法：
+ *   npx tsx scripts/realcase/run.ts                      单点（intensity 0.9 / seed 20261015）
+ *   npx tsx scripts/realcase/run.ts --matrix             矩阵（5 seed × 2 强度 = 每篇 10 组）
+ *   npx tsx scripts/realcase/run.ts --matrix --seeds=1,42 --intensities=0.9,0.7
+ *   npx tsx scripts/realcase/run.ts --only C3-tech-popular    单篇调试（两种模式都支持）
+ *
+ * 为什么要矩阵：单点跑一遍等于抽奖——是否替换取决于 rng 落点 + 强度档，
+ * 主力用例在 1.0 绿而产品默认 0.9 档漏是常态（见 docs/realcase-findings-2026-10-15.md）。
+ * 矩阵模式下同一缺陷在多组重复出现只报一条，并标注命中组数——偶发与稳定要能分开看。
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -21,8 +29,39 @@ import { LEAK_WORDS } from "../verify-quality.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, "out");
-const onlyIdx = process.argv.indexOf("--only");
-const ONLY = onlyIdx >= 0 ? process.argv[onlyIdx + 1] : undefined;
+const OUT_MATRIX = path.join(OUT, "matrix");
+
+const argOf = (name: string): string | undefined => {
+  const i = process.argv.indexOf(name);
+  if (i >= 0) return process.argv[i + 1];
+  // 同时支持 --seeds=1,42 与 --seeds 1,42 两种写法（等号形式更常用）
+  const pref = `${name}=`;
+  const hit = process.argv.find((a) => a.startsWith(pref));
+  return hit ? hit.slice(pref.length) : undefined;
+};
+
+const ONLY = argOf("--only");
+const MATRIX = process.argv.includes("--matrix");
+
+/** `--seeds=1,42` → [1,42]；未给时取默认值 */
+function numList(flag: string, dflt: number[], label: string): number[] {
+  const raw = argOf(flag);
+  if (!raw) return dflt;
+  return raw.split(",").map((s) => {
+    const n = Number(s.trim());
+    if (!Number.isFinite(n)) throw new Error(`${label} 非数字：${s}`);
+    if (label === "强度" && (n <= 0 || n > 1)) throw new Error(`强度越界（0,1]：${s}`);
+    return n;
+  });
+}
+
+// 单点默认 = 历史基线（20261015 / 0.9），矩阵默认额外扩到 5 seed × 2 档
+const SEEDS = numList("--seeds", MATRIX ? [20261015, 1, 7, 42, 2026] : [20261015], "种子");
+const INTENSITIES = numList("--intensities", MATRIX ? [0.9, 1.0] : [0.9], "强度");
+const RUNS = SEEDS.length * INTENSITIES.length;
+if (MATRIX && RUNS < 2) {
+  throw new Error(`--matrix 至少要 2 组组合，当前只有 ${RUNS} 组（检查 --seeds / --intensities）`);
+}
 
 interface Case {
   id: string;
@@ -151,50 +190,184 @@ function check(before: string, after: string): Finding[] {
 }
 
 /* ------------------------------ 跑 ------------------------------ */
-const rows: Array<Record<string, string>> = [];
-const allFindings: Array<{ id: string; f: Finding }> = [];
-
-for (const c of cases) {
-  if (ONLY && c.id !== ONLY) continue;
-  const t0 = Date.now();
-  const after = humanize(c.text, { intensity: 0.9, seed: 20261015 });
-  const ms = Date.now() - t0;
-  const before = c.text;
-  const sb = aiScore(before).score;
-  const sa = aiScore(after).score;
-  const F = check(before, after);
-
-  fs.writeFileSync(path.join(OUT, `${c.id}.before.txt`), before, "utf8");
-  fs.writeFileSync(path.join(OUT, `${c.id}.after.txt`), after, "utf8");
-
-  rows.push({
-    id: c.id,
-    aiScore: `${sb}→${sa}`,
-    len: `${before.length}→${after.length}`,
-    段落: `${paraCount(before)}→${paraCount(after)}`,
-    HARD: String(F.filter((f) => f.level === "HARD").length),
-    SOFT: String(F.filter((f) => f.level === "SOFT").length),
-    ms: String(ms),
-  });
-  for (const f of F) allFindings.push({ id: c.id, f });
+interface Run {
+  id: string;
+  seed: number;
+  intensity: number;
+  before: string;
+  after: string;
+  ms: number;
+  aiBefore: number;
+  aiAfter: number;
+  F: Finding[];
 }
 
-console.log("\n════════ 真实案例跑测：本地引擎（intensity 0.9，seed 20261015）════════\n");
-const cols = ["id", "aiScore", "len", "段落", "HARD", "SOFT", "ms"];
-console.log(cols.join("\t"));
-for (const r of rows) console.log(cols.map((k) => r[k]).join("\t"));
+const selected = cases.filter((c) => !ONLY || c.id === ONLY);
+// 拼错 id 必须报错，不能静默跑 0 篇然后打一行"硬缺陷 0"——v0.9.53 在送检脚本里踩过同一个坑
+if (selected.length === 0) {
+  throw new Error(`--only ${ONLY} 未匹配任何用例（共 ${cases.length} 篇）`);
+}
 
-const hard = allFindings.filter((x) => x.f.level === "HARD");
-const soft = allFindings.filter((x) => x.f.level === "SOFT");
-console.log(`\n──── 硬缺陷 ${hard.length} 条 ────`);
-for (const { id, f } of hard) console.log(`  [${id}] ${f.kind}：${f.detail}`);
-console.log(`\n──── 软提示 ${soft.length} 条 ────`);
-for (const { id, f } of soft) console.log(`  [${id}] ${f.kind}：${f.detail}`);
+const runs: Run[] = [];
+const aiBeforeOf = new Map<string, number>();
 
-fs.writeFileSync(
-  path.join(HERE, "report.json"),
-  JSON.stringify({ rows, findings: allFindings }, null, 2),
-  "utf8",
+for (const c of selected) {
+  const sb = aiScore(c.text).score;
+  aiBeforeOf.set(c.id, sb);
+  for (const seed of SEEDS) {
+    for (const intensity of INTENSITIES) {
+      const t0 = Date.now();
+      const after = humanize(c.text, { intensity, seed });
+      const ms = Date.now() - t0;
+      runs.push({
+        id: c.id,
+        seed,
+        intensity,
+        before: c.text,
+        after,
+        ms,
+        aiBefore: sb,
+        aiAfter: aiScore(after).score,
+        F: check(c.text, after),
+      });
+    }
+  }
+}
+
+/** 同一 (id, kind, detail) 在多个组合里重复出现 → 只报一条，记命中数 */
+interface AggFinding {
+  id: string;
+  level: Finding["level"];
+  kind: string;
+  detail: string;
+  hits: string[];
+}
+const agg = new Map<string, AggFinding>();
+const runsWithDefect = new Set<string>();
+
+for (const r of runs) {
+  for (const f of r.F) {
+    const key = `${r.id}\u0000${f.kind}\u0000${f.detail}`;
+    const hit = `s${r.seed}/i${r.intensity}`;
+    const cur = agg.get(key);
+    if (cur) cur.hits.push(hit);
+    else agg.set(key, { id: r.id, level: f.level, kind: f.kind, detail: f.detail, hits: [hit] });
+    if (f.level === "HARD") runsWithDefect.add(`${r.id}\u0000${hit}`);
+  }
+}
+
+// 硬缺陷优先，其次命中组数多的（稳定的 > 偶发的）
+const ranked = [...agg.values()].sort(
+  (a, b) =>
+    Number(b.level === "HARD") - Number(a.level === "HARD") || b.hits.length - a.hits.length,
 );
-console.log(`\n📁 逐篇 before/after 已落 ${OUT}`);
-console.log(`📁 机器可读报告 ${path.join(HERE, "report.json")}`);
+const hard = ranked.filter((x) => x.level === "HARD");
+const soft = ranked.filter((x) => x.level === "SOFT");
+const fmtHits = (h: string[]) => `${h.length}/${RUNS} 组（${h.slice(0, 3).join("、")}${h.length > 3 ? "…" : ""}）`;
+
+if (!MATRIX) {
+  /* ---------------- 单点模式：输出与 report.json 结构保持历史原样 ---------------- */
+  const rows: Array<Record<string, string>> = [];
+  const allFindings: Array<{ id: string; f: Finding }> = [];
+  for (const r of runs) {
+    fs.writeFileSync(path.join(OUT, `${r.id}.before.txt`), r.before, "utf8");
+    fs.writeFileSync(path.join(OUT, `${r.id}.after.txt`), r.after, "utf8");
+    rows.push({
+      id: r.id,
+      aiScore: `${r.aiBefore}→${r.aiAfter}`,
+      len: `${r.before.length}→${r.after.length}`,
+      段落: `${paraCount(r.before)}→${paraCount(r.after)}`,
+      HARD: String(r.F.filter((f) => f.level === "HARD").length),
+      SOFT: String(r.F.filter((f) => f.level === "SOFT").length),
+      ms: String(r.ms),
+    });
+    for (const f of r.F) allFindings.push({ id: r.id, f });
+  }
+
+  console.log(
+    `\n════════ 真实案例跑测：本地引擎（intensity ${INTENSITIES[0]}，seed ${SEEDS[0]}）════════\n`,
+  );
+  const cols = ["id", "aiScore", "len", "段落", "HARD", "SOFT", "ms"];
+  console.log(cols.join("\t"));
+  for (const r of rows) console.log(cols.map((k) => r[k]).join("\t"));
+
+  console.log(`\n──── 硬缺陷 ${allFindings.filter((x) => x.f.level === "HARD").length} 条 ────`);
+  for (const { id, f } of allFindings.filter((x) => x.f.level === "HARD"))
+    console.log(`  [${id}] ${f.kind}：${f.detail}`);
+  console.log(`\n──── 软提示 ${allFindings.filter((x) => x.f.level === "SOFT").length} 条 ────`);
+  for (const { id, f } of allFindings.filter((x) => x.f.level === "SOFT"))
+    console.log(`  [${id}] ${f.kind}：${f.detail}`);
+
+  fs.writeFileSync(
+    path.join(HERE, "report.json"),
+    JSON.stringify({ rows, findings: allFindings }, null, 2),
+    "utf8",
+  );
+  console.log(`\n📁 逐篇 before/after 已落 ${OUT}`);
+  console.log(`📁 机器可读报告 ${path.join(HERE, "report.json")}`);
+} else {
+  /* ---------------- 矩阵模式：按篇汇总 + 缺陷聚合 ---------------- */
+  fs.mkdirSync(OUT_MATRIX, { recursive: true });
+
+  // 只有出缺陷的组才落盘，否则 20 篇 × 10 组 = 200 个文件把 out/ 淹了
+  for (const r of runs) {
+    if (r.F.length === 0) continue;
+    fs.writeFileSync(
+      path.join(OUT_MATRIX, `${r.id}__s${r.seed}__i${r.intensity}.after.txt`),
+      r.after,
+      "utf8",
+    );
+  }
+
+  const rows: Array<Record<string, string>> = selected.map((c) => {
+    const mine = runs.filter((r) => r.id === c.id);
+    const hardRuns = mine.filter((r) => r.F.some((f) => f.level === "HARD"));
+    const softRuns = mine.filter((r) => r.F.some((f) => f.level === "SOFT"));
+    const scores = mine.map((r) => r.aiAfter);
+    const sb = aiBeforeOf.get(c.id) ?? 0;
+    return {
+      id: c.id,
+      aiScore: `${sb}→${Math.min(...scores)}~${Math.max(...scores)}`,
+      len: `${c.text.length}→${Math.min(...mine.map((r) => r.after.length))}~${Math.max(...mine.map((r) => r.after.length))}`,
+      组数: String(mine.length),
+      HARD组: `${hardRuns.length}`,
+      SOFT组: `${softRuns.length}`,
+      ms: `${Math.min(...mine.map((r) => r.ms))}~${Math.max(...mine.map((r) => r.ms))}`,
+    };
+  });
+
+  console.log(
+    `\n════════ 真实案例跑测：矩阵（${SEEDS.length} seed × ${INTENSITIES.length} 强度 = 每篇 ${RUNS} 组）════════`,
+  );
+  console.log(`seed：[${SEEDS.join(", ")}]  强度：[${INTENSITIES.join(", ")}]\n`);
+  const cols = ["id", "aiScore", "len", "组数", "HARD组", "SOFT组", "ms"];
+  console.log(cols.join("\t"));
+  for (const r of rows) console.log(cols.map((k) => r[k]).join("\t"));
+
+  console.log(`\n──── 硬缺陷 ${hard.length} 条（已去重）────`);
+  for (const f of hard) console.log(`  [${f.id}] ${f.kind}：${f.detail}  命中 ${fmtHits(f.hits)}`);
+  console.log(`\n──── 软提示 ${soft.length} 条（已去重）────`);
+  for (const f of soft) console.log(`  [${f.id}] ${f.kind}：${f.detail}  命中 ${fmtHits(f.hits)}`);
+
+  fs.writeFileSync(
+    path.join(HERE, "report-matrix.json"),
+    JSON.stringify(
+      {
+        meta: { seeds: SEEDS, intensities: INTENSITIES, cases: selected.length, runs: runs.length },
+        rows,
+        findings: ranked,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  console.log(`\n📁 出缺陷组的 after 已落 ${OUT_MATRIX}`);
+  console.log(`📁 机器可读矩阵报告 ${path.join(HERE, "report-matrix.json")}`);
+}
+
+// 有硬缺陷就非 0 退出——否则进 check:release 只能靠人眼看输出
+if (hard.length > 0) {
+  process.exitCode = 1;
+  console.error(`\n❌ 硬缺陷 ${hard.length} 类，涉及 ${runsWithDefect.size} 个「篇×组」`);
+}

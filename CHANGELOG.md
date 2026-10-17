@@ -2,6 +2,64 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## 未发布 · 测试基建补强（2026-10-17）
+
+> 不 bump 版本、不改产品代码：补的是三道此前**不存在**的门禁。
+> 全量基线 **96 文件 / 1926 用例 → 98 文件 / 1941 用例**，覆盖率四项不变（98.0 / 94.5 / 98.5 / 98.5）。
+
+起因是一次体检：`tsc`、`eslint`、`test:cov`、`check:regex`、`check:version`、realcase 全绿，
+但把清单往「测试之外的那一圈」看，三个洞是明摆着的——发版必经的 971 行壳层零自动化、
+性能零门禁、真实语料只跑单个种子。
+
+### 一、realcase 从单点变矩阵
+
+`scripts/realcase/run.ts` 原来写死 `intensity: 0.9, seed: 20261015`，20 篇各跑一遍。
+这跟项目自己的结论冲突：**是否替换取决于 rng 落点 + 强度档**，单点跑一遍等于抽奖。
+
+新增 `--matrix`（默认 5 seed × 2 强度 = 每篇 10 组）、`--seeds=`、`--intensities=`，
+两种参数写法（空格/等号）都支持；同一缺陷在多组重复出现只报一条并标注命中组数，
+偶发与稳定因此能分开看；有硬缺陷时退出码非 0（否则进不了门禁）。
+单点模式的输出与 `report.json` 结构保持原样，历史基线仍可对照。
+
+- 进 `check:release`（`npm run test:realcase`），耗时约 6.5 秒。
+- `--only` 拼错 id 现在直接报错——与本版 v0.9.53 修的是同一类「静默白跑」。
+- 首次跑矩阵就抓出一条软提示：**C9-mixed-links 段落数 6→7，命中 3/10 组**
+  （强度 1.0 时把「接口地址变更为 X，旧地址将于 Y 停止服务」从逗号处切成两段）。
+  0.9 档不复现 ⇒ 待评估，未修。
+
+### 二、性能门禁（此前只有打印，没有判定）
+
+`scripts/bench.ts` 把耗时打到控制台，没有阈值、不在任何门禁里；
+`humanize-metrics-perf.test.ts` 名字里有 perf 却只断言指标等价性。
+结果是「把某条规则改成 O(n²)、或让全流程常数因子慢 5 倍」没有任何自动化会红。
+
+新增 `src/engine/humanize-perf-budget.test.ts`（2 条）：
+
+| 判据 | 为什么这么定 |
+|---|---|
+| 4 倍字数不得吃掉 6 倍耗时 | 比同一进程内相邻两次测量的**比值**，不比绝对秒数——90+ 文件并行 + v8 插桩下墙钟能差 5~10 倍，绝对阈值必然 flaky |
+| 18k 字 ≤ 5000ms、bestOf 8 稿 2.9k 字 ≤ 6000ms | 只作兜底，抓灾难性退化（本机实测 60ms / 90ms，留一个数量级） |
+
+变异检验（实做）：注入真 O(n²) 后红在 **15.8ms → 122.5ms（7.8x）**；
+换轻度退化（内层步长 `len/400`，约 200 万次空转）**照常绿** ⇒ 它抓的是量级，不是 20%。
+
+### 三、electron 壳层 13 条（此前 971 行零测试）
+
+`scripts/electron-shell-scripts.test.ts`，在临时目录造假的 `electron-dist` 树跑真子进程：
+
+- `prune-dist.cjs`：dry-run **一个字节都不动**、真删的取舍（留 win32、留两个语言包、非 .pak 不动）、
+  重复裁剪幂等、目录不存在时非 0 退出；
+- `verify-pruned.cjs`：三条硬判据（缺文件 / 版本不一致 / 无 build-info）确实会红并点名；
+- `rebuild-app.cjs`：两条前置检查；
+- 安全基线：`contextIsolation/nodeIntegration/sandbox` 三件套、preload 不裸暴露 `ipcRenderer`、
+  暴露面就是 `ppl/preset/secureStore` 三个 namespace、**preload 的 invoke/on 通道在主进程侧都有对应端点**。
+
+变异检验（实做）：把 `prune-dist` 的 dry-run 保护拆掉 → 红；把 `preset-keys` 拼成 `preset-key` → 红在
+「通道 preset-key 在 preload 里被调用，但主进程没有 ipcMain.handle」。
+
+不覆盖：真跑 `rebuild-app` 全流程（`execSync("npm ls")` + 拷 300MB，几十秒）、真起 Electron 窗口（要 GUI）、
+`ppl-engine` 的模型推理（要下 99MB 权重）。这三块仍靠发版后跑 `verify-pruned` 兜底。
+
 ## v0.9.53 更新（朱雀送检链路：拼错 id 不再静默白跑一天）
 
 一个小而硬的修复，直接对着「烧官方额度」那条链路。朱雀 API 的免费额度按天/按月算，

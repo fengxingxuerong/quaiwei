@@ -3,3 +3,5 @@ out/
 # 机器可读报告同样是生成物（2026-10-17 体检发现：它在仓库里被跟踪，
 # 导致每次 run.ts 都产生一次无意义 diff）
 report.json
+# --matrix 模式的聚合报告，同样是生成物
+report-matrix.json
