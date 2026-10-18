@@ -69,6 +69,34 @@ describe("SettingsModal（设置弹窗）", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("声线样本：太短提示不生效，达标显示画像预览并随保存上抛", () => {
+    const VOICE_SAMPLE =
+      "我写东西不太讲究结构，想到哪写到哪。句子一会儿长一会儿短，偶尔还会冒出一句特别短的，自己看着顺眼就行。" +
+      "有时候一句话能绕好几个弯，把前因后果都塞进去。说白了就是随性，写多了自然知道哪里该停，差不多就这样。";
+    const onSave = vi.fn();
+    const { container, getByText } = render(<SettingsModal {...base({ onSave })} />);
+    const ta = rowControl(container, "声线样本") as HTMLTextAreaElement;
+
+    fireEvent.change(ta, { target: { value: "太短。" } });
+    expect(container.textContent).toContain("样本不足");
+
+    fireEvent.change(ta, { target: { value: VOICE_SAMPLE } });
+    expect(container.textContent).toContain("已识别声线");
+
+    fireEvent.click(getByText("保存"));
+    const [apiArg] = onSave.mock.calls[0] as [ApiConfig];
+    expect(apiArg.voiceSample).toBe(VOICE_SAMPLE);
+  });
+
+  it("声线样本缺省（老配置 undefined）：输入框值为空、不崩且显示未设置提示", () => {
+    const { container } = render(
+      <SettingsModal {...base({ api: { ...DEFAULT_API, voiceSample: undefined } })} />,
+    );
+    const ta = rowControl(container, "声线样本") as HTMLTextAreaElement;
+    expect(ta.value).toBe("");
+    expect(container.textContent).toContain("声线样本（可选）");
+  });
+
   it("编辑草稿后保存才统一上抛：API Key / 启用 / 温度失焦归一化 / 朱雀增强", () => {
     const onSave = vi.fn();
     const p = base({ onSave });

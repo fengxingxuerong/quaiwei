@@ -10,6 +10,7 @@ import {
 import { DetectorConfig, DEFAULT_DETECTOR, ZHUQUE_OFFICIAL_DETECTOR } from "../api/detector";
 import { hasSecureStore } from "../store";
 import type { LocalSettings } from "../store";
+import { extractVoiceProfile, VOICE_SAMPLE_MIN } from "../engine/voice-profile";
 
 interface SettingsModalProps {
   api: ApiConfig;
@@ -75,6 +76,8 @@ export function SettingsModal({
   const updateApi = (patch: Partial<ApiConfig>) => setDraftApi({ ...draftApi, ...patch });
   const updateDetector = (patch: Partial<DetectorConfig>) =>
     setDraftDetector({ ...draftDetector, ...patch });
+  // 声线样本实时画像预览（纯函数，输入变化即重算）
+  const voiceProfile = extractVoiceProfile(draftApi.voiceSample ?? "");
 
   return (
     <div className="modal-mask" onClick={onClose}>
@@ -308,6 +311,43 @@ export function SettingsModal({
           人味人格：同一口语语体下的风格分档——不同平台读者口味不同，也避免单一模板被检测器
           针对性统计。仅对 LLM 改写生效。
         </p>
+        <label className="row" style={{ alignItems: "flex-start" }}>
+          <span>声线样本</span>
+          <textarea
+            style={{
+              flex: 1,
+              minHeight: 70,
+              background: "rgba(8,12,22,0.7)",
+              color: "var(--text)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              padding: "8px 10px",
+              fontFamily: "inherit",
+              fontSize: 12,
+              resize: "vertical",
+            }}
+            value={draftApi.voiceSample ?? ""}
+            onChange={(e) => updateApi({ voiceSample: e.target.value })}
+            placeholder={`粘贴 2~3 段你自己写的东西（≥${VOICE_SAMPLE_MIN} 字）。改写会模仿你的句长节奏、标点习惯和口气；样本用破折号，就按你的密度保留。仅对 LLM 改写生效。`}
+          />
+        </label>
+        {voiceProfile ? (
+          <p className="modal-tip" style={{ marginTop: -6 }}>
+            已识别声线：句均 {voiceProfile.avgLen} 字 · 起伏 {voiceProfile.cv} · 短句{" "}
+            {(voiceProfile.shortRatio * 100).toFixed(0)}% / 长句{" "}
+            {(voiceProfile.longRatio * 100).toFixed(0)}% · 破折号 {voiceProfile.dashPer1k} 处/千字
+          </p>
+        ) : (draftApi.voiceSample ?? "").trim() ? (
+          <p className="modal-tip" style={{ marginTop: -6, color: "var(--warn)" }}>
+            样本不足 {VOICE_SAMPLE_MIN} 字（含标点）暂不生效——太短画不出可信的声线画像，改写会
+            照旧走默认风格。
+          </p>
+        ) : (
+          <p className="modal-tip" style={{ marginTop: -6 }}>
+            声线样本（可选）：粘贴你自己的写作节选，改写优先向你本人的句长节奏、标点习惯和口气
+            靠拢——样本里的破折号密度会覆盖默认的"整篇最多一次"限制。
+          </p>
+        )}
         <label className="row">
           <span>深度模式</span>
           <input

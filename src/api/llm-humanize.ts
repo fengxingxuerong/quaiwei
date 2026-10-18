@@ -20,6 +20,7 @@ import { chat, resetApiCallCount, getApiCallCount } from "./llm-chat";
 import { processCandidate, fabricationReview, addedContentSignals } from "./llm-quality";
 import { restoreMixedSpacing } from "../engine/humanize-shuffle.ts";
 import { fingerprintCheck } from "../engine/humanize.ts";
+import { voiceDirectiveBlock } from "../engine/voice-profile";
 import { errMsg } from "./llm-judge";
 
 /* ----------------------------- 去味 ----------------------------- */
@@ -103,14 +104,16 @@ async function mapLimited<T>(
   );
 }
 
-/** 组装改写用的 system 提示词（基础战术 + 按体裁选范例 + 文风预设 + 人味人格 + 强度档位） */
+/** 组装改写用的 system 提示词（基础战术 + 按体裁选范例 + 文风预设 + 人味人格 + 强度档位 + 声线样本）。
+ *  声线块放最后：样本优先级最高，冲突时以用户本人的写作习惯为准（竞品吸收（一））。 */
 export function buildSystemPrompt(cfg: ApiConfig, intensity: number, sourceText?: string): string {
   return (
     SYSTEM_PROMPT +
     pickExemplarBlock(sourceText ?? "", cfg.style) +
     styleDirective(cfg.style) +
     personaDirective(cfg.persona) +
-    intensityDirective(intensity)
+    intensityDirective(intensity) +
+    voiceDirectiveBlock(cfg.voiceSample)
   );
 }
 

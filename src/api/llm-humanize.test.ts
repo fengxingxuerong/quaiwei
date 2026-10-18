@@ -1071,6 +1071,25 @@ describe("全链路失败时的对外契约（探针实证：行 517-521 是死�
 describe("LLM 层边角：空样例与缺省参数", () => {
   const cfg = { ...DEFAULT_API, enabled: true, apiKey: "test-key" };
 
+  /** 声线样本（>100 可见字符，短路/长句混排） */
+  const VOICE_SAMPLE =
+    "我写东西不太讲究结构，想到哪写到哪。句子一会儿长一会儿短，偶尔还会冒出一句特别短的，自己看着顺眼就行。" +
+    "有时候一句话能绕好几个弯，把前因后果都塞进去。说白了就是随性，写多了自然知道哪里该停，差不多就这样。";
+
+  it("声线样本：达门槛注入画像指令（含标点覆盖声明）；过短/空白不注入且逐字等价于未设样本", () => {
+    const p = buildSystemPrompt({ ...cfg, voiceSample: VOICE_SAMPLE }, 0.6);
+    expect(p).toContain("声线样本");
+    expect(p).toContain("覆盖");
+    expect(p).toContain("样本节选");
+
+    const short = buildSystemPrompt({ ...cfg, voiceSample: "太短。" }, 0.6);
+    expect(short).not.toContain("声线样本");
+    expect(short).toBe(buildSystemPrompt(cfg, 0.6));
+    expect(buildSystemPrompt({ ...cfg, voiceSample: "   " }, 0.6)).toBe(
+      buildSystemPrompt(cfg, 0.6),
+    );
+  });
+
   it("编造否决错误没有样例时也不炸（消息如实写 0 处）", () => {
     const err = new FabricationVetoError([]);
     expect(err.name).toBe("FabricationVetoError");

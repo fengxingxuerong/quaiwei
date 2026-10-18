@@ -54,6 +54,16 @@ export interface ApiConfig {
    *  禁网络烂梗——绝绝子/yyds 式表演反而是 AI 模仿人类的破绽）；
    *  classic=老派文青（书面骨架+人味态度，垫词降浓度，句有呼吸，结尾留余韵）。 */
   persona?: "default" | "netgen" | "classic";
+  /**
+   * v0.9.55 竞品吸收（一）：声线样本（用户自己的写作节选，可选）。
+   *
+   * 来源：blader/humanizer 的 voice matching（样本优先于全部默认规则，含
+   * "样本用破折号就跟随样本密度"）+ harshaneel/humanize 的 HyPerAlign 蒸馏思路。
+   * 非空且 ≥100 可见字符时，buildSystemPrompt 追加声线画像指令——句长节奏、
+   * 标点密度、口气向样本靠拢，样本本身用破折号则覆盖"整篇最多一次"的默认上限。
+   * 只对 LLM 改写生效（本地引擎不消费画像，阈值标定面不动）。
+   */
+  voiceSample?: string;
 }
 
 /* ---------------------- SenseNova 常驻预置 ----------------------
@@ -220,6 +230,8 @@ export const DEFAULT_API: ApiConfig = {
   // 而 strictFidelity 正是编造复核的开关，静默失效等于防线漏空。
   strictFidelity: false,
   persona: "default",
+  // v0.9.55 竞品吸收（一）：声线样本默认空（不注入，行为与升级前逐字一致）
+  voiceSample: "",
 };
 
 /**

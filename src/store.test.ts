@@ -118,6 +118,7 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
       contestSamples: 3,
       strictFidelity: true,
       persona: "netgen" as const,
+      voiceSample: "probe-voice-sample",
     };
     saveApi(probe);
     const back = loadApi();
@@ -164,6 +165,17 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
   it("apiKeys 字段透传（Key 池）", () => {
     saveApi({ ...DEFAULT_API, apiKeys: "k1\nk2, k3" });
     expect(loadApi().apiKeys).toBe("k1\nk2, k3");
+  });
+
+  it("voiceSample：非字符串回落默认、超长截断 5000（防手改配置撑爆提示词）", () => {
+    localStorage.setItem("aihumanizer.api", JSON.stringify({ voiceSample: 42 }));
+    expect(loadApi().voiceSample).toBe(DEFAULT_API.voiceSample);
+
+    localStorage.setItem("aihumanizer.api", JSON.stringify({ voiceSample: "x".repeat(6000) }));
+    expect((loadApi().voiceSample ?? "").length).toBe(5000);
+
+    localStorage.setItem("aihumanizer.api", JSON.stringify({ voiceSample: "我平时就这么写。" }));
+    expect(loadApi().voiceSample).toBe("我平时就这么写。");
   });
 });
 
