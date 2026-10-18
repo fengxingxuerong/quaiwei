@@ -1,9 +1,14 @@
 /**
  * 趣AI味 · v0.9.3 多角色通道清单（Multi-Role Endpoints）
  * ---------------------------------------------------------
+ * ⚠️ v0.9.54 从 src/api/ 迁到 scripts/：本模块直读本地 Key 文件（node:fs + CWD
+ * 相对路径），是 CLI/实验性质的装载点，放进 src/api 等于给浏览器代码留了颗
+ * 「谁 import 谁构建崩」的地雷——目前全仓只有它自己的测试在用。scripts/ 是
+ * 同类探针/工具的家，将来要在 UI 里装配多通道，请把装配逻辑重写成浏览器安全版。
+ *
  * 全部通道 2026-09-12 宿主 curl 实测。Key 均来自用户提供（D:\Desktop\新建
- * Text Document.txt），不进 git（本文件已列入 .gitignore 由用户自行管理；
- * 若文件意外入库，推送远程前必须轮换全部 Key）。
+ * Text Document.txt），不进 git——Key 文件已列 .gitignore（scripts/.sensenova-keys、
+ * endpoints.local.json），由用户自行管理；若 Key 意外入库，推送远程前必须轮换。
  *
  * 通道健康档案：
  *  · sensenova  https://token.sensenova.cn/v1        ✅ 5 模型 3 Key（429 限流需冷却）
@@ -21,8 +26,8 @@
 
 import { readFileSync } from "fs";
 import { existsSync } from "fs";
-import type { JudgeSeat } from "./judge-panel";
-import { splitKeys } from "./llm-config";
+import type { JudgeSeat } from "../src/api/judge-panel.ts";
+import { splitKeys } from "../src/api/llm-config.ts";
 
 /** 用户提供的通道清单原文件路径（不进 git） */
 const ENDPOINTS_FILE = ["endpoints.local.json", "../endpoints.local.json"];
