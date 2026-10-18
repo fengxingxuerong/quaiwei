@@ -2,6 +2,15 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## 未发布 · 工程卫生（七）：工具链跨大版本升级（2026-10-18）
+
+- **React 18.3.1 → 19.3.1**（react-dom、@types/react、@types/react-dom 同步）。
+  升级前扫描确认无遗留 API（无 React.FC / defaultProps / findDOMNode /
+  ReactDOM.render / 全局 JSX.Element / 无参 useRef），tsc 零改动通过；
+  @testing-library/react 16.3.3 已声明支持 React 19，无需调整。
+  组件渲染由 103 个测试文件（happy-dom）兜底；产物内 React 运行时随构建替换，
+  桌面端建议人工冒烟一版。
+
 ## 未发布 · 工程卫生（六）：依赖补丁升级 + TS 严格位（2026-10-18）
 
 - tsconfig 启用三枚零成本严格位：`noImplicitReturns`、`noImplicitOverride`、
