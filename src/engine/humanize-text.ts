@@ -31,7 +31,18 @@ export function isCJK(ch: string): boolean {
  * 修法：**先把 URL 段替换成占位符，切完再还原**。
  * 这是最窄的修复——只对 URL 生效，不动原有的切句语义（中文问号照切）。
  */
+/** 切句记忆化缓存上限：256 条（段落级键，超限整体清空，无 LRU 开销） */
+const SPLIT_CACHE_MAX = 256;
+const SPLIT_CACHE = new Map<string, string[]>();
+
 export function splitSentences(text: string): string[] {
+  // v0.9.55 性能（工程卫生九）：切句结果按输入记忆化——同一段文本在一次
+  // humanize 里会被十余个阶段（cliche/vocab/burst/detector/burst-single…）
+  // 反复切，用户再点「换一版」时整段还会原样命中。splitSentences 是纯函数、
+  // 输入决定输出，按键缓存安全；键取段落级字符串，256 条上限、超限整体清空
+  // （无 LRU 开销）。命中返回**副本**：调用方存在就地改写（splice/按下标赋值）。
+  const cached = SPLIT_CACHE.get(text);
+  if (cached) return cached.slice();
   // v0.9.25：URL / 邮箱等结构化串整体保护，避免被标点切碎。
   //
   // 承载方式从「占位符 + 还原」换成 `text-shield.ts` 的**区间表**：
@@ -59,7 +70,10 @@ export function splitSentences(text: string): string[] {
     i++;
   }
   if (buf) out.push(buf);
-  return out.map((s) => s.trim()).filter((s) => s.length > 0);
+  const result = out.map((s) => s.trim()).filter((s) => s.length > 0);
+  if (SPLIT_CACHE.size >= SPLIT_CACHE_MAX) SPLIT_CACHE.clear();
+  SPLIT_CACHE.set(text, result.slice());
+  return result;
 }
 
 export function pick<T>(rng: () => number, arr: T[]): T {

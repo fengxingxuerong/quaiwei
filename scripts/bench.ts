@@ -54,3 +54,26 @@ for (const mult of [1, 10]) {
     `x${mult.toString().padStart(2)}  | ${String(charCount).padStart(5)}字 | ${dt2.toFixed(0)}ms（8 稿择优，含指纹/忠实度门槛）`,
   );
 }
+
+// 形态基准（工程卫生九补）：伸缩维度之外的两种真实稿型——多短段与单超长段，
+// 用来盯「分段级/段内级」循环与扫描的开销漂移（切句记忆化即在这两种形态下收益最明显）。
+console.log("\n=== 形态基准（朱雀增强 0.9）===\n");
+const shapes: Array<[string, string]> = [
+  [
+    "多短段 120 段",
+    Array.from(
+      { length: 120 },
+      (_, i) => `这是第 ${i + 1} 段短文本，用来观察多段形态下的每段开销。`,
+    ).join("\n\n"),
+  ],
+  ["单超长段 40 句", longText.replace(/\n/g, "").repeat(4)],
+];
+for (const [name, text] of shapes) {
+  const charCount = text.replace(/\s/g, "").length;
+  humanize(text, { intensity: 0.9, seed: 42, zhuqueMode: true }); // 预热
+  const t3 = performance.now();
+  for (let i = 0; i < 3; i++) humanize(text, { intensity: 0.9, seed: 42 + i, zhuqueMode: true });
+  console.log(
+    `${name.padEnd(14)} | ${String(charCount).padStart(5)}字 | ${((performance.now() - t3) / 3).toFixed(0)}ms`,
+  );
+}
