@@ -16,6 +16,22 @@
   20→22（本地 Node 24 本就达标）。plugin-react 6 的三个 react-compiler 相关
   peer 均声明 optional，未引入新依赖。门禁：2047 用例全绿、lint / tsc /
   vite build / build:cli 全过，覆盖率四指标不变（98.4 / 95.7 / 99.3 / 98.8）。
+- **TypeScript 5.9.3 → 7.0.2（原生编译器，官方 side-by-side 方案）**。
+  TS 7 不带 JS API（7.1 才会带来新 API），typescript-eslint 8.71 实测直接拒载
+  TS7（"does not support TS 7.0"）⇒ 按官方 7.0 公告用 npm alias 并行：
+  `typescript` → `npm:@typescript/typescript6@^6.0.2`（typescript-eslint 继续走
+  TS 6.0 API），`@typescript/native` → `npm:typescript@^7.0.2`（CLI `tsc` 为原生
+  7.0；`tsc6` 可并行调用）。本仓库无任何程序化消费 TS API 的代码，切换面仅为
+  CLI 类型检查。配套适配两处：tsconfig 增加 `types: ["node"]`（TS 7 起默认 `[]`，
+  不再自动收录全部 @types；@types/node 同时补为直接 devDep，沿用树内去重后的
+  26.6.5），新增标准 `src/vite-env.d.ts`（`/// <reference types="vite/client" />`
+  ——TS 7 起 `noUncheckedSideEffectImports` 默认开启，`import "./styles.css"`
+  必须解析到 `*.css` 模块声明，此前 TS 5.x 因该检查默认关闭从未报错）。
+  实测：`tsc -b` 5.6~6.1s → 1.57~1.76s（约 3.5×，小项目以进程启动开销为主）；
+  eslint / 2047 用例 / vite build / build:cli 全绿，覆盖率四指标不变。
+  注意：编辑器 IntelliSense 仍用 `typescript`（6.0 API 包）——即官方建议的
+  稳妥路径（Volar 类工具同样只能依赖 6.0 API）；待 typescript-eslint 支持
+  TS ≥7.1 API 后再收回 alias。
 
 ## 未发布 · 工程卫生（六）：依赖补丁升级 + TS 严格位（2026-10-18）
 
