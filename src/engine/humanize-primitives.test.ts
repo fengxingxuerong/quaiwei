@@ -24,7 +24,8 @@
  * 守卫加了却 119/119 一动不动。宽表越宽越挡不住真名词短语。
  */
 import { describe, it, expect } from "vitest";
-import { fragmentFrontCanStand, findGuardedCutNear } from "./humanize-primitives.ts";
+import { fragmentFrontCanStand, findGuardedCutNear, emitStage } from "./humanize-primitives.ts";
+import type { StageTrace } from "./humanize-primitives.ts";
 
 describe("fragmentFrontCanStand —— 必须拒绝的（残句防线）", () => {
   it("空串 / 纯空白", () => {
@@ -90,6 +91,14 @@ describe("fragmentFrontCanStand —— 必须拒绝的（残句防线）", () =>
     // 同上：「早期阶段」4 字被上一条拦住了，要覆盖得给更长的输入。
     expect(fragmentFrontCanStand("半导体工艺节点")).toBe(false);
     expect(fragmentFrontCanStand("后摩尔时代初期")).toBe(false);
+  });
+
+  it("v0.9.44 裸时间名词守卫本体（长段以「昨日上午」收束 → 拦）", () => {
+    // 上方两条样本其实都被更靠后的「时代/阶段/节点」守卫接走了，
+    // 判定链里 v0.9.44 新增的这条 if 本身从未被执行过——用真实通稿形态补上，
+    // 并配一个「时间词收束但不在词表（凌晨）」的对照组防过度拦截。
+    expect(fragmentFrontCanStand("本报讯 昨日上午")).toBe(false);
+    expect(fragmentFrontCanStand("据悉事故发生在昨日凌晨")).toBe(true);
   });
 
   it("`pop() ?? front` 是死分支：split 永不返回空数组", () => {
@@ -213,5 +222,22 @@ describe("findGuardedCutNear —— 切点守卫", () => {
     // 这里钉的是"距离优先 + 可切成性兜底"的组合行为，
     // 不是"每个 preferPos 都切在该点"——后者是错的假设。
     expect(findGuardedCutNear(s, 10)).toBe(8);
+  });
+});
+
+describe("emitStage —— trace 发射器的零开销守卫", () => {
+  const base = { id: "t", name: "步骤", why: "测试", charsBefore: 2 };
+
+  it("未传回调：原样返回，不抛错（全部插入点都是 if(onStage) 短路，这是兜底防线）", () => {
+    expect(() => emitStage(undefined, base, 0, "abcd")).not.toThrow();
+  });
+
+  it("传了回调：补齐 ms/charsAfter/snippet 后回调一次", () => {
+    const got: StageTrace[] = [];
+    emitStage((s) => got.push(s), base, 0, "abcd");
+    expect(got).toHaveLength(1);
+    expect(got[0].charsAfter).toBe(4);
+    expect(got[0].snippet).toBe("abcd");
+    expect(typeof got[0].ms).toBe("number");
   });
 });

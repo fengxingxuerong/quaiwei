@@ -135,4 +135,22 @@ describe("preDetectHumanFingerprint：50 字下限与段首 CV", () => {
     expect(clean.metrics.typosPerK).toBe(0);
     expect(typo.metrics.typosPerK).toBeGreaterThan(clean.metrics.typosPerK);
   });
+
+  it("分支 B（中等人称密度 + 段首参差 + 短句占比 + 常见错字词）→ 判人类手写", () => {
+    // 既有样本都命分支 A（personPronPerK ≥ 50），|| 短路导致分支 B 的
+    // personPronPerK ∈ [3,40] 区间判定从未被求值。这条样本人称密度 14（<50 ⇒
+    // 分支 A 必假），靠 B 的其余三维命中：
+    //   paraLeadCV≥0.3（段首长短参差）、shortRatio≥0.2（短句多）、
+    //   typosPerK≥1.5（「已经」在 TYPOS_HAND 表内）+ 人称 ∈ [3,40]
+    const text =
+      "那天下午我出门买点东西。下雨了。\n\n路过巷口的时候看见老王蹲在屋檐下抽烟，他说这雨怕是一时半会儿停不下来，手上还拎着刚买的菜。\n\n我点点头继续走，鞋子已经湿透了。\n\n回家换了衣服。坐了一会儿。";
+    const r = preDetectHumanFingerprint(text);
+    // 前提断言（分支 B 的四项门槛，防样本腐化后断言变成永真式）
+    expect(r.metrics.personPronPerK).toBeGreaterThanOrEqual(3);
+    expect(r.metrics.personPronPerK).toBeLessThan(40);
+    expect(r.metrics.paraLeadCV).toBeGreaterThanOrEqual(0.3);
+    expect(r.metrics.shortRatio).toBeGreaterThanOrEqual(0.2);
+    expect(r.metrics.typosPerK).toBeGreaterThanOrEqual(1.5);
+    expect(r.isHumanHand).toBe(true);
+  });
 });

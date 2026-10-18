@@ -29,6 +29,7 @@ import {
   structuralShuffleParagraph,
 } from "./humanize-shuffle.ts";
 import { splitSentences } from "./humanize-text.ts";
+import { computeStats } from "./humanize-data.ts";
 
 const rngMid = () => 0.5;
 const rngLow = () => 0.4;
@@ -164,6 +165,16 @@ describe("hardNumberedEnumerationShuffle（P3-2 硬编号拆毁）", () => {
     expect(out.join("")).toContain("成本很低");
     expect(out.join("")).toContain("良率不错");
   });
+
+  it("编号句无句尾标点：原位补句号，极化括号仍接在标点之前", () => {
+    // 此前所有样本的编号句都以「。」收尾，`/[。！？!?]$/.test(body0) ? … : "。"`
+    // 的兜底侧（无尾标点 → 默认「。」）从未被执行。
+    const sents = ["开头一句话。", "1) 良率不错", "2) 成本很低"];
+    const out = hardNumberedEnumerationShuffle(sents, rngMid, 0.9);
+    expect(out[0]).toContain("（顺便提一句——良率不错）。"); // 无尾标点 → 补出来的句号
+    expect(out[1]).toContain("成本很低");
+    expect(out.join("")).not.toContain("1)");
+  });
 });
 
 describe("enforceParagraphLeadSentVariance（P3-3 段首方差）", () => {
@@ -290,6 +301,31 @@ describe("resegmentParagraphsAggressive（段长强制方差，行 200/221）", 
     const out = resegmentParagraphsAggressive(t, rngMid, 0.9);
     // 4 段均匀 ⇒ 若 forceOneDone 失效会被一路合并到 1~2 段；守卫生效则仍保有两段以上
     expect(out.split(/\n\n+/).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("行 291：CV ≥ 0.45（needForce 不成立）时走概率合并臂，同样能并段", () => {
+    // 上方两条用例的段长都完全均匀（CV<0.45 ⇒ needForce 一臂）；
+    // 这条把 CV 抬到 0.45 以上，逼出三元表达式的另一半：
+    // `rng() < 0.35 + 0.35 * intensity`（rngMid=0.5 < 0.665 ⇒ 必合并）。
+    const pShort =
+      "先看结果。这一段的字符数压到五十二字上下，刚好够到合并窗口的下限要求，再补上两个短句把长度凑够就好。";
+    const pLong =
+      "这一段要拉长到接近窗口上限，用几句连续的话把字符数慢慢堆起来，同时把总句数控制在二到四句之间才行。第二句继续补充一些内容让它更饱满，顺便把整段的总字数抬到一百七十上下，免得落回窗口之外去。第三句再垫一点细节，说明这套写法在真实语料里的出现频率确实不低，值得单独拿出来看上一整段。第四句收尾用。";
+    const lens = [pShort.replace(/\s/g, "").length, pLong.replace(/\s/g, "").length];
+    // 前提断言：两段都落在合并窗口（50~180 字）内、句数 2~4，且 CV 越过 needForce 门槛
+    expect(Math.min(...lens)).toBeGreaterThanOrEqual(50);
+    expect(Math.max(...lens)).toBeLessThanOrEqual(180);
+    expect(computeStats(lens).cv).toBeGreaterThanOrEqual(0.45);
+    expect(splitSentences(pShort).length).toBeGreaterThanOrEqual(2);
+    expect(splitSentences(pLong).length).toBeGreaterThanOrEqual(2);
+    const t = `${pShort}\n\n${pLong}`;
+    const out = resegmentParagraphsAggressive(t, rngMid, 0.9);
+    // 合并臂真触发：两段之间被插进一条碎碎念桥接段（段数 2→3），原段内容一字不丢
+    expect(out).not.toBe(t);
+    const paras = out.split(/\n\n+/);
+    expect(paras).toHaveLength(3);
+    expect(paras[2]).toBe(pLong);
+    expect(paras[0]).toBe(pShort);
   });
 });
 

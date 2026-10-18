@@ -36,6 +36,29 @@ describe("P6 classifyGenre 自动体裁识别", () => {
     expect(["main", "narrative", "dialogue"]).toContain(classifyGenre("").genre);
     expect(classifyGenre("好。").genre).toBeDefined();
   });
+  it("引号台词占比达标（≥5%）→ 单特征直接判对话（不靠场景块/冒号）", () => {
+    // dlgComboScore 里「引号 ≥5% 直接给满 0.25 分」这一支此前没有样本命中，
+    // 既有对话体样本全靠场景块（0.35 分）提前触发。
+    const Q = `「这雨今晚停不了。」老王把烟头掐灭，「你看看那云。」
+「那就明天再走。」我把伞递过去，「反正也不赶时间。」
+「行。」他笑了笑，「听你的。」`;
+    const r = classifyGenre(Q);
+    expect(r.features.dlgQuoteRatio).toBeGreaterThanOrEqual(0.05);
+    expect(r.genre).toBe("dialogue");
+    expect(r.ruleHit).toBe(1);
+    // 综合分为正 ⇒ 置信度走 0.45+combo*0.55 一侧（>0.45），不是兜底 0.6
+    expect(r.confidence).toBeGreaterThan(0.45);
+  });
+  it("叙事文带少量引语（2%~5%）：仍判叙事，但拿不到「无引语」加分", () => {
+    // Rule 3 置信度组成里 `dlgQuoteRatio < 0.02 ? 0.08 : 0` 的「0 支」此前无样本，
+    // 既有叙事样本要么零引语，要么引语多到早已判成对话体。
+    const N = `那天下午我回了趟老家，院子里的石榴树已经挂果了。母亲在厨房忙活，隔着纱窗喊我洗手。我应了一声，把行李放在堂屋的长凳上。「吃饭了。」她端着盘子出来。「先吃，别凉了。」我把碗接过来，在桌边坐下，跟她说了说城里的近况。`;
+    const r = classifyGenre(N);
+    expect(r.features.dlgQuoteRatio).toBeGreaterThanOrEqual(0.02);
+    expect(r.features.dlgQuoteRatio).toBeLessThan(0.05);
+    expect(r.genre).toBe("narrative");
+    expect(r.ruleHit).toBe(3);
+  });
 });
 
 describe("P7 引擎级体裁联动", () => {

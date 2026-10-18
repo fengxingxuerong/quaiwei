@@ -23,7 +23,7 @@ import {
   computeStats,
   MIN_BURSTINESS_CV,
 } from "../humanize-data.ts";
-import { PAD_HEADS } from "../humanize-primitives.ts";
+import { PAD_HEADS, findSplitPoint } from "../humanize-primitives.ts";
 
 /** 确定性 rng：本组用例只依赖守卫是否生效，不依赖随机数取值 */
 const rng = (): number => 0.5;
@@ -264,6 +264,27 @@ describe("boostBurstinessInBlock：尾挂锚的三种收尾（293-296）", () =>
     // 且不得丢字：原句核心内容仍在
     expect(out).toContain("项目进度需要提前排期");
     expect(out).toContain("细节还要逐条跟相关同事核对清楚");
+  });
+
+  it("行 370/373：标准区间切不动时，插入语长句的后路要真把切点落在第二个逗号后", () => {
+    // 上方「行 351」样本的第二个逗号其实落在 30%~70% 区间内，走的是标准 findSplitPoint，
+    // 后路分支（findSplitPoint === -1 且句首是插入语）此前没有任何样本走到。
+    // 构造：第二个逗号放到句长 70% 之外 ⇒ 标准区间无处可切 ⇒ 只能走插入语后路。
+    const src =
+      "说起来，这套方案我们其实已经反复讨论过很多轮并且对细节做了大量准备工作，下周就启动实施。这是一句补充说明让文本不止一句。";
+    const first = splitSentences(src)[0];
+    expect(findSplitPoint(first, 22)).toBe(-1); // 前提：标准路径确实失效
+    const out = boostBurstinessByCutting(src, 0.9, 4);
+    expect(out).not.toBe(src);
+    // 切点在插入语之后（首逗号位置 3 被保住），不得切出「说起来。」孤句
+    expect(out).not.toContain("说起来。");
+    expect(out).toContain("准备工作。下周就启动实施");
+  });
+
+  it("行 370：插入语句子里一个逗号都没有 → 后路自然放弃，原样返回", () => {
+    const src =
+      "总的来说这件事值得单独出来聊聊它的来龙去脉和后续安排。第二句话补在这里保证句子数足够。";
+    expect(boostBurstinessByCutting(src, 0.9, 4)).toBe(src);
   });
 
   /**
