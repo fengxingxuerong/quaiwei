@@ -13,17 +13,17 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: unknown) {
+  override componentDidCatch(error: Error, info: unknown) {
     console.error("[QuAiWei] 渲染层异常:", error, info);
   }
 
-  render() {
+  override render() {
     const { error } = this.state;
     if (error) {
       return (
