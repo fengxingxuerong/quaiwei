@@ -54,6 +54,28 @@ function bestMs(fn: () => void, n = 3): number {
   return best;
 }
 
+/**
+ * 交替测量两档规模、各取 min（2026-10-19 加固，起因 CI run 39146780923 判红 6.55x）。
+ *
+ * 原实现「先小后大各测 3 次」有一个时序盲区：两档测量在时间上分离，一旦 runner
+ * 进入慢时段（90+ 文件并行 + v8 插桩），慢时段会整体落在某一档上（本例是大的那档），
+ * min-of-3 救不回来。交替后并发噪声对两档近似同分布，比值恢复稳定；
+ * 阈值与判据不变——真 O(n²)（注入实测 7.8x）照样打穿 6x。
+ */
+function bestMsPair(smallFn: () => void, largeFn: () => void, n = 5): [number, number] {
+  let small = Number.POSITIVE_INFINITY;
+  let large = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < n; i++) {
+    const t0 = performance.now();
+    smallFn();
+    small = Math.min(small, performance.now() - t0);
+    const t1 = performance.now();
+    largeFn();
+    large = Math.min(large, performance.now() - t1);
+  }
+  return [small, large];
+}
+
 describe("性能预算门禁", () => {
   it("标度近线性：4 倍字数不得吃掉 6 倍耗时（O(n²) 会到 ~16 倍）", () => {
     const small = build(20); // ≈ 4.5k 字
@@ -64,12 +86,14 @@ describe("性能预算门禁", () => {
     humanize(small, opts);
     humanize(large, opts);
 
-    // 下限 0.5ms：小样本若被计时器量化到 0，比值会变成 Infinity/NaN 而失去意义
-    const tSmall = Math.max(
-      bestMs(() => humanize(small, opts)),
-      0.5,
+    // 交替测量两档规模、各取 min-of-5：并发噪声对两档近似同分布（见 bestMsPair 注释）
+    const [tSmallRaw, tLarge] = bestMsPair(
+      () => humanize(small, opts),
+      () => humanize(large, opts),
+      5,
     );
-    const tLarge = bestMs(() => humanize(large, opts));
+    // 下限 0.5ms：小样本若被计时器量化到 0，比值会变成 Infinity/NaN 而失去意义
+    const tSmall = Math.max(tSmallRaw, 0.5);
     const ratio = tLarge / tSmall;
 
     expect(
