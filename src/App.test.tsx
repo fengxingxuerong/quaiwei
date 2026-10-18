@@ -8,7 +8,7 @@
  * 两种产出来源的界面文案）/ 空输入守卫 / Ctrl+Enter 热键 / 强度持久化 / 历史落盘。
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
+import { render, fireEvent, cleanup, waitFor, within, act } from "@testing-library/react";
 import App from "./App";
 import { aiScore, humanize } from "./engine/humanize";
 import { loadHistory } from "./store-history";
@@ -219,6 +219,54 @@ describe("App 去味闭环", () => {
       expect(runHumanizeMock).toHaveBeenCalledTimes(1);
     });
     expect(getByText(/使用本地引擎去味/)).toBeTruthy();
+  });
+
+  it("并发守卫：去味进行中热键再按不再发起第二次（v0.9.54）", async () => {
+    let resolveRun: (v: ReturnType<typeof makeRunResult>) => void = () => {};
+    runHumanizeMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRun = resolve;
+        }),
+    );
+    const { getByText, getByPlaceholderText } = await renderApp();
+    const pane = getByPlaceholderText(/把 AI 写的文章粘进来/);
+    fireEvent.change(pane, { target: { value: INPUT_TEXT } });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => expect(runHumanizeMock).toHaveBeenCalledTimes(1));
+    // 按钮 disabled 挡不住热键：Ctrl+Enter 必须被 loading 守卫自己拦住
+    fireEvent.keyDown(pane, { key: "Enter", ctrlKey: true });
+    expect(runHumanizeMock).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolveRun(makeRunResult(OUTPUT_TEXT, "local"));
+    });
+    await waitFor(() => {
+      expect((getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value).toBe(
+        OUTPUT_TEXT,
+      );
+    });
+  });
+
+  it("去味进行中点「清空」：在途结果作废，不覆盖已清空的界面（v0.9.54）", async () => {
+    let resolveRun: (v: ReturnType<typeof makeRunResult>) => void = () => {};
+    runHumanizeMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRun = resolve;
+        }),
+    );
+    const { getByText, getByPlaceholderText } = await renderApp();
+    const pane = getByPlaceholderText(/把 AI 写的文章粘进来/);
+    fireEvent.change(pane, { target: { value: INPUT_TEXT } });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => expect(runHumanizeMock).toHaveBeenCalledTimes(1));
+    fireEvent.click(getByText("清空"));
+    await act(async () => {
+      resolveRun(makeRunResult(OUTPUT_TEXT, "local"));
+    });
+    // 结果已被令牌作废：输出区保持空、input 保持空（旧稿不得回写）
+    expect((getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value).toBe("");
+    expect((getByPlaceholderText(/把 AI 写的文章粘进来/) as HTMLTextAreaElement).value).toBe("");
   });
 
   it("runHumanize 抛错：界面给出错误提示且不崩", async () => {
@@ -503,11 +551,27 @@ describe("App 集成：评分 / 检测闭环 / 设置 / 历史 / 草稿 / 面板
     });
   });
 
-  it("「复制」按钮：提示已复制到剪贴板", async () => {
-    const utils = render(<App />);
-    const { getByText } = await humanizeFirst(utils);
-    fireEvent.click(getByText("复制"));
-    expect(getByText("已复制到剪贴板")).toBeTruthy();
+  it("「复制」按钮：clipboard 可用时提示已复制到剪贴板", async () => {
+    // v0.9.54：复制改走 copyText（clipboard → textarea 降级）。这里把 clipboard
+    // 钉成可用，断言成功路径；失败路径由 zhuque.test.ts 的 copyText 用例覆盖。
+    const nav = navigator as Navigator & { clipboard?: { writeText?: () => Promise<void> } };
+    const origClip = nav.clipboard;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.resolve() },
+    });
+    try {
+      const utils = render(<App />);
+      const { getByText } = await humanizeFirst(utils);
+      fireEvent.click(getByText("复制"));
+      await waitFor(() => {
+        expect(getByText("已复制到剪贴板")).toBeTruthy();
+      });
+    } finally {
+      if (origClip)
+        Object.defineProperty(nav, "clipboard", { configurable: true, value: origClip });
+      else Reflect.deleteProperty(nav, "clipboard");
+    }
   });
 
   it("「AI 检测」：14 特征面板出现，特征明细可展开收起", async () => {
@@ -602,10 +666,12 @@ describe("App 集成：评分 / 检测闭环 / 设置 / 历史 / 草稿 / 面板
     fireEvent.click(utils.getByText("朱雀检测"));
     fireEvent.click(utils.getByText(/校准实验室（攒真值）/));
     fireEvent.click(utils.getByText(/预置真值锚点/));
-    // 页面存在两个「复制」按钮（主工具条 + 实验室样本行），逐个点击直到实验室给出回执
+    // 页面存在两个「复制」按钮（主工具条 + 实验室样本行），逐个点击直到实验室给出回执。
+    // v0.9.54：主工具条「复制」改走异步 copyText 后也会落一条匹配 /已复制|复制失败的
+    // note，若断言同时匹配两者会命中多个元素；这里只认实验室的专属回执文案。
     for (const btn of utils.getAllByText("复制")) fireEvent.click(btn);
     await waitFor(() => {
-      expect(utils.getByText(/已复制|复制失败/)).toBeTruthy();
+      expect(utils.getByText(/已复制（超 2000 字|复制失败，请手动复制/)).toBeTruthy();
     });
   });
 

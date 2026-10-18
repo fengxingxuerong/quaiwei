@@ -122,10 +122,12 @@ export default function App({
   initialDetector?: DetectorConfig;
 }) {
   // 草稿恢复：刷新/误关标签页后把上次编辑中的内容拿回来（v0.9.15）。
-  // 只取一次并存在 ref 里——若用 state，恢复提示会被后续 effect 反复触发。
-  const restoredDraft = useRef<ReturnType<typeof loadDraft>>(loadDraft());
-  const [input, setInput] = useState(() => restoredDraft.current?.input ?? "");
-  const [output, setOutput] = useState(() => restoredDraft.current?.output ?? "");
+  // v0.9.54 修正：改用惰性 useState —— 原先 `useRef(loadDraft())` 的参数在**每次
+  // 渲染都会求值**（useRef 只丢弃返回值，不延迟参数），长文下每个按键都要同步
+  // localStorage.getItem + JSON.parse 一份草稿（上限 1MB）。惰性初始化只在首渲染跑一次。
+  const [restoredDraft] = useState(loadDraft);
+  const [input, setInput] = useState(() => restoredDraft?.input ?? "");
+  const [output, setOutput] = useState(() => restoredDraft?.output ?? "");
   const [intensity, setIntensity] = useState<number>(loadIntensity());
   const [zhuqueMode, setZhuqueMode] = useState<boolean>(loadZhuqueMode());
   const [genreOverride, setGenreOverride] = useState<
@@ -252,8 +254,21 @@ export default function App({
     void runPplFeature(target);
   }
 
+  // v0.9.54：去味任务令牌。热键此前不检查 loading（按钮 disabled 挡不住 Ctrl+Enter），
+  // 且「清空/示例/导入」不使在途任务失效——后完成的旧任务会把整轮结果（output/note/历史）
+  // 回写到已被用户清掉的界面上。每次发起任务自增令牌，await 回来后令牌不匹配即丢弃结果。
+  const runSeqRef = useRef(0);
+
+  /** 作废在途去味任务（清空/示例/导入时调用），并复位 loading，避免旧任务 finally 不再清它 */
+  function cancelPendingRun() {
+    runSeqRef.current += 1;
+    setLoading(false);
+  }
+
   async function handleHumanize() {
+    if (loading) return; // 并发守卫：热键绕过按钮 disabled 的路径必须自己拦
     if (!input.trim()) return;
+    const seq = ++runSeqRef.current;
     setLoading(true);
     setNote("");
     setRoundScores([]);
@@ -266,6 +281,7 @@ export default function App({
         intensity,
         api,
         (round, score, stage) => {
+          if (runSeqRef.current !== seq) return; // 已被新一轮/清空取代：进度文案不再回写
           setNote(
             score !== null && score >= 0
               ? `${stage ?? ""}深度去味第 ${round} 轮完成，LLM 评分 ${score}${score <= DEEP_TARGET_SCORE ? "（已达标）" : "，继续压…"}`
@@ -277,6 +293,7 @@ export default function App({
         local.bestOf ? { bestOf: true, candidates: local.candidates } : undefined,
         true, // collectTrace：本地引擎路径下收集逐步执行记录
       );
+      if (runSeqRef.current !== seq) return; // 结果已被作废（用户点了清空/导入了新稿）：整轮丢弃
       setTrace(r.trace ?? null);
       setLastRun({
         bestOfTried: r.bestOf?.tried,
@@ -330,16 +347,22 @@ export default function App({
       saveHistory(entry);
       setHistory(loadHistory());
     } catch (e: unknown) {
-      setNote("出错了：" + (e instanceof Error ? e.message : String(e)));
+      if (runSeqRef.current === seq) {
+        setNote("出错了：" + (e instanceof Error ? e.message : String(e)));
+      }
     } finally {
-      setLoading(false);
+      if (runSeqRef.current === seq) setLoading(false);
     }
   }
 
   function copy() {
     if (!output) return;
-    navigator.clipboard?.writeText(output);
-    setNote("已复制到剪贴板");
+    // v0.9.54：统一走 copyText（clipboard 失败自动降级 textarea+execCommand），
+    // 并如实反馈成败——原先 `navigator.clipboard?.writeText` 在非安全上下文/无权限时
+    // 静默失败却仍提示"已复制"，且 rejection 无人处理（unhandled rejection）。
+    void copyText(output).then((ok) => {
+      setNote(ok ? "已复制到剪贴板" : "复制失败：浏览器未授予剪贴板权限，请手动选择复制");
+    });
   }
 
   async function handleJudge() {
@@ -415,10 +438,11 @@ export default function App({
 
   // 挂载时提示草稿已恢复（只跑一次）；时长文案见 src/app-messages.ts
   useEffect(() => {
-    const d = restoredDraft.current;
+    const d = restoredDraft;
     if (!d || (!d.input.trim() && !d.output.trim())) return;
     setNote(formatRestoredNote(d.ts, d.input.length));
-  }, []);
+    // eslint 依赖仅为稳定值（惰性 state 首渲染即定），不需要重跑
+  }, [restoredDraft]);
 
   // 草稿防抖落盘：每次键入都写会让长文手感变卡（与强度滑块同一手法）
   const draftSaveRef = useRef<number | undefined>(undefined);
@@ -467,6 +491,7 @@ export default function App({
   const openSettings = useCallback(() => setShowSettings(true), []);
 
   function handleClear() {
+    cancelPendingRun(); // 在途任务作废：清空后旧产出不许再写回
     setInput("");
     setOutput("");
     setNote("");
@@ -491,6 +516,7 @@ export default function App({
   }
 
   function handleSample() {
+    cancelPendingRun(); // 在途任务作废：载入示例即换稿，旧产出不许再写回
     setInput(SAMPLE_TEXT);
     setOutput("");
     setExplainItems(null);
@@ -525,6 +551,7 @@ export default function App({
     if (!f) return;
     void importFileToText(f).then((res) => {
       if (res.text) {
+        cancelPendingRun(); // 导入生效即换稿：在途任务作废，防止旧产出覆盖新导入
         setInput(res.text);
         setOutput("");
       }

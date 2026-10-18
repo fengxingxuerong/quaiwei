@@ -298,6 +298,11 @@ export function useZhuqueLab(opts: UseZhuqueLabOptions): UseZhuqueLabResult {
   // 朱雀面板的体裁线预测：v3 18 点 OLS（与对标评分面板共用 engine/zhuque-calib 同一把尺子）。
   // aiScore + classifyGenre 都是全文扫描，用 useMemo 缓存——面板未开（zq 为 null）时直接跳过，
   // 开着时也只随检测文本/体裁覆盖变化重算，不跟着每次输入键入白跑。
+  //
+  // v0.9.54：依赖里去掉 input/output —— 它们只在 `zqText` 为空时作回退文本，而 zq 非空
+  // 的路径（handleZhuque/rerunWithPpl 等）都保证 zqText 已有值；此前 deps 含 input/output
+  // 导致**面板开着时每次按键**都对全文重跑 classifyGenre+aiScore 两遍，与注释里
+  // 「不跟着每次输入键入白跑」相悖。
   const zqGenreEstimate = useMemo(() => {
     if (!zq) return null;
     const t = zqText || (output.trim() ? output : input).trim();
@@ -308,7 +313,7 @@ export function useZhuqueLab(opts: UseZhuqueLabOptions): UseZhuqueLabResult {
       pct: Math.round(predictOfficialPct(aiScore(t).score, track) * 10) / 10,
       tag: CALIB[track].x40Tag,
     };
-  }, [zq, zqText, input, output, genreOverride]);
+  }, [zq, zqText, genreOverride]);
 
   return {
     zq,

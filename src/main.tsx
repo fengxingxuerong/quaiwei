@@ -39,4 +39,25 @@ async function bootstrap() {
   );
 }
 
-bootstrap();
+// v0.9.54：bootstrap 失败必须留下可见出口。它发生在 React 挂载**之前**
+// （安全存储桥/预置 Key/配置读取），ErrorBoundary 护不到这个阶段——
+// 此前任何一个 rejection 都会让页面停在空白屏，用户连错误信息都看不到。
+bootstrap().catch((e: unknown) => {
+  const msg = e instanceof Error ? e.message : String(e);
+  const root = document.getElementById("root");
+  if (root) {
+    const box = document.createElement("div");
+    box.style.cssText =
+      "max-width:560px;margin:80px auto;font-family:system-ui,sans-serif;padding:0 16px;line-height:1.7";
+    const h = document.createElement("h1");
+    h.textContent = "趣AI味启动失败";
+    const p = document.createElement("p");
+    p.textContent = `应用初始化时出错：${msg}`;
+    const hint = document.createElement("p");
+    hint.textContent =
+      "可以尝试：刷新页面重试；浏览器隐私模式下允许本站点数据；或改用桌面版（设置面板里重新保存一次配置）。";
+    box.append(h, p, hint);
+    root.replaceChildren(box);
+  }
+  console.error("[QuAiWei] bootstrap failed:", e);
+});

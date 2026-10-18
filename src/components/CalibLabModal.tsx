@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { labStats, type CalibSample } from "../api/calib-lab";
 
 export function CalibLabModal({
@@ -31,7 +32,9 @@ export function CalibLabModal({
   onApplyWeight: (w: number) => void;
   onSeed: () => void;
 }) {
-  const st = labStats();
+  // v0.9.54：labStats 会读样本库（可达 200 条全文）并做拟合 + 留出洗牌，
+  // 原先每次渲染都跑（粘贴框每敲一个字就全量重算）。样本或回填映射变化时才重算。
+  const st = useMemo(() => labStats(), [samples, pasteMap]);
   const cal = st.calibration;
   const ordered = [...samples].reverse(); // 新样本在上
 
