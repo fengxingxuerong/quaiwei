@@ -487,7 +487,9 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     result = result
       .split(/\n\n+/)
       // v0.9.54：围栏块整段跳过——结构重排会把它内部的换行吃掉（splitSentences + join("")）
-      .map((p) => (isProtectedBlock(p) ? p : structuralShuffleParagraph(p, structRng, intensity, structOpts)))
+      .map((p) =>
+        isProtectedBlock(p) ? p : structuralShuffleParagraph(p, structRng, intensity, structOpts),
+      )
       .join("\n\n");
     // v0.9.8 P0 收敛（六·续）：段落重排只对论说/公文生效。
     //
@@ -554,7 +556,6 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   // 全文级句长节奏兜底
   const tRhythm = nowMs();
   if (intensity > 0.4) {
-    const rng3 = makeRng(opts.seed, 4444);
     // v0.9.8 P0 修复：废除 boostBurstiness 的「短碎片句」注入（boostBurstinessFragments）。
     //
     // 原因（第七阶段剥夺实验，scripts/_c_diag.ts）：
@@ -576,7 +577,6 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     //   段尾 \n\n，整篇直调会把多段焊成单段（humanize.test.ts「多段文本保留段落换行」
     //   实测 16 个用例回归）。必须逐段分发——这是原 PAD_INJECT_CAP 分支早已埋下的隐患，
     //   只因该分支罕有命中而未暴露，现在成为主路径必须修掉。
-    void rng3; // 保留句柄：切句路径未来若需抖动可用
     result = result.includes("\n\n")
       ? result
           .split(/\n\n+/)
@@ -718,8 +718,6 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     // 替代方案：CV 兜底全部交给 boostBurstinessByCutting（纯切长句、零注入）。
     //   它只切句不引新痕迹，且原代码在 cap2 之后本来就走这条路（下方 649 行），
     //   现在只是把「先灌锚再删锚」的冗余往来彻底去掉，两个目标不再互相拉锯。
-    const p4Rng = makeRng(opts.seed, 9401);
-    void p4Rng; // 保留 rng 句柄：boost 系列接口签名统一，且切句路径未来可能需要
     result = result.includes("\n\n")
       ? result
           .split(/\n\n+/)
@@ -757,7 +755,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
             .map((p) => (isProtectedBlock(p) ? p : burstCut(p, 0.55, 8)))
             .join("\n\n")
         : burstCut(result, 0.55, 8);
-  }
+    }
   }
   if (onStage)
     emitStage(

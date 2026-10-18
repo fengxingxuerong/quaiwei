@@ -61,7 +61,9 @@ describe("围栏代码块：整块冻结（v0.9.54 主缺陷回归）", () => {
         // ① 内容一个字符不变（含中文注释里的套话）
         expect(out.includes(CODE), `i=${intensity} seed=${seed} 围栏块被改动`).toBe(true);
         // ② 没被压平：`splitSentences + join("")` 会把块内换行吃光（实测 8 → 4）
-        expect(out.includes("\n```\n// 此外"), `i=${intensity} seed=${seed} 块内换行丢失`).toBe(true);
+        expect(out.includes("\n```\n// 此外"), `i=${intensity} seed=${seed} 块内换行丢失`).toBe(
+          true,
+        );
         // ③ 没被逐行炸开：段数守恒为 3（正文 / 代码块 / 尾段）
         expect(paraCount(out), `i=${intensity} seed=${seed} 段落数`).toBe(3);
       }

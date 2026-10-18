@@ -186,14 +186,14 @@ function rawStats(text: string): Raw {
   };
 }
 
-function featureList(text: string, r: Raw, chars: number): FeatureItem[] {
+function featureList(text: string, r: Raw, chars: number, bg: string[]): FeatureItem[] {
   const f: FeatureItem[] = [];
   const per = (n: number) => (chars > 0 ? (n * 100) / chars : 0);
 
   // 1. 套话密度（每百字命中数）
   let formulaHits = 0;
-  for (const p of FORMULAIC) {
-    const m = text.match(new RegExp(p, "g"));
+  for (const re of FORMULAIC_G) {
+    const m = text.match(re);
     if (m) formulaHits += m.length;
   }
   // 范围按标定实测收紧：AI 样本每百字 1.0~2.5 处，真人接近 0
@@ -206,8 +206,8 @@ function featureList(text: string, r: Raw, chars: number): FeatureItem[] {
 
   // 1b. 公文/黑话套话密度（与上面分开：真人公文也用，权重略低）
   let offHits = 0;
-  for (const p of OFFICIAL) {
-    const m = text.match(new RegExp(p, "g"));
+  for (const re of OFFICIAL_G) {
+    const m = text.match(re);
     if (m) offHits += m.length;
   }
   f.push({
@@ -233,8 +233,7 @@ function featureList(text: string, r: Raw, chars: number): FeatureItem[] {
     hint: `均长 ${r.avgLen.toFixed(1)} 字`,
   });
 
-  // 4. 词汇多样性（bigram TTR，AI 偏低）
-  const bg = bigrams(text);
+  // 4. 词汇多样性（bigram TTR，AI 偏低）——bg 由 detectAI 传入，全文只算一次
   const ttr = bg.length ? new Set(bg).size / bg.length : 0;
   f.push({
     name: "用词重复（TTR 偏低）",
@@ -265,8 +264,8 @@ function featureList(text: string, r: Raw, chars: number): FeatureItem[] {
 
   // 7. 连接词密度
   let connHits = 0;
-  for (const c of CONNECTIVES) {
-    const m = text.match(new RegExp(c, "g"));
+  for (const re of CONNECTIVES_G) {
+    const m = text.match(re);
     if (m) connHits += m.length;
   }
   f.push({
@@ -278,8 +277,8 @@ function featureList(text: string, r: Raw, chars: number): FeatureItem[] {
 
   // 8. 骨架词（首先/其次/综上所述）
   let skelHits = 0;
-  for (const s of SKELETON) {
-    const m = text.match(new RegExp(s, "g"));
+  for (const re of SKELETON_G) {
+    const m = text.match(re);
     if (m) skelHits += m.length;
   }
   f.push({
@@ -373,6 +372,19 @@ function featureList(text: string, r: Raw, chars: number): FeatureItem[] {
  */
 const FORMULAIC_RES: RegExp[] = FORMULAIC.map((p) => new RegExp(p));
 const SKELETON_RES: RegExp[] = SKELETON.map((s) => new RegExp("^" + s));
+
+/**
+ * v0.9.54 性能：`featureList`（篇章级特征，detectAI 每次调用跑一遍）原先对
+ * FORMULAIC/OFFICIAL/CONNECTIVES/SKELETON 四张表**逐条现场 new RegExp**（约 100 次），
+ * 与 segmentRisk 的 v0.9.23 是同一种浪费。表是模块级常量、运行期不变 ⇒ 提到模块级编译一次。
+ *
+ * 安全性：`String.prototype.match` 在 global 模式下先重置 lastIndex 再匹配，
+ * 共享 `g` 正则不会残留状态（同 zhuque.ts:countG 的登记）；正则源与 flag 与原先逐字一致。
+ */
+const FORMULAIC_G: RegExp[] = FORMULAIC.map((p) => new RegExp(p, "g"));
+const OFFICIAL_G: RegExp[] = OFFICIAL.map((p) => new RegExp(p, "g"));
+const CONNECTIVES_G: RegExp[] = CONNECTIVES.map((p) => new RegExp(p, "g"));
+const SKELETON_G: RegExp[] = SKELETON.map((p) => new RegExp(p, "g"));
 
 export function segmentRisk(sent: string): { risk: number; reason: string; reasons: string[] } {
   const reasons: string[] = [];
@@ -470,7 +482,10 @@ export function detectAI(raw: string): DetectReport {
     warnings.push("句子太少，节奏类特征不可靠");
   }
 
-  const features = featureList(text, r, chars);
+  // bigram 全文只算一次：featureList 的 TTR 特征与下方 stats.ttr 共用
+  // （原先 featureList 内算一遍、此处又算一遍，v0.9.54 合并）
+  const bg = bigrams(text);
+  const features = featureList(text, r, chars, bg);
 
   // 加权求和 → 0~100
   const wSum = features.reduce((a, f) => a + f.weight, 0) || 1;
@@ -493,7 +508,6 @@ export function detectAI(raw: string): DetectReport {
     .sort((a, b) => b.risk - a.risk)
     .slice(0, 8);
 
-  const bg = bigrams(text);
   return {
     probability,
     level,

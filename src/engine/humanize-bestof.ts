@@ -82,8 +82,11 @@ export function humanizeBestOf(text: string, opts: BestOfOptions = {}): BestOfRe
   }
 
   if (!best) {
-    // 全部被淘汰：退回单次生成，保证一定有输出（不静默返回空）
-    const out = humanize(text, opts);
+    // 全部被淘汰：退回单次生成，保证一定有输出（不静默返回空）。
+    // v0.9.54 修复：必须把 `seed: base` 显式传下去——否则 humanize 内部自行取
+    // Date.now() 新种子，与返回结果里报出的 `seed: base` 对不上，
+    // 用户拿报出的种子复现不出这一稿（这条回退路径此前没有可复现性测试）。
+    const out = humanize(text, { ...opts, seed: base });
     return {
       text: out,
       before,

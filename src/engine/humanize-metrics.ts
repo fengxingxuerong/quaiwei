@@ -58,6 +58,30 @@ const PAD_SENTENCE_WORDS = new Set([
 ]);
 
 /**
+ * v0.9.54 性能：`aiScore` / `fingerprintCheck` 原先**每次调用**都现场拼接
+ * FORMULAIC+FORMULAIC_EXTRA 去重表、并对每个垫词现场 new RegExp。
+ * bestOf 一跑就是 4~10 个候选 ⇒ 这些构造重复十遍。两表都是常量 ⇒ 提到模块级。
+ * 垫词正则只含字面量（转义后无反向引用），预编译实例与现场构造逐字等价。
+ */
+const ALL_FORMULAIC = Array.from(new Set([...FORMULAIC, ...FORMULAIC_EXTRA]));
+const ALL_FORMULAIC_SET = new Set(ALL_FORMULAIC);
+/** fingerprintCheck 的硬签名补充表（v0.9.54：从函数体内提到模块级，同上） */
+const FP_EXTRA_HARD = [
+  "展望未来",
+  "面向未来",
+  "按下了快进键",
+  "迈上了新的台阶",
+  "交出了一份满意的答卷",
+  "具有里程碑意义",
+  // v0.8.5: 关键在于/核心在于/本质在于/根本在于 已是 VOCAB 源词（概率式替换），
+  // 列入硬签名会导致"概率跳过替换"与"探针零残留"自相矛盾——移除，计分走 FORMULAIC
+];
+const PAD_SENTENCE_RES: RegExp[] = [...PAD_SENTENCE_WORDS].map(
+  (w) =>
+    new RegExp(`(?:^|[。！？!?\\n]\\s*)${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[。！？]`, "g"),
+);
+
+/**
  * aiScore 的「人写 ←→ 机器」打分边界（v0.9.7 权重标定产物）
  * ---------------------------------------------------------
  * 三个数都要留住，它们各有身份，历史上曾被人当成同一个：
@@ -242,7 +266,6 @@ export function aiScore(text: string): ScoreBreakdown {
   // ---- 1) 套话命中（真 AI 套话；正常书面语已排除）----
   let hits = 0;
   const haystack = text;
-  const ALL_FORMULAIC = Array.from(new Set([...FORMULAIC, ...FORMULAIC_EXTRA]));
   for (const phrase of ALL_FORMULAIC) {
     if (!(phrase in VOCAB) && haystack.includes(phrase)) hits++;
   }
@@ -323,11 +346,7 @@ export function aiScore(text: string): ScoreBreakdown {
   // 3d) 垫词独句：口语垫词被机械插成独立短句。
   //     正常写作里"就这样"可以出现（"事情就这样结束了"），
   //     但绝不会以「就这样。」「你懂的。」这种形态单独成句 —— 那是引擎的插入痕迹。
-  for (const w of PAD_SENTENCE_WORDS) {
-    const re = new RegExp(
-      `(?:^|[。！？!?\\n]\\s*)${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[。！？]`,
-      "g",
-    );
+  for (const re of PAD_SENTENCE_RES) {
     const c = (text.match(re) ?? []).length;
     if (c > 0) structure += Math.min(3, c) * W_PAD_SENTENCE;
   }
@@ -482,20 +501,9 @@ export function fingerprintCheck(text: string): FingerprintReport {
   }
   // 5) AI 套话（v0.8：合并 FORMULAIC + FORMULAIC_EXTRA）
   let formulaic = 0;
-  const ALL_FORMULAIC_FP = Array.from(new Set([...FORMULAIC, ...FORMULAIC_EXTRA]));
-  for (const p of ALL_FORMULAIC_FP) if (text.includes(p)) formulaic++;
-  const FP_EXTRA_HARD = [
-    "展望未来",
-    "面向未来",
-    "按下了快进键",
-    "迈上了新的台阶",
-    "交出了一份满意的答卷",
-    "具有里程碑意义",
-    // v0.8.5: 关键在于/核心在于/本质在于/根本在于 已是 VOCAB 源词（概率式替换），
-    // 列入硬签名会导致"概率跳过替换"与"探针零残留"自相矛盾——移除，计分走 FORMULAIC
-  ];
+  for (const p of ALL_FORMULAIC) if (text.includes(p)) formulaic++;
   for (const w of FP_EXTRA_HARD) {
-    if (text.includes(w) && !ALL_FORMULAIC_FP.includes(w)) formulaic++;
+    if (text.includes(w) && !ALL_FORMULAIC_SET.has(w)) formulaic++;
   }
   if (formulaic > 0) {
     issues.push({

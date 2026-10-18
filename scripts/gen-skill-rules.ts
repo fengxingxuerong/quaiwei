@@ -26,7 +26,6 @@ import {
   INTERJECTIONS,
   LEADING_CONNECTORS,
   SOFT_ENDINGS,
-  SOFT_TAIL_VARIANTS,
 } from "../src/engine/humanize-vocab.ts";
 import { getGenreKnobs, type EffectiveGenre } from "../src/engine/humanize.ts";
 
@@ -155,7 +154,6 @@ function renderMaterials(): string {
     list("插入语（INTERJECTIONS）", INTERJECTIONS),
     list("开头连接词（软化对象）", LEADING_CONNECTORS),
     list("句尾语气词（SOFT_ENDINGS）", SOFT_ENDINGS),
-    list("句尾软化变体（SOFT_TAIL_VARIANTS）", SOFT_TAIL_VARIANTS),
     "",
     "## 使用纪律",
     "",

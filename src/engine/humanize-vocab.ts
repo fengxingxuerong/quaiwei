@@ -848,17 +848,6 @@ export function fragmentCanStand(s: string): boolean {
   return true;
 }
 
-// 句尾收束变体（自带句号，替换整句尾标点，制造收束节奏）
-export const SOFT_TAIL_VARIANTS = [
-  "，说白了。",
-  "，就这么回事。",
-  "，没毛病。",
-  "，你细品。",
-  "，对吧。",
-  "，实话实说。",
-  "，搁谁都一样。",
-];
-
 // 套话短语集合（用于评分，覆盖词典之外）
 export const FORMULAIC = [
   "值得注意的是",

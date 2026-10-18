@@ -16,11 +16,11 @@
  * 全部确定性实现（同输入必同输出），零第三方依赖。
  */
 
-/** 是否为剧本块头行（场景/人物/角色/地点/时间/背景/旁白/简介） */
-const SCENE_LINE_RE = /【[^】]{0,80}(?:场景|人物|角色|地点|时间|背景|旁白|简介)[^】]{0,80}】/;
+import { SCENE_BLOCK_LINE_RE } from "./text-shield.ts";
 
+/** 是否为剧本块头行（场景/人物/角色/地点/时间/背景/旁白/简介） */
 export function isSceneMetaLine(line: string): boolean {
-  return SCENE_LINE_RE.test(line);
+  return SCENE_BLOCK_LINE_RE.test(line);
 }
 
 /* =========================================================
@@ -413,7 +413,7 @@ export function fixOrphanConnectiveLeads(text: string): string {
    ========================================================= */
 /** 逐句处理时判断：该句是否为剧本块头行（是则跳过全部注入） */
 export function isSceneMetaSentence(sentence: string): boolean {
-  return SCENE_LINE_RE.test(sentence);
+  return SCENE_BLOCK_LINE_RE.test(sentence);
 }
 
 /* =========================================================

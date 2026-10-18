@@ -19,7 +19,6 @@ import { VOCAB_ENTRIES } from "./humanize-data.ts";
 export const REPLACE_VOCAB_BASE = 0.65;
 export const REPLACE_VOCAB_SLOPE = 0.45;
 export const SOFT_ENDING_PROB = 0.06;
-export const SOFT_TAIL_PROB = 0.12;
 export const SPLIT_SENTENCE_THRESHOLD = 34;
 export const SPLIT_SENTENCE_RATE = 0.45;
 export const MERGE_SENTENCE_THRESHOLD = 9;

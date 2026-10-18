@@ -2,6 +2,8 @@
  * 趣AI味 · 命中护栏：固定搭配守卫（GUARD_BEFORE/AFTER）与记忆化的判定入口。
  */
 
+import { SCENE_BLOCK_LINE_RE } from "./text-shield.ts";
+
 /**
  * 「通过」后紧邻的动词短语（2026-09-30 新增，见 docs/2026-09-30-sentence-defects-report.md §5.3）。
  * 这些词紧跟「通过」时，「通过」是介词、后接动词短语；单音节替身「靠/借/用」塞进这个槽位
@@ -364,7 +366,6 @@ function judgeGuardBlocks(from: string, context: string, before: string): boolea
     }
   }
   /**
-  /**
    * v0.9.24 类别规则：**源词以「了/着」结尾**（可分离助词）→ 整组跳过。
    *
    * 源词以「了/着」结尾时，替身替换掉的是它的**词干**，助词被留在原地：
@@ -408,8 +409,6 @@ function judgeGuardBlocks(from: string, context: string, before: string): boolea
  * injectHumanTypos 会单字替换——任何注入/机械改写都应跳过整行。
  * 判定口径：行首为【 且行内含场景块关键字（无锚，行内包含）。
  */
-const SCENE_BLOCK_LINE_RE = /【[^】]{0,80}(?:场景|人物|角色|地点|时间|背景|旁白|简介)[^】]{0,80}】/;
-
 export function isSceneBlockLine(line: string): boolean {
   const t = line.trimStart();
   return t.startsWith("【") && SCENE_BLOCK_LINE_RE.test(t);

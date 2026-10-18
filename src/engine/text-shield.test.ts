@@ -309,7 +309,9 @@ describe("frontmatterSpans / isIndentedBlock / isFrontmatterBlock（v0.9.54 第�
     const text = "---\ntitle: 周报\ndate: 2026-10-18\n---\n正文。";
     const spans = frontmatterSpans(text);
     expect(spans).toHaveLength(1);
-    expect(text.slice(spans[0].start, spans[0].end)).toBe("---\ntitle: 周报\ndate: 2026-10-18\n---");
+    expect(text.slice(spans[0].start, spans[0].end)).toBe(
+      "---\ntitle: 周报\ndate: 2026-10-18\n---",
+    );
   });
 
   it("闭合行可以是 ...（YAML 另一种写法）", () => {

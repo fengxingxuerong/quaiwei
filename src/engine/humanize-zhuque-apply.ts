@@ -37,13 +37,11 @@ import {
   MERGE_SENTENCE_RATE,
   MERGE_SENTENCE_THRESHOLD,
   SOFT_ENDING_PROB,
-  SOFT_TAIL_PROB,
   SPLIT_SENTENCE_RATE,
   SPLIT_SENTENCE_THRESHOLD,
 } from "./humanize-rules.ts";
 
 import {
-  SCENE_BLOCK_LINE_RE,
   countVocabTokens,
   dropLeadingConnectives,
   relaxIntensifierVerb,
@@ -55,6 +53,8 @@ import {
   replaceWithDevelopment,
   softenPassive,
 } from "./humanize-replace.ts";
+
+import { SCENE_BLOCK_LINE_RE } from "./text-shield.ts";
 
 import {
   PAD_INJECT_CAP,
@@ -661,7 +661,14 @@ export function humanizeSingle(text: string, opts: HumanizeOptions = {}): string
         //
         // 保留 SOFT_ENDINGS 单字尾（吧/呢/嘛/呀/哈）：它们本身很轻，
         //   问题只在「不该在低档位出现」，不在「不该存在」。
-        if (r < SOFT_ENDING_PROB * eff + SOFT_TAIL_PROB * eff) {
+        //
+        // v0.9.54 修复（幽灵加项）：条件里原先还挂着 `+ SOFT_TAIL_PROB * eff`——
+        //   v0.9.8 废除 SOFT_TAIL_VARIANTS 分支时只删了注入语句，这个已作废分支的
+        //   概率项留在了条件里，实际软化率变成 (0.06+0.12)×eff = 0.18×eff，
+        //   与上面两处注释（0.06×intensity 很低）全部相悖。现对齐文档：
+        //   只保留 SOFT_ENDINGS 的 0.06。行为变化方向=只减少注入，由 regress12
+        //   E 棘轮 + scan-bugs 全种子 + realcase 矩阵共同看守。
+        if (r < SOFT_ENDING_PROB * eff) {
           s = s.replace(/[。！？!?]+$/, "") + pick(rng, SOFT_ENDINGS) + "。";
         }
       }
