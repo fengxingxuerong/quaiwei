@@ -54,6 +54,7 @@ import { LocalDetectPanel } from "./components/LocalDetectPanel";
 import { ExplainPanel } from "./components/ExplainPanel";
 import { ReviewPanel } from "./components/ReviewPanel";
 import { reviewText, type ReviewReport } from "./engine/review";
+import { cleanInputJunk } from "./engine/input-hygiene";
 import {
   loadHistory,
   saveHistory,
@@ -894,10 +895,18 @@ export default function App({
       {review && (
         <ReviewPanel
           report={review}
+          text={input}
           onClose={() => setReview(null)}
           onRun={() => {
             setReview(null);
             void handleHumanize();
+          }}
+          onClean={(cleaned) => {
+            const r = cleanInputJunk(input);
+            handleInputChange(cleaned); // 原文一改：旧 diff 归因与痕迹地图一并作废（内含 setReview(null)）
+            setNote(
+              `输入清洗完成：隐形字符 ${r.removed.invisible} · 聊天残渣 ${r.removed.chatbot} · 重复标点 ${r.removed.punct}（共 ${r.total} 处）。`,
+            );
           }}
         />
       )}
