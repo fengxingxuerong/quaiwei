@@ -15,7 +15,9 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      // v0.9.55 工程卫生：warn → error。src 非测试文件实测零处 any，warn 在任何
+      // 门禁里都不会让构建变红（eslint 退出码不受 warning 影响）——等于没有护栏。
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "off",
       "no-constant-condition": "off",
     },

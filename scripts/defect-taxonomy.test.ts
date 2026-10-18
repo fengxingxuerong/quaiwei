@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   DEFECT_TAXONOMY,
   allTaxonomySignatures,
+  fixesFor,
   unfixedCategories,
 } from "../scripts/defect-taxonomy";
 
@@ -60,6 +61,25 @@ describe("缺陷类别对照表", () => {
     }
     // 这不是断言数量，是断言「这个函数能用」
     expect(Array.isArray(unfixed)).toBe(true);
+  });
+
+  /**
+   * v0.9.55 工程卫生：`fixesFor` 是反查入口（「这条命中历史修过几次」），
+   * 此前全无用例调用。补三条不变量：与表内记录一致 / 未修类别返回空 /
+   * 与 unfixedCategories 互补（同一分区、无重叠）。
+   */
+  it("fixesFor：与表内记录一致，且与 unfixedCategories 互补", () => {
+    for (const e of DEFECT_TAXONOMY) {
+      expect(fixesFor(e.category), `「${e.category}」fixesFor 与表内记录不一致`).toEqual(e.fixes);
+    }
+    // 能力边界类：「内容失真」只检出、不能修——修 = 编造原文
+    expect(fixesFor("内容失真")).toEqual([]);
+    expect(unfixedCategories()).toContain("内容失真");
+    // 互补性：两棵清单并集 = 全表，交集为空
+    const unfixed = new Set(unfixedCategories());
+    for (const e of DEFECT_TAXONOMY) {
+      expect(fixesFor(e.category).length === 0).toBe(unfixed.has(e.category));
+    }
   });
 
   /**

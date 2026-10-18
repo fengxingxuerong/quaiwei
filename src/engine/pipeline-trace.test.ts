@@ -187,3 +187,69 @@ describe("aggregateStages · 归并口径", () => {
     expect(t.stages[0].metrics).toEqual(["同一句"]);
   });
 });
+
+/**
+ * v0.9.55 工程卫生：补齐「旁路分支」的 trace 记录。
+ *
+ * 这些分支不会进改写主路径——入口守卫的三种短路、单段落直通、朱雀三道门控的
+ * 跳过原因——但它们的 metric 文案会**原样出现在 trace 面板上**，是用户肉眼可见的
+ * 观测产物。此前全无用例走到，等于面板上有一半文案没有回归保护。
+ */
+describe("pipeline-trace · 旁路分支也留真记录", () => {
+  it("空文本：入口守卫记录一条 skipped，输出空串", () => {
+    const { text, trace } = runTracedHumanize("");
+    expect(text).toBe("");
+    expect(trace.stages.length).toBe(1);
+    expect(trace.stages[0].id).toBe("guard");
+    expect(trace.stages[0].skipped).toBe(true);
+  });
+
+  it("强度=0：入口即短路，记录 skipped 且输出逐字等于原文", () => {
+    const r = runTracedHumanize(MULTI, { intensity: 0, seed: 1 });
+    expect(r.text).toBe(MULTI);
+    expect(r.trace.stages.length).toBe(1);
+    expect(r.trace.stages[0].id).toBe("guard");
+    expect(r.trace.stages[0].skipped).toBe(true);
+  });
+
+  it("单段普通文本：走直通分支（非逐段派生种子），输出仍与不开 trace 逐字相同", () => {
+    const single = "随着人工智能技术的快速发展，AI 写作工具应运而生。它有效提升了写作效率。";
+    const r = runTracedHumanize(single, { intensity: 0.9, seed: 42 });
+    expect(r.text).toBe(humanize(single, { intensity: 0.9, seed: 42 }));
+    const para = r.trace.stages.find((s) => s.id === "para")!;
+    expect(para.metrics.join(" ")).toContain("单段文本");
+  });
+
+  it("朱雀跳过三种原因都如实记录：未开启 / 强度不足 / 垫词饱和", () => {
+    // ① 默认不开朱雀增强（zhuqueMode 缺省 false）
+    const a = runTracedHumanize(MULTI, { intensity: 0.9, seed: 1 });
+    const zqA = a.trace.stages.find((s) => s.id === "zhuque")!;
+    expect(zqA.skipped).toBe(true);
+    expect(zqA.metrics.join(" ")).toContain("未开启");
+
+    // ② 开了但强度不足（narrative 的 knobs.disableZhuque=false，可控）
+    const b = runTracedHumanize(MULTI, {
+      intensity: 0.3,
+      seed: 1,
+      zhuqueMode: true,
+      genre: "narrative",
+    });
+    const zqB = b.trace.stages.find((s) => s.id === "zhuque")!;
+    expect(zqB.skipped).toBe(true);
+    expect(zqB.metrics.join(" ")).toContain("0.35");
+
+    // ③ 开了、强度够，但原文垫词已饱和（≥ PAD_INJECT_CAP=10 处「讲道理」）
+    const pad = Array.from({ length: 11 }, (_, i) => `讲道理，第 ${i + 1} 点确实值得注意。`).join(
+      "",
+    );
+    const c = runTracedHumanize(pad, {
+      intensity: 0.9,
+      seed: 1,
+      zhuqueMode: true,
+      genre: "narrative",
+    });
+    const zqC = c.trace.stages.find((s) => s.id === "zhuque")!;
+    expect(zqC.skipped).toBe(true);
+    expect(zqC.metrics.join(" ")).toContain("饱和");
+  });
+});

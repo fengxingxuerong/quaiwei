@@ -1207,3 +1207,35 @@ describe("LLM 模式标签（行 509-518）", () => {
     expect(utils.container.querySelector(".mode-tag")).toBeTruthy();
   });
 });
+
+/**
+ * v0.9.55 工程卫生：审题（detector-only 痕迹地图）的界面接线此前无用例。
+ *
+ * `reviewText` 引擎侧有 9 条直调用例（engine/review.test.ts），但
+ * 「点按钮 → 面板出现 → 收起 → 输入输出一字不动」这条**界面契约**没锁：
+ * 它承诺的是只读——引擎没错不等于 App 没把状态改错。
+ */
+describe("App 审题（只读痕迹地图）", () => {
+  it("有原文点「审题」：痕迹地图出现，且输入输出都不动", async () => {
+    const { getByText, getByPlaceholderText, findByText } = render(<App />);
+    const pane = getByPlaceholderText(/把 AI 写的文章粘进来/) as HTMLTextAreaElement;
+    const src =
+      "随着人工智能技术的快速发展，AI 写作工具应运而生。综上所述，它极大地提升了写作效率，降低了运营成本。";
+    fireEvent.change(pane, { target: { value: src } });
+    fireEvent.click(getByText("审题"));
+    expect(await findByText(/AI 味痕迹地图/)).toBeTruthy();
+    expect(pane.value).toBe(src);
+    // 只读承诺：输出区不得被写入
+    expect((getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value).toBe("");
+  });
+
+  it("点「收起」：面板退场，不残留在页面上", async () => {
+    const { getByText, getByPlaceholderText, queryByText, findByText } = render(<App />);
+    const pane = getByPlaceholderText(/把 AI 写的文章粘进来/) as HTMLTextAreaElement;
+    fireEvent.change(pane, { target: { value: "人工智能正在改变世界。它提升了生产效率。" } });
+    fireEvent.click(getByText("审题"));
+    await findByText(/AI 味痕迹地图/);
+    fireEvent.click(getByText("收起"));
+    expect(queryByText(/AI 味痕迹地图/)).toBeNull();
+  });
+});
