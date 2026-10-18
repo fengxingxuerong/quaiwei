@@ -421,6 +421,19 @@ export function SettingsModal({
           编造/忠实度问题（如现编「我见过不少例子」），会预算外追加一轮定向修复；
           修不掉则保留原稿并明确警告，绝不静默带病交付。
         </p>
+        <label className="row">
+          <span>回译洗稿</span>
+          <input
+            type="checkbox"
+            checked={draftApi.backTranslation ?? false}
+            onChange={(e) => updateApi({ backTranslation: e.target.checked })}
+          />
+        </label>
+        <p className="modal-tip" style={{ marginTop: -6 }}>
+          回译洗稿（仅深度模式收尾，多花约 2 次调用）：最终稿中→英→中往返一轮再打磨，
+          用词句式换一茬、统计指纹随之改变。本地保真复核不过（数字/术语有出入）自动弃用；
+          开严格保真时还会加做事实复核。回译轮不计分。
+        </p>
 
         <div className="modal-divider">朱雀增强（可选 · 反检测特征）</div>
         <p className="modal-tip">

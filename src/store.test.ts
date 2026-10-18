@@ -119,6 +119,7 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
       strictFidelity: true,
       persona: "netgen" as const,
       voiceSample: "probe-voice-sample",
+      backTranslation: true,
     };
     saveApi(probe);
     const back = loadApi();
@@ -174,8 +175,17 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
     localStorage.setItem("aihumanizer.api", JSON.stringify({ voiceSample: "x".repeat(6000) }));
     expect((loadApi().voiceSample ?? "").length).toBe(5000);
 
-    localStorage.setItem("aihumanizer.api", JSON.stringify({ voiceSample: "我平时就这么写。" }));
+    saveApi({ ...DEFAULT_API, voiceSample: "我平时就这么写。" });
     expect(loadApi().voiceSample).toBe("我平时就这么写。");
+  });
+
+  it("backTranslation：默认关；开启后读回（竞品吸收四，防白名单漏读）", () => {
+    expect(loadApi().backTranslation).toBe(false);
+    saveApi({ ...DEFAULT_API, backTranslation: true });
+    expect(loadApi().backTranslation).toBe(true);
+    // 非布尔别值回落默认关
+    localStorage.setItem("aihumanizer.api", JSON.stringify({ backTranslation: "yes" }));
+    expect(loadApi().backTranslation).toBe(false);
   });
 });
 

@@ -321,6 +321,17 @@ describe("SettingsModal 补盲（逐行覆盖 · 配置行编辑与环境分支�
     expect(api.strictFidelity).toBe(true);
   });
 
+  it("回译洗稿勾选随保存上抛（竞品吸收四：默认关，勾上才有效）", () => {
+    const onSave = vi.fn();
+    const { container, getByText } = render(<SettingsModal {...base({ onSave })} />);
+    const bt = rowControl(container, "回译洗稿") as HTMLInputElement;
+    expect(bt.checked).toBe(false); // DEFAULT_API.backTranslation 默认关
+    fireEvent.click(bt);
+    expect(bt.checked).toBe(true);
+    fireEvent.click(getByText("保存"));
+    expect((onSave.mock.calls[0][0] as ApiConfig).backTranslation).toBe(true);
+  });
+
   it("最长等待 / 调用上限 / 首轮候选数三个下拉随保存上抛", () => {
     const onSave = vi.fn();
     const { container, getByText } = render(<SettingsModal {...base({ onSave })} />);

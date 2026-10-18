@@ -15,11 +15,14 @@ import {
   intensityDirective,
   personaDirective,
   styleDirective,
+  TRANSLATE_TO_EN_PROMPT,
+  BACK_TRANSLATE_HINT,
 } from "./llm-prompts";
 import { chat, resetApiCallCount, getApiCallCount } from "./llm-chat";
 import { processCandidate, fabricationReview, addedContentSignals } from "./llm-quality";
 import { restoreMixedSpacing } from "../engine/humanize-shuffle.ts";
 import { fingerprintCheck } from "../engine/humanize.ts";
+import { checkFidelityLocal } from "../engine/humanize-metrics";
 import { voiceDirectiveBlock } from "../engine/voice-profile";
 import { errMsg } from "./llm-judge";
 
@@ -115,6 +118,80 @@ export function buildSystemPrompt(cfg: ApiConfig, intensity: number, sourceText?
     intensityDirective(intensity) +
     voiceDirectiveBlock(cfg.voiceSample)
   );
+}
+
+/* ----------------------------- 回译洗稿（竞品吸收（四）） ----------------------------- */
+
+/** 回译轮结果：adopted 才接管交付稿；skip/reject 一律保留原稿并把原因写进 note */
+export type BackTranslationOutcome =
+  | { kind: "skip"; reason: string }
+  | { kind: "reject"; reason: string }
+  | { kind: "adopted"; text: string };
+
+/**
+ * 回译洗稿：中→英→中往返一轮（lynote-ai 的回译思路）。
+ *
+ * 防线（先便宜后昂贵）：
+ * 1. 原文须以中文为主——英文稿走"中→英→中"会改变语言本身，直接跳过；
+ * 2. 本地保真复核（checkFidelityLocal），数字/英文术语与**原文**比对，不过即弃用；
+ * 3. 严格保真开启时补做 LLM 编造复核，有编造即弃用；通道异常也弃用
+ *    （新候选没有"宁可放行"的余地：不放行只是少个选择，放行可能带病交付）。
+ * 弃用一律保留原稿 + note 说明，绝不抛错打断整次交付。
+ */
+async function backTranslationRound(
+  original: string,
+  current: string,
+  cfg: ApiConfig,
+  intensity: number,
+  altModel: string,
+  isOverBudget: () => boolean,
+): Promise<BackTranslationOutcome> {
+  const vis = original.replace(/\s/g, "").length;
+  const cn = (original.match(/[\u4e00-\u9fff]/g) ?? []).length;
+  if (vis === 0 || cn * 2 < vis) return { kind: "skip", reason: "原文非中文为主，回译不适用" };
+  if (isOverBudget()) return { kind: "skip", reason: "预算已尽" };
+
+  // 第一跳：中→英（低温只翻译，不创作）
+  const en = await chatNonEmpty(
+    cfg,
+    [
+      { role: "system", content: TRANSLATE_TO_EN_PROMPT },
+      { role: "user", content: current },
+    ],
+    { temperature: 0.2, maxTokens: 8000 },
+    altModel,
+    isOverBudget,
+  );
+  if (!en.content) return { kind: "skip", reason: "翻译通道无产出" };
+
+  // 第二跳：英→中（回译 + 人味打磨，走与主改写同一套 system 提示词）
+  const zh = await chatNonEmpty(
+    cfg,
+    [
+      {
+        role: "system",
+        content: buildSystemPrompt(cfg, intensity, original) + BACK_TRANSLATE_HINT,
+      },
+      { role: "user", content: en.content },
+    ],
+    { temperature: cfg.temperature, maxTokens: 8000 },
+    altModel,
+    isOverBudget,
+  );
+  if (!zh.content) return { kind: "skip", reason: "回译通道无产出" };
+
+  const fid = checkFidelityLocal(original, zh.content);
+  if (!fid.pass) return { kind: "reject", reason: `本地保真复核不过（${fid.problems[0]}）` };
+
+  if (cfg.strictFidelity) {
+    try {
+      const fabs = await fabricationReview(original, zh.content, cfg);
+      if (fabs.length) return { kind: "reject", reason: `事实复核发现 ${fabs.length} 处新增断言` };
+    } catch (e) {
+      return { kind: "reject", reason: `事实复核未能完成（${errMsg(e)}），疑点未排除即弃用` };
+    }
+  }
+  return { kind: "adopted", text: zh.content };
 }
 
 /** 单轮 LLM 去味 */
@@ -299,7 +376,8 @@ export async function humanizeViaApiDeep(
    *
    * v0.9.14 补的洞：此前只有后者做收稿终审，即"首轮就达标"的稿子反而不过终审——
    * 把好区收手接上提前 return 之后，这个不对称会被放大，所以统一到一个出口。
-   * 顺序：严格保真终审（发现编造即否决，抛 FabricationVetoError）→ 达标线说明 → 未达标提示。
+   * 顺序：回译洗稿（可选，v0.9.55 竞品吸收（四）；不过复核即弃用）→
+   * 严格保真终审（发现编造即否决，抛 FabricationVetoError）→ 达标线说明 → 未达标提示。
    *
    * 为什么还要一次终审：每候选的编造复核有漏判率（实测 s1 竞争稿的"见效最快/比拍脑袋准"
    * 漏网，修订轮同内容才被抓到），前移复核不能完全替代收稿检查。v0.9.13 之前这里只警告不
@@ -307,6 +385,20 @@ export async function humanizeViaApiDeep(
    */
   const deliver = async (hit: boolean): Promise<DeepResult> => {
     let finalNote = note;
+    // v0.9.55 竞品吸收（四）：回译洗稿收尾轮。放在两条收口路径的统一下游——
+    // "竞争段首轮达标提前收手"与"主循环收场"的稿子享受同一收尾。
+    if (cfg.backTranslation) {
+      const bt = await backTranslationRound(text, bestText, cfg, intensity, alt, isOverBudget);
+      if (bt.kind === "adopted") {
+        bestText = bt.text;
+        finalNote = appendNote(
+          finalNote,
+          "回译洗稿已采用：中→英→中往返一轮并打磨（本地保真复核通过；多花 2 次调用，回译轮不计分）",
+        );
+      } else {
+        finalNote = appendNote(finalNote, `回译洗稿未采用（${bt.reason}），保留原最优稿`);
+      }
+    }
     if (cfg.strictFidelity) {
       try {
         const fabs = await fabricationReview(text, bestText, cfg);

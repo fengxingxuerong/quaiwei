@@ -1102,3 +1102,173 @@ describe("LLM 层边角：空样例与缺省参数", () => {
     expect(buildSystemPrompt(cfg, 0.5)).toBe(buildSystemPrompt(cfg, 0.5, ""));
   });
 });
+
+/**
+ * v0.9.55 竞品吸收（四）：回译洗稿（lynote-ai 的"中→外→中"思路）。
+ * 契约：默认关=行为不变；开启后收尾多跑两跳且不计分；三道防线
+ * （非中文跳过 / 本地保真弃用 / 严格保真事实复核弃用）都只弃用不抛错。
+ */
+describe("回译洗稿（竞品吸收四）", () => {
+  const TEXT = "值得注意的是，人工智能正在深刻地改变着我们的生活方式。";
+  /** 兜底英文"译文"（内容不重要，测试只看通道与稿件流向） */
+  const EN_OUT =
+    "A few years back, hardly anyone used tools like these; today it is a different story, worth a slow look.";
+
+  /**
+   * 多角色桩：翻译/回译/事实核查/质检/改写/评判按 system 提示词分流。
+   * 事实核查通道按次数：第 1 次（候选期）恒干净；后续按配置给（回译复核 / 终审各占一次）。
+   */
+  function stubBackTranslate(opts?: {
+    backZh?: string;
+    finalFab?: string;
+    rewrite?: string;
+    enEmpty?: boolean;
+    zhEmpty?: boolean;
+    fabChannelBroken?: boolean;
+  }) {
+    const calls: string[] = [];
+    let fabCalls = 0;
+    const ok = (content: string) =>
+      new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    const fetch = vi.fn(async (_url: string, init?: { body?: string }) => {
+      const body = JSON.parse(init?.body ?? "{}") as {
+        messages: { role: string; content: string }[];
+      };
+      const sys = body.messages?.[0]?.content ?? "";
+      if (sys.includes("双语翻译引擎")) {
+        calls.push("to-en");
+        return ok(opts?.enEmpty ? "" : EN_OUT);
+      }
+      if (sys.includes("回译洗稿")) {
+        calls.push("to-zh");
+        return ok(opts?.zhEmpty ? "" : (opts?.backZh ?? GOOD_REWRITE));
+      }
+      if (sys.includes("事实核查员")) {
+        calls.push("fab");
+        fabCalls++;
+        if (fabCalls === 2 && opts?.fabChannelBroken) return ok("我不是 JSON");
+        // 第 3 次起是终审（回译稿被弃用时终审对象是原最优稿，必须干净）
+        const payload = fabCalls === 2 ? opts?.finalFab : undefined;
+        return ok(payload ?? JSON.stringify({ fabrications: [] }));
+      }
+      if (sys.includes("质检员")) {
+        calls.push("qc");
+        return ok("PASS");
+      }
+      if (sys.includes("改写专家")) {
+        calls.push("rewrite");
+        return ok(opts?.rewrite ?? GOOD_REWRITE);
+      }
+      calls.push("judge");
+      return ok("句长过于均匀\n35");
+    });
+    vi.stubGlobal("fetch", fetch);
+    return calls;
+  }
+
+  const BT = { ...DEFAULT_API, enabled: true, apiKey: "test-key", backTranslation: true };
+
+  it("开启：收尾多跑两跳并采用回译稿，note 如实说明；关闭：零额外调用", async () => {
+    const on = stubBackTranslate();
+    const deep = await humanizeViaApiDeep(TEXT, BT, undefined, 10, 1, 0.6);
+    expect(deep.text).toBe(GOOD_REWRITE);
+    expect(on.filter((c) => c === "to-en").length).toBe(1);
+    expect(on.filter((c) => c === "to-zh").length).toBe(1);
+    expect(deep.note).toContain("回译洗稿已采用");
+
+    const off = stubBackTranslate();
+    const plain = await humanizeViaApiDeep(
+      TEXT,
+      { ...BT, backTranslation: false },
+      undefined,
+      10,
+      1,
+      0.6,
+    );
+    expect(off).not.toContain("to-en");
+    expect(plain.note).not.toContain("回译洗稿");
+  });
+
+  it("本地保真复核不过（回译新增原文没有的数字）→ 弃用并说明，保留原最优稿", async () => {
+    stubBackTranslate({
+      backZh: "时间往前倒几年，这类工具还没几个人用，现在情况已经完全不一样了，约 42% 的人在用。",
+    });
+    const deep = await humanizeViaApiDeep(TEXT, BT, undefined, 10, 1, 0.6);
+    expect(deep.text).toBe(GOOD_REWRITE); // 未被回译稿接管
+    expect(deep.note).toContain("回译洗稿未采用");
+    expect(deep.note).toContain("本地保真复核不过");
+  });
+
+  it("非中文为主的原文跳过回译：中→英→中会改变语言本身", async () => {
+    // 术语密集型原文（过候选门槛：数字与英文术语都保留），但中文字符占比 <50%
+    const calls = stubBackTranslate({
+      rewrite: "GPT-4 和 Claude 3.5 这两款放在一起比，差别其实挺明显，选哪个看你要什么。",
+    });
+    const deep = await humanizeViaApiDeep("GPT-4 与 Claude 3.5 对比", BT, undefined, 10, 1, 0.6);
+    expect(calls).not.toContain("to-en");
+    expect(deep.note).toContain("原文非中文为主");
+  });
+
+  it("预算已尽：跳过回译，不追加调用", async () => {
+    const calls = stubBackTranslate();
+    const deep = await humanizeViaApiDeep(TEXT, { ...BT, maxApiCalls: 3 }, undefined, 10, 1, 0.6);
+    expect(calls).not.toContain("to-en");
+    expect(deep.note).toContain("预算已尽");
+  });
+
+  it("严格保真：回译稿事实复核有编造 → 弃用回译稿（不抛错，正常交付原稿）", async () => {
+    // fab 第 1 次=候选期（干净）；第 2 次=回译复核（有编造）；第 3 次=终审（干净）
+    stubBackTranslate({ finalFab: JSON.stringify({ fabrications: ["凭空来的例子"] }) });
+    const deep = await humanizeViaApiDeep(
+      TEXT,
+      { ...BT, strictFidelity: true },
+      undefined,
+      10,
+      1,
+      0.6,
+    );
+    expect(deep.text).toBe(GOOD_REWRITE);
+    expect(deep.note).toContain("回译洗稿未采用");
+    expect(deep.note).toContain("事实复核发现");
+  });
+
+  it("翻译通道空产出（降级重试亦空）→ 跳过并说明，不发回译跳", async () => {
+    const calls = stubBackTranslate({ enEmpty: true });
+    const deep = await humanizeViaApiDeep(TEXT, BT, undefined, 10, 1, 0.6);
+    expect(deep.text).toBe(GOOD_REWRITE);
+    expect(calls).not.toContain("to-zh");
+    expect(deep.note).toContain("翻译通道无产出");
+  });
+
+  it("回译通道空产出 → 跳过并说明，保留原稿", async () => {
+    const calls = stubBackTranslate({ zhEmpty: true });
+    const deep = await humanizeViaApiDeep(TEXT, BT, undefined, 10, 1, 0.6);
+    expect(calls).toContain("to-zh");
+    expect(deep.text).toBe(GOOD_REWRITE);
+    expect(deep.note).toContain("回译通道无产出");
+  });
+
+  it("严格保真：回译复核通道异常（模型没给 JSON）→ 疑点未排除即弃用", async () => {
+    stubBackTranslate({ fabChannelBroken: true });
+    const deep = await humanizeViaApiDeep(
+      TEXT,
+      { ...BT, strictFidelity: true },
+      undefined,
+      10,
+      1,
+      0.6,
+    );
+    expect(deep.text).toBe(GOOD_REWRITE);
+    expect(deep.note).toContain("事实复核未能完成");
+  });
+
+  it("空原文（可见字符 0）：回译守卫直接跳过，不发任何翻译调用", async () => {
+    const calls = stubBackTranslate();
+    const deep = await humanizeViaApiDeep("", BT, undefined, 10, 1, 0.6);
+    expect(calls).not.toContain("to-en");
+    expect(deep.note).toContain("原文非中文为主");
+  });
+});
