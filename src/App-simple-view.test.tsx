@@ -15,7 +15,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import App from "./App";
 import { aiScore } from "./engine/humanize";
-import { loadViewMode } from "./store";
+import { loadViewMode, saveDraft } from "./store";
 
 const INPUT_TEXT =
   "值得注意的是，随着人工智能技术的快速发展，AI 写作工具应运而生。综上所述，数字化办公不仅极大地提升了工作效率，而且有效地降低了运营成本。然而，技术的变革也带来了一系列值得关注的挑战。";
@@ -99,9 +99,15 @@ describe("简洁模式：默认形态", () => {
   });
 
   it("强度滑块配人话标签，不只给一个百分比", () => {
-    const { getByText } = render(<App />);
+    const { getByText, container } = render(<App />);
     // 默认 0.6 → 「标准」
     expect(getByText(/标准：换词 \+ 调句式/)).toBeTruthy();
+    // 低两档此前从未被显示过（所有用例都停在默认档，两档文案没人验过）
+    const slider = container.querySelector('input[type="range"]') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: "0.3" } });
+    expect(getByText(/轻度：只清套话和连接词/)).toBeTruthy();
+    fireEvent.change(slider, { target: { value: "0" } });
+    expect(getByText(/几乎不动/)).toBeTruthy();
   });
 });
 
@@ -141,6 +147,18 @@ describe("简洁模式：去味闭环与结果条", () => {
     const utils = render(<App />);
     await runOnce(utils);
     expect(utils.queryByText("① 把 AI 写的稿子粘进左边")).toBeNull();
+  });
+
+  it("草稿只剩产出（没跑过本轮也没原文）时：结果条给「已生成」兜底，不画没有依据的分数", async () => {
+    // 真实路径：上次去味后清掉原文、关掉应用，再打开——Output 从草稿恢复，before/after 都是 null。
+    saveDraft("", "上次留下的产出稿子，还没复制走。");
+    const utils = render(<App />);
+    await waitFor(() => expect(utils.getByText(/已恢复/)).toBeTruthy());
+    const bar = utils.container.querySelector(".resultbar");
+    expect(bar, "产出已恢复，但结果条没出现").toBeTruthy();
+    expect(bar!.textContent).toContain("已生成，可直接复制走");
+    // 兜底形态不冒充评分：分数位不渲染
+    expect(utils.container.querySelector(".result-score b")).toBeNull();
   });
 });
 

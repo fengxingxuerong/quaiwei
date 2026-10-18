@@ -990,15 +990,15 @@ describe("App 守卫分支与面板回调（行覆盖补锁）", () => {
 });
 
 /**
- * 引擎返回值的边界形状（目标行 221 / 229）
+ * 引擎返回值的边界形状（App.tsx 里 bestOf 短路与 roundScores 兜底两处）
  *
  * 之前所有用例都走 makeRunResult(...) 这个**规整的**工厂：
  * 它恒带 roundScores（默认 []），且从不带 bestOf。
  * 于是 App 里两处兜底写法一次都没被走过：
- *   · 行 221 `local.bestOf ? {...} : undefined` —— 短路取 undefined 那半边
- *   · 行 229 `r.roundScores || []`             —— undefined 兜底那半边
+ *   · `local.bestOf ? {...} : undefined` —— 短路取 undefined 那半边
+ *   · `r.roundScores || []`              —— undefined 兜底那半边
  */
-describe("引擎返回值的边界形状（目标行 221 / 229）", () => {
+describe("引擎返回值的边界形状（bestOf 短路 / roundScores 兜底）", () => {
   beforeEach(() => {
     localStorage.clear();
     saveViewMode("pro");
@@ -1055,7 +1055,7 @@ describe("引擎返回值的边界形状（目标行 221 / 229）", () => {
   });
 
   it("引擎开启 bestOf 时把候选数透传给 runHumanize", async () => {
-    // 行 221：`local.bestOf ? { bestOf: true, candidates: local.candidates } : undefined`
+    // `local.bestOf ? { bestOf: true, candidates: local.candidates } : undefined`
     //
     // ⚠️ 第一版把 key 写成 `quaiwei.cfg.local`，探针（失败信息 expected 8 to be 4）
     // 指出读到的是默认值：store.ts 的 key 其实是 `aihumanizer.local`，
@@ -1084,7 +1084,7 @@ describe("引擎返回值的边界形状（目标行 221 / 229）", () => {
   });
 
   it("关闭 bestOf 时第 7 个入参为 undefined（短路那半边）", async () => {
-    // 覆盖行 221 的 `: undefined` 分支：optArgs 整个不传
+    // 覆盖 `: undefined` 分支：optArgs 整个不传
     runHumanizeMock.mockResolvedValue(makeRunResult(OUTPUT_TEXT, "local"));
     localStorage.setItem("aihumanizer.local", JSON.stringify({ bestOf: false, candidates: 8 }));
     const utils = render(<App />);
@@ -1103,18 +1103,18 @@ describe("引擎返回值的边界形状（目标行 221 / 229）", () => {
 });
 
 /**
- * 「指纹体检」的空输入守卫（App.tsx 行 191-192）
+ * 「指纹体检」的空输入守卫（handleFingerprint 的 target 空串早退）
  *
  * handleFingerprint 的第一句是
  *   const target = output.trim() ? output : input;
  *   if (!target.trim()) return;
- * 之前唯一的「指纹体检」用例（行 522）都先跑了 humanizeFirst，
+ * 此前唯一的「指纹体检」用例（困惑度引导那条）都先跑了 humanizeFirst，
  * output 非空 —— 于是「两个都是空」的早退分支一次都没被走过。
  *
  * 断言要点：点了**不崩、也不发起困惑度推理**。后者用 mock 调用次数钉住，
  * 因为早退若失效，先崩的可能是异步的推理链，而不是这个 handler 本身。
  */
-describe("指纹体检的空输入守卫（行 191-192）", () => {
+describe("指纹体检的空输入守卫（target 空串早退）", () => {
   beforeEach(() => {
     localStorage.clear();
     saveViewMode("pro");
@@ -1158,19 +1158,20 @@ describe("指纹体检的空输入守卫（行 191-192）", () => {
 });
 
 /**
- * LLM 模式标签的两副面孔（App.tsx 行 509-518）。
+ * LLM 模式标签的两副面孔。
  *
  * 标签只在 `api.enabled && effectiveKeys(api).length > 0` 时渲染，
  * 内容由 `api.deepMode` 二选一。此前所有用例都没配过 API，
- * 于是这个 span 从来没出现过——三处缺口（513 的 true 支、515 的 false 支、518）。
+ * 于是这个 span 从来没出现过——deepMode 真/假两支与「Key 为空不渲染」三处都缺。
  *
- * ⚠️ 选择器必须限定 span：App.tsx 行 522 还有另一个 `className="mode-tag"`
- *   （朱雀模式的 **label**，带 active 类）。第一版用 `querySelector(".mode-tag")`
- *   的第三条用例就是这么错的——拿到的是行 522 那个 label，不是行 510 的 span。
+ * ⚠️ 选择器必须限定 span：App.tsx 里「🛡 朱雀增强」还有一个同
+ *   `className="mode-tag"` 的 **label**（带 active 类）。第一版用
+ *   `querySelector(".mode-tag")` 的第三条用例就是这么错的——拿到的是
+ *   朱雀增强那个 label，不是这个 span。
  */
-describe("LLM 模式标签（行 509-518）", () => {
+describe("LLM 模式标签", () => {
   const KEY = "aihumanizer.api";
-  const LLM_TAG = "span.mode-tag"; // 行 510 是 span；行 522 是 label，两者 className 相同
+  const LLM_TAG = "span.mode-tag"; // span 是本标签；朱雀增强是 label，className 相同
 
   function renderWith(cfg: Record<string, unknown>) {
     localStorage.clear();
@@ -1203,7 +1204,7 @@ describe("LLM 模式标签（行 509-518）", () => {
     // 探针实测：effectiveKeys({apiKey:"", apiKeys:""}) === []（splitKeys 会滤掉空串）
     const utils = renderWith({ enabled: true, deepMode: true, apiKey: "", apiKeys: "" });
     expect(utils.container.querySelector(LLM_TAG)).toBeNull();
-    // 对照：行 522 那个 label 仍在——证明是「这个 span 不渲染」而非整页崩了
+    // 对照：朱雀增强那个 label 仍在——证明是「这个 span 不渲染」而非整页崩了
     expect(utils.container.querySelector(".mode-tag")).toBeTruthy();
   });
 });
@@ -1237,5 +1238,195 @@ describe("App 审题（只读痕迹地图）", () => {
     await findByText(/AI 味痕迹地图/);
     fireEvent.click(getByText("收起"));
     expect(queryByText(/AI 味痕迹地图/)).toBeNull();
+  });
+});
+
+/**
+ * v0.9.55 工程卫生（三）：App 接线边角。
+ *
+ * 这些分支共同点：真实用户偶尔撞上、日常路径永远碰不到——
+ * 非 Error 抛出（第三方/浏览器抛字符串）、进度播报的「已达标」档、
+ * 任务作废后的迟到进度、Mac 的 Cmd+Enter、剪贴板被拒、草稿只剩产出。
+ * 全部走界面动作，不直接调私有函数。
+ */
+describe("App 接线边角（进度 / 非 Error / 热键 / 剪贴板 / 目标回落）", () => {
+  const INPUT_RE = /把 AI 写的文章粘进来/;
+  const OUTPUT_PLACEHOLDER_RE = /点击「去味」生成/;
+  const ENABLED_API = { ...DEFAULT_API, enabled: true, apiKey: "sk-test" };
+  const ENABLED_DETECTOR = {
+    ...DEFAULT_DETECTOR,
+    enabled: true,
+    url: "http://detector.local/score",
+  };
+
+  /** 走一次完整去味（mock 结果固定），返回常用查询器 */
+  async function runOnce(utils: ReturnType<typeof render>) {
+    runHumanizeMock.mockResolvedValue(makeRunResult(OUTPUT_TEXT, "local"));
+    const { getByText, getByPlaceholderText } = utils;
+    fireEvent.change(getByPlaceholderText(INPUT_RE), { target: { value: INPUT_TEXT } });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => {
+      expect((getByPlaceholderText(OUTPUT_PLACEHOLDER_RE) as HTMLTextAreaElement).value).toBe(
+        OUTPUT_TEXT,
+      );
+    });
+    return { getByText, getByPlaceholderText };
+  }
+
+  it("深度进度「已达标」档播报 + 任务作废后迟到的进度不再回写（v0.9.54 令牌）", async () => {
+    let fire: ((r: number, s: number | null, st?: string) => void) | null = null;
+    let resolveRun: (v: ReturnType<typeof makeRunResult>) => void = () => {};
+    runHumanizeMock.mockImplementation(
+      (
+        _t: string,
+        _i: number,
+        _a: unknown,
+        onRound?: (r: number, s: number | null, st?: string) => void,
+      ) => {
+        fire = onRound ?? null;
+        return new Promise((resolve) => {
+          resolveRun = resolve;
+        });
+      },
+    );
+    const { getByText, getByPlaceholderText, queryByText } = await renderApp();
+    fireEvent.change(getByPlaceholderText(INPUT_RE), { target: { value: INPUT_TEXT } });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => expect(runHumanizeMock).toHaveBeenCalledTimes(1));
+
+    // 高分走「继续压」（既有用例已锁），这里锁低分「已达标」档
+    act(() => fire?.(1, 5));
+    expect(getByText(/LLM 评分 5（已达标）/)).toBeTruthy();
+
+    // 清空 → 令牌作废 → 迟到的进度回调不许再改 note（L284 守卫的另一半）
+    fireEvent.click(getByText("清空"));
+    act(() => fire?.(2, 7));
+    expect(queryByText(/第 2 轮/)).toBeNull();
+
+    await act(async () => {
+      resolveRun(makeRunResult(OUTPUT_TEXT, "local"));
+    });
+  });
+
+  it("去味抛出的不是 Error（抛字符串）：兜底 String 转换也如实播报", async () => {
+    runHumanizeMock.mockRejectedValueOnce("网络断了");
+    const { getByText, getByPlaceholderText } = await renderApp();
+    fireEvent.change(getByPlaceholderText(INPUT_RE), { target: { value: INPUT_TEXT } });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => {
+      expect(getByText(/出错了：网络断了/)).toBeTruthy();
+    });
+  });
+
+  it("检测器抛出的不是 Error：自动送检与手动送检都兜底 String 转换", async () => {
+    scoreViaDetectorMock.mockRejectedValue("流量超时");
+    const utils = render(<App initialDetector={ENABLED_DETECTOR} />);
+    const { getByText } = await runOnce(utils);
+    await waitFor(() => {
+      expect(getByText(/检测器送检失败：流量超时/)).toBeTruthy();
+    });
+    fireEvent.click(getByText("用外部检测器"));
+    await waitFor(() => {
+      expect(getByText(/检测器调用失败：流量超时/)).toBeTruthy();
+    });
+  });
+
+  it("LLM 评判抛出的不是 Error：String 兜底播报", async () => {
+    judgeScoreStableMock.mockRejectedValueOnce("网关崩了");
+    const utils = render(<App initialApi={ENABLED_API} />);
+    const { getByText } = await runOnce(utils);
+    fireEvent.click(getByText("用 LLM 评判"));
+    await waitFor(() => {
+      expect(getByText(/LLM 评判失败：网关崩了/)).toBeTruthy();
+    });
+  });
+
+  it("docx 导出失败且抛的是字符串：报真实原因且不崩", async () => {
+    writeDocxTextMock.mockRejectedValueOnce("磁盘炸了");
+    const utils = render(<App />);
+    const { getByText } = await runOnce(utils);
+    fireEvent.click(getByText("导出 .docx"));
+    await waitFor(() => {
+      expect(getByText(/docx 导出失败：磁盘炸了/)).toBeTruthy();
+    });
+  });
+
+  it("Cmd（metaKey）+ Enter 同样触发去味（Mac 用户的热键）", async () => {
+    runHumanizeMock.mockResolvedValue(makeRunResult(OUTPUT_TEXT, "local"));
+    const { getByPlaceholderText } = await renderApp();
+    const pane = getByPlaceholderText(INPUT_RE);
+    fireEvent.change(pane, { target: { value: INPUT_TEXT } });
+    fireEvent.keyDown(pane, { key: "Enter", metaKey: true });
+    await waitFor(() => expect(runHumanizeMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("「复制」失败：如实说失败与原因，不谎报已复制（v0.9.54）", async () => {
+    const nav = navigator as Navigator & { clipboard?: { writeText: () => Promise<void> } };
+    const origClip = nav.clipboard;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+    try {
+      const utils = render(<App />);
+      const { getByText } = await runOnce(utils);
+      fireEvent.click(getByText("复制"));
+      await waitFor(() => {
+        expect(getByText(/复制失败：浏览器未授予剪贴板权限/)).toBeTruthy();
+      });
+    } finally {
+      if (origClip)
+        Object.defineProperty(nav, "clipboard", { configurable: true, value: origClip });
+      else Reflect.deleteProperty(nav, "clipboard");
+    }
+  });
+
+  it("审题面板内点「去味」：面板退场并真的发起去味（onRun 接线）", async () => {
+    runHumanizeMock.mockResolvedValue(makeRunResult(OUTPUT_TEXT, "local"));
+    const { getByText, getByPlaceholderText, queryByText } = render(<App />);
+    fireEvent.change(getByPlaceholderText(INPUT_RE), { target: { value: INPUT_TEXT } });
+    fireEvent.click(getByText("审题"));
+    await waitFor(() => expect(getByText(/AI 味痕迹地图/)).toBeTruthy());
+    const panel = getByText(/AI 味痕迹地图/).closest(".bench") as HTMLElement;
+    fireEvent.click(within(panel).getByText("去味"));
+    expect(queryByText(/AI 味痕迹地图/)).toBeNull();
+    await waitFor(() => expect(runHumanizeMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("困惑度引导下载完成后：分析目标回落到原文侧（output 为空）", async () => {
+    pplStatusMock.mockResolvedValue({ supported: true, ready: true });
+    ensurePplModelMock.mockResolvedValue(undefined);
+    computePplFeatureMock.mockResolvedValue({
+      meanNll: 3.1,
+      winStd: 0.5,
+      scoredChars: 100,
+      windows: [],
+    });
+    const { getByText, getByPlaceholderText } = render(<App />);
+    fireEvent.change(getByPlaceholderText(INPUT_RE), { target: { value: INPUT_TEXT } });
+    fireEvent.click(getByText("指纹体检"));
+    await waitFor(() => expect(getByText(/下载模型（约 100MB/)).toBeTruthy());
+    // 下载完成后模型就绪：ensurePpl 会取 getAnalysisTarget() —— output 为空 ⇒ 原文
+    isPplReadyMock.mockReturnValue(true);
+    fireEvent.click(getByText(/下载模型（约 100MB/));
+    await waitFor(() => expect(computePplFeatureMock).toHaveBeenCalled());
+    expect(computePplFeatureMock.mock.calls[0]?.[0]).toBe(INPUT_TEXT);
+  });
+
+  it("结果条「人话结论」四档全覆盖（含此前未测的 28~45 档）", async () => {
+    saveViewMode("simple"); // 结果条只属于简洁档；本文件默认 pro
+    const { getByText, getByPlaceholderText } = render(<App />);
+    const scores = [5, 20, 40, 99];
+    const verdicts = [/套话清得很干净/, /剩下的多是正常书面词/, /还有一批套话/, /AI 味偏重/];
+    for (let i = 0; i < scores.length; i++) {
+      const base = makeRunResult(OUTPUT_TEXT, "local");
+      runHumanizeMock.mockResolvedValueOnce({
+        ...base,
+        after: { ...base.after, score: scores[i] },
+      });
+      fireEvent.change(getByPlaceholderText(INPUT_RE), { target: { value: INPUT_TEXT } });
+      fireEvent.click(getByText("去味"));
+      await waitFor(() => expect(getByText(verdicts[i])).toBeTruthy());
+    }
   });
 });
