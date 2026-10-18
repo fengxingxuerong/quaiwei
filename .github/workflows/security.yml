@@ -18,7 +18,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 与 ci.yml 对齐（vitest 5 要求 node ^22.12；本作业虽不跑测试，统一版本免意外）
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 

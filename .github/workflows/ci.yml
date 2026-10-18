@@ -34,7 +34,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # v0.9.55：vitest 5 起 engines 要求 node ^22.12，20 已不满足
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 

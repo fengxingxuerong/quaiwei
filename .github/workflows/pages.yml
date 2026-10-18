@@ -38,7 +38,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 与 ci.yml 对齐（vitest 5 要求 node ^22.12）
+          node-version: 22
           cache: npm
 
       # ci.yml 踩过的坑：不能 --omit=optional，会把 rollup 的 linux 平台二进制一起省掉

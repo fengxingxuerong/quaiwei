@@ -10,6 +10,12 @@
   @testing-library/react 16.3.3 已声明支持 React 19，无需调整。
   组件渲染由 103 个测试文件（happy-dom）兜底；产物内 React 运行时随构建替换，
   桌面端建议人工冒烟一版。
+- **工具链升到 Vite 8 / Vitest 5 / @vitejs/plugin-react 6 / @vitest/coverage-v8 5 /
+  happy-dom 21**（scripts-logic 测试与 CLI 构建用的 esbuild 0.25→0.28 一并升）。
+  vitest 5 的 engines 要求 Node ^22.12 ⇒ CI / Pages / Security 三处 setup-node
+  20→22（本地 Node 24 本就达标）。plugin-react 6 的三个 react-compiler 相关
+  peer 均声明 optional，未引入新依赖。门禁：2047 用例全绿、lint / tsc /
+  vite build / build:cli 全过，覆盖率四指标不变（98.4 / 95.7 / 99.3 / 98.8）。
 
 ## 未发布 · 工程卫生（六）：依赖补丁升级 + TS 严格位（2026-10-18）
 
