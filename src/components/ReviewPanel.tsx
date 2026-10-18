@@ -56,6 +56,12 @@ export function ReviewPanel({
       </div>
       <div className="bench-row" style={{ justifyContent: "flex-start" }}>
         <span style={{ color: "var(--muted)", fontSize: 11 }}>
+          AI 参与比例 ≈ {report.editedRatio}%（达门槛句的字符占比，本地估计）· 样本置信度：
+          {report.confidence.text}
+        </span>
+      </div>
+      <div className="bench-row" style={{ justifyContent: "flex-start" }}>
+        <span style={{ color: "var(--muted)", fontSize: 11 }}>
           本地启发式代理分，不是任何检测器的官方分——只有同一篇的前后对比有意义
         </span>
       </div>

@@ -50,6 +50,9 @@ describe("ReviewPanel", () => {
     expect(getByText(/只读 · 不改稿/)).toBeTruthy();
     expect(container.textContent).toContain(`共 ${r.total} 句`);
     expect(container.textContent).toContain(`达到痕迹门槛 ${r.marked} 句`);
+    // 参与比例与置信度同屏（竞品吸收三）
+    expect(container.textContent).toContain(`AI 参与比例 ≈ ${r.editedRatio}%`);
+    expect(container.textContent).toContain("样本置信度");
     // 逐句序号与建议都得上屏
     expect(container.textContent).toContain(`第${r.marks[0].index}句`);
     expect(container.textContent).toContain("建议改");

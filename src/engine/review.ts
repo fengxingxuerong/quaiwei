@@ -14,6 +14,9 @@
  *    32 是「疑似 AI 辅助」的判档线，审题是给人看具体句子，太松会淹没真信号。
  * 4. **正向特征不给建议**。「有主观视角 / 有具体细节 / 短句 / 疑问句」是减风险的项，
  *    它们出现在 reasons 里是解释为什么这句分数低，不是待办事项。
+ * 5. **AI 参与比例与样本置信度（2026-10-19 竞品吸收（三）：harshaneel/humanize
+ *    ai-check 的对应物）**。比例与 marks 同门槛——地图上列出的句 == 计入比例的句，
+ *    两个数字不许打架；置信度按篇幅分档且带限定语，"短文本统计不稳"要说出来。
  */
 
 import { detectAI, segmentRisk, splitSentences, type DetectReport } from "./detector";
@@ -32,10 +35,24 @@ export interface ReviewMark {
   suggestions: string[];
 }
 
+/** 样本置信度档位：短文本统计不稳，宁说明白不给错觉 */
+export interface ReviewConfidence {
+  level: "low" | "medium" | "high";
+  /** 一句话说明（含限定语，供面板/CLI 直接展示） */
+  text: string;
+}
+
 export interface ReviewReport {
   /** 全文综合代理分（本地启发式，非任何检测器官方分） */
   probability: number;
   levelText: string;
+  /**
+   * AI 参与比例（本地估计，0~100 整数）：达到痕迹门槛的句子占全文可见字符的
+   * 百分比（harshaneel/humanize ai-check 的 "AI 编辑比例" 对应物）。
+   * 与 marks 同一门槛口径：地图上列出的句子 == 计入比例的句子，两个数字不打架。
+   */
+  editedRatio: number;
+  confidence: ReviewConfidence;
   /** 句子总数 */
   total: number;
   /** 达到门槛、被列出的句数 */
@@ -51,6 +68,20 @@ export interface ReviewReport {
 const RISK_FLOOR = 40;
 const SEV_HIGH = 60;
 const SEV_MEDIUM = 45;
+
+/** 置信度分档（全文可见字符数）：不足 200 统计不稳；800 以上判据相对稳定 */
+const CONF_SHORT = 200;
+const CONF_LONG = 800;
+
+const visibleLen = (s: string): number => s.replace(/\s/g, "").length;
+
+function confidenceOf(chars: number): ReviewConfidence {
+  if (chars < CONF_SHORT) {
+    return { level: "low", text: `低——全文不足 ${CONF_SHORT} 字，统计不稳，只作参考` };
+  }
+  if (chars < CONF_LONG) return { level: "medium", text: "中——中等篇幅，判据基本可用" };
+  return { level: "high", text: "高——篇幅足够，判据相对稳定" };
+}
 
 /** 减风险项：出现在 reasons 里只是解释，不需要给建议 */
 const POSITIVE = new Set(["有主观视角", "有具体细节", "短句", "疑问句"]);
@@ -87,11 +118,16 @@ export function reviewText(raw: string, sentences?: string[]): ReviewReport {
 
   const marks: ReviewMark[] = [];
   const tally = new Map<string, number>();
+  let markedChars = 0;
+  let totalChars = 0;
 
   segs.forEach((sentence, i) => {
+    const vis = visibleLen(sentence);
+    totalChars += vis;
     const { risk, reasons } = segmentRisk(sentence);
     if (risk < RISK_FLOOR) return;
 
+    markedChars += vis;
     for (const r of reasons) {
       if (POSITIVE.has(r)) continue;
       tally.set(r, (tally.get(r) ?? 0) + 1);
@@ -112,10 +148,14 @@ export function reviewText(raw: string, sentences?: string[]): ReviewReport {
   });
 
   const summary = [...tally.entries()].sort((a, b) => b[1] - a[1]);
+  // 空文本 totalChars=0 ⇒ 比例 0（真实输入路径，非死支兜底）
+  const editedRatio = totalChars > 0 ? Math.round((markedChars / totalChars) * 100) : 0;
 
   return {
     probability: report.probability,
     levelText: report.levelText,
+    editedRatio,
+    confidence: confidenceOf(totalChars),
     total: segs.length,
     marked: marks.length,
     marks,
@@ -136,6 +176,7 @@ export function formatReview(r: ReviewReport): string {
   const lines: string[] = [];
   lines.push(`AI 味代理分 ${r.probability} / 100（${r.levelText}）· 本地启发式，非官方分`);
   lines.push(`共 ${r.total} 句，其中 ${r.marked} 句达到痕迹门槛`);
+  lines.push(`AI 参与比例（本地估计）${r.editedRatio}% · 样本置信度：${r.confidence.text}`);
   if (r.summary.length) {
     lines.push("痕迹分布：" + r.summary.map(([k, v]) => `${k}×${v}`).join("、"));
   }

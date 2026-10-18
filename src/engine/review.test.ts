@@ -120,6 +120,40 @@ describe("审题模式 reviewText", () => {
   });
 });
 
+describe("审题报告 · AI 参与比例与样本置信度（竞品吸收三）", () => {
+  it("参与比例 = 达门槛句可见字符 / 全文可见字符，四舍五入取整", () => {
+    // 手写常量：36 字 AI 句 + 2 字人话句 ⇒ round(36/38×100) = 95
+    const r = reviewText(
+      "综上所述，企业需要构建高效协同的组织机制，这是提升核心竞争力的关键所在。\n好。",
+    );
+    expect(r.marked).toBe(1);
+    expect(r.total).toBe(2);
+    expect(r.editedRatio).toBe(95);
+  });
+
+  it("人类样本参与比例 0；比例恒为 0~100 整数", () => {
+    expect(reviewText(HUMAN_SAMPLE).editedRatio).toBe(0);
+    const r = reviewText(AI_SAMPLE);
+    expect(Number.isInteger(r.editedRatio)).toBe(true);
+    expect(r.editedRatio).toBeGreaterThanOrEqual(0);
+    expect(r.editedRatio).toBeLessThanOrEqual(100);
+  });
+
+  it("置信度按全文可见字符分档：<200 低 / <800 中 / ≥800 高（边界不多不少）", () => {
+    expect(reviewText("字".repeat(199)).confidence.level).toBe("low");
+    expect(reviewText("字".repeat(200)).confidence.level).toBe("medium");
+    expect(reviewText("字".repeat(799)).confidence.level).toBe("medium");
+    expect(reviewText("字".repeat(800)).confidence.level).toBe("high");
+    // 空白输入走同一路径：字符数 0 < 200 ⇒ 低
+    expect(reviewText("").confidence.level).toBe("low");
+  });
+
+  it("置信度文案带限定语：低档明说只作参考，高档才说相对稳定", () => {
+    expect(reviewText("短句。").confidence.text).toContain("只作参考");
+    expect(reviewText("字".repeat(800)).confidence.text).toContain("相对稳定");
+  });
+});
+
 describe("formatReview", () => {
   it("渲染出总分、门槛句数、每句序号与建议", () => {
     const out = formatReview(reviewText(AI_SAMPLE));
@@ -127,6 +161,12 @@ describe("formatReview", () => {
     expect(out).toContain("本地启发式，非官方分");
     expect(out).toContain("第1句");
     expect(out).toContain("建议：");
+  });
+
+  it("渲染出参与比例与样本置信度", () => {
+    const out = formatReview(reviewText(AI_SAMPLE));
+    expect(out).toContain("AI 参与比例");
+    expect(out).toContain("样本置信度");
   });
 
   it("无痕迹时给的是限定语，不是『保证像人写』", () => {
