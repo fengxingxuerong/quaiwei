@@ -498,3 +498,55 @@ describe("请求体改写：kimi 温度锁定 + OpenRouter 头", () => {
     expect(seen).toBe("https://api.example.com/v1/chat/completions");
   });
 });
+
+/*
+ * 请求体的第三处「按条件改写」+ 响应畸形兜底。
+ *
+ * ① reasoning 字段：推理强度只在调用方配置了 reasoningEffort 时才附加，
+ *   不配置时请求体里不能出现该字段（部分网关对未知字段直接 400）。
+ * ② 网关返回 200 但 choices 缺失/为空是现实存在的畸形响应（限流页、网关占位
+ *   响应都可能带 200），此时必须退化成空串交给上层判定，而不是在这里崩掉。
+ */
+describe("请求体：推理强度按需附加 + 响应畸形兜底", () => {
+  const msgs2 = [{ role: "user" as const, content: "hi" }];
+  const opts2 = { temperature: 0.3, maxTokens: 100 };
+
+  it("cfg.reasoningEffort 有值 → body.reasoning.effort 透传", async () => {
+    let body: { reasoning?: unknown } = {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        body = JSON.parse(String(init.body)) as { reasoning?: unknown };
+        return resp(200);
+      }),
+    );
+    await chat({ ...cfg, reasoningEffort: "high" }, msgs2, opts2);
+    expect(body.reasoning).toEqual({ effort: "high" });
+  });
+
+  it("cfg.reasoningEffort 缺省 → 请求体不含 reasoning 字段", async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return resp(200);
+      }),
+    );
+    await chat(cfg, msgs2, opts2);
+    expect("reasoning" in body).toBe(false);
+  });
+
+  it("200 响应缺 choices → content/reasoning 退化为空串，不抛错", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }),
+      ),
+    );
+    const r = await chat(cfg, msgs2, opts2);
+    expect(r.content).toBe("");
+    expect(r.reasoning).toBe("");
+  });
+});

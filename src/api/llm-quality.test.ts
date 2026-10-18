@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  qualityCheck,
   localHardGate,
   processCandidate,
   coherenceIssues,
@@ -788,5 +789,33 @@ describe("structureIssues（结构元素点数）", () => {
   it("必须真接在 localHardGate 上（防只定义不接线）", () => {
     const out = "张总：早。\n李工：顺利。";
     expect(localHardGate(SCENE_SRC, out).join(" / ")).toMatch(/结构丢失/);
+  });
+});
+
+/**
+ * qualityCheck 判定行解析的两个兜底分支（此前从无直测）：
+ * ① content 为空、reasoning 只含空白 → body 有值但行列表为空，
+ *    `(lines[0] || "")` 的 `|| ""` 支执行，最终落到「未给出明细」文案；
+ * ② 判定行不是 PASS → 走 issues 提取（details 支在本文件其他用例已覆盖，
+ *    这里锁的是空行表的另一侧）。
+ * 下游（processCandidate）只看 pass 布尔与 issues 文案，冻结这两支防回归。
+ */
+describe("qualityCheck 判定行边界", () => {
+  const cfg = { ...DEFAULT_API, enabled: true, apiKey: "k" };
+
+  it("响应只有空白（无 content、reasoning 仅换行）→ 未给出明细兜底", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ choices: [{ message: { content: "", reasoning_content: "\n" } }] }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+      ),
+    );
+    const r = await qualityCheck("原文：营收增长23%。", "改写稿：营收增长23%。", cfg);
+    expect(r.pass).toBe(false);
+    expect(r.issues).toEqual(["质检未通过（未给出明细）"]);
   });
 });
