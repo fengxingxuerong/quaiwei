@@ -252,7 +252,9 @@ export function classifyGenre(text: string): GenreResult {
     f.dlgColonRatio >= 0.06 ||
     dlgComboScore >= 0.28
   ) {
-    const conf = Math.min(0.95, dlgComboScore > 0 ? 0.45 + dlgComboScore * 0.55 : 0.6);
+    // （入口四条条件（场景块>0 / 引号≥5% / 冒号≥6% / 综合≥0.28）都蕴含
+    //   dlgComboScore>0 ⇒ 旧代码 `: 0.6` 兜底不可达，工程卫生（八）已删）
+    const conf = Math.min(0.95, 0.45 + dlgComboScore * 0.55);
     return { genre: "dialogue", confidence: conf, ruleHit: 1, features: f };
   }
 

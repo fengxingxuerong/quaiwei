@@ -400,7 +400,9 @@ export function fragmentFrontCanStand(front: string): boolean {
   // 分隔符必须含冒号：「…入手：首先」按逗号切只得到 5 字 lastSeg「入手：首先」，
   // 长度门槛(≤4)量不到它，于是切点被放行、产出光杆句「…入手：首先。」
   // （实测 UI 论说样本 69/210 次 = 32.9%，强度 ≥0.5 起）。
-  const lastSeg = front.split(/[，、；：:]/).pop() ?? front;
+  // （split 至少返回一个元素 ⇒ pop() 的 `?? front` 兜底不可达——工程卫生（八）已删；
+  //   slice(-1)[0] 类型上就是 string，行为逐位一致）
+  const lastSeg = front.split(/[，、；：:]/).slice(-1)[0];
   if (lastSeg.length <= 4 && !CLAUSE_PREDICATE_RE.test(lastSeg)) return false;
   // v0.9.44：裸时间名词残句（第二轮真实案例测试，真实通稿 20/20 复现）：
   //   「本报讯 昨日上午，市轨道交通集团发布消息，…」被劈成

@@ -281,13 +281,7 @@ export function humanizeSingle(text: string, opts: HumanizeOptions = {}): string
   let prev = text;
   // fn 刻意做成**无参**thunk：调用处直接读外层 working，
   // 这样每一步的赋值都是"下一步真会读"的活值（而不是被 eslint 判成死存储的中间量）。
-  const step = (
-    id: string,
-    name: string,
-    why: string,
-    fn: () => string,
-    metric?: string,
-  ): string => {
+  const step = (id: string, name: string, why: string, fn: () => string): string => {
     const b = prev;
     const t0 = on ? nowMs() : 0;
     const after = fn();
@@ -300,7 +294,6 @@ export function humanizeSingle(text: string, opts: HumanizeOptions = {}): string
         name,
         why,
         charsBefore: b.length,
-        ...(metric === undefined ? {} : { metric }),
         ...(para === undefined ? {} : { para }),
       },
       t0,
@@ -371,7 +364,7 @@ export function humanizeSingle(text: string, opts: HumanizeOptions = {}): string
   // v0.9.46：正式语体 = main / academic（与 guardFormalRegister 完全同口径）。
   // 传给 replaceVocab 后，口语替身就地否掉，不再走"先改成病句、再靠下游还原"的老路。
   const formalRegister = opts.genre === "main" || style === "academic";
-  // 词汇替换要给出真实命中数：本步单独手写 emit（step 的 metric 是静态串，这里需要前后计数差）
+  // 词汇替换要给出真实命中数：本步单独手写 emit（step 的 emit 不带动态 metric，这里需要前后计数差）
   {
     const b = working;
     const t0 = on ? nowMs() : 0;

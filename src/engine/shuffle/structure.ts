@@ -315,7 +315,9 @@ export function resegmentParagraphsAggressive(
       ps.chars <= 220 &&
       ps.sentences >= 3 &&
       // v0.9.55 拆段门控：原文该段本就 ≥3 句才拆——不因自家切句（逗号→句号）而拆，见函数头注释
-      (origGate === undefined || (origGate[i] ?? 99) >= 3) &&
+      // （origGate 在 L246 已归一为「长度对齐才启用」⇒ i 恒在界内、origGate[i] 必有值，
+      //   `?? 99` 兜底不可达，工程卫生（八）已删）
+      (origGate === undefined || origGate[i] >= 3) &&
       (needForce ? !forceOneDone && rng() < 0.85 : rng() < 0.3 + 0.35 * intensity)
     ) {
       const sents = splitSentences(cur);
@@ -699,12 +701,9 @@ export function hardNumberedEnumerationShuffle(
   body0 = body0.replace(/[。！？!?]$/, "");
   if (rng() < 0.7) {
     const parenth = "（顺便提一句——" + body0 + "）" + punct;
-    const neighbor =
-      idx0 - 1 >= 0 && !hits.includes(idx0 - 1)
-        ? idx0 - 1
-        : idx0 + 1 < out.length
-          ? idx0 + 1
-          : idx0;
+    // （chosen[0] 是 hits 最小下标 ⇒ `!hits.includes(idx0-1)` 恒真；hits.length≥2
+    //   又保证 idx0=0 时 idx0+1 必在界内 ⇒ 旧三元的两条兜底死支工程卫生（八）已删）
+    const neighbor = idx0 - 1 >= 0 ? idx0 - 1 : idx0 + 1;
     out[neighbor] = out[neighbor].replace(/\s*$/, "") + parenth;
     out[idx0] = "";
   }

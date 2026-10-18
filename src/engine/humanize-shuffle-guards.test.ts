@@ -189,6 +189,14 @@ describe("ensureEmDashCountHardCap（破折号硬上限）", () => {
     expect(ensureEmDashCountHardCap(t, -1)).toBe(t);
   });
 
+  it("cap=0 且唯一「——」在段首：前无字符走保留路径，原样返回（公开 API 边界，非死支）", () => {
+    // 旧清单曾把 `before = ""` 这侧标成死支——只对 cap≥1 的调用链成立；
+    // cap=0（导出的公开 API）可构造：段首「——」前无字 ⇒ before === "" ⇒
+    // skipChars.includes("") 恒真 ⇒ 认作自问自答头保留。工程卫生（八）改钉行为。
+    const t = "——开头就是破折号";
+    expect(ensureEmDashCountHardCap(t, 0)).toBe(t);
+  });
+
   it("ensureEmDashCountHardCap 未超限时原样返回", () => {
     const t = "你可能会问——这靠谱吗？";
     expect(ensureEmDashCountHardCap(t, 1)).toBe(t);

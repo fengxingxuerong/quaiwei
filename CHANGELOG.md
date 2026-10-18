@@ -2,6 +2,36 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## 未发布 · 工程卫生（八）：死代码清理（零行为变更）（2026-10-18）
+
+把历批「已论证死支」中**证明完备、删除零行为变更**的条目真正删掉；证明不完备的
+（防御守卫 / 有意冗余 / 公开 API 可达）保留，并改正一条错证：
+
+- `humanize-primitives.ts` `lastSeg` 的 `?? front`：`split` 至少返回一个元素，
+  兜底不可达；改 `slice(-1)[0]`（类型即 string，运行逐位一致）。
+- `humanize-zhuque-apply.ts` `step()` 的 `metric?` 形参与 spread：全文件 11 个
+  调用点全部 4 参；需要动态 metric 的步骤（vocab 等 3 处）本就是手写 emit，
+  该形参从未接线——此前记为「死参扩展口」，复核后删除。
+- `classify-genre.ts` 对话 conf 的 `: 0.6` 兜底：入口四条条件（场景块>0 /
+  引号≥5% / 冒号≥6% / 综合≥0.28）都蕴含 `dlgComboScore>0`，不可达；删。
+- `structure.ts` 插叙邻居选择三元：`chosen[0]` 是 hits 最小下标 ⇒
+  `!hits.includes(idx0-1)` 恒真；`hits.length≥2` 又保证 `idx0=0` 时 `idx0+1`
+  必在界内 ⇒ 两条兜底删，化简为 `idx0 - 1 >= 0 ? idx0 - 1 : idx0 + 1`。
+- `structure.ts` 拆段门控 `origGate[i] ?? 99`：L246 已归一「长度对齐才启用」
+  ⇒ i 恒在界内、`origGate[i]` 必有值，兜底删。
+- **错证改正**：`ensureEmDashCountHardCap` 的 `before = ""` 侧此前被记为死支——
+  该死证只对 cap≥1 的调用链成立；cap=0（导出的公开 API，此前无人调用）可构造：
+  段首「——」前无字 ⇒ `before === ""` ⇒ `skipChars.includes("")` 恒真 ⇒ 走保留
+  路径。本轮补行为钉测试（cap=0 + 段首「——」原样保留），旧条目同步改正。
+
+保留不删（复核结论）：`structure.ts` L256/461/755/763 防御位、L867 有意冗余
+（代码注释已写明保留理由）、`llm-chat.ts` L75 全灭守卫（失败模式守卫，去掉
+401 抛错才会走到）、`humanize-primitives.ts` `?? Date.now()` 环境兜底、
+`burstiness.ts` L119（无完备证明）。
+
+门禁：2047→2048 用例全绿（+1 行为钉）、lint / tsc / 构建全过；删死支后分支率
+95.7→95.8（分母收缩），其余三项持平。
+
 ## 未发布 · 工程卫生（七）：工具链跨大版本升级（2026-10-18）
 
 - **React 18.3.1 → 19.3.1**（react-dom、@types/react、@types/react-dom 同步）。
@@ -55,7 +85,7 @@
   coverage-v8 补丁开始为 `??` 兜底计数分支（此前不计入分母）：新增可见的
   structure.ts L318 `origGate[i] ?? 99` 为**结构性死支**——L246 只在长度对齐时
   启用门控 ⇒ `origGate[i]` 必有值；长度不齐 ⇒ `origGate` 为 undefined、左式
-  短路不评估。非用例回退，已补入下方「已知不改」。
+  短路不评估。非用例回退，已补入下方「已知不改」（卫生八已按该证明删除）。
 
 ## 未发布 · 工程卫生（五）：结构/节奏/指纹层真行为补测（2026-10-18）
 
@@ -85,15 +115,15 @@
 
 已知不改（本轮穷举归类）：
 
-- structure.ts 余下 10 支：除零/缺省池/空数组防御（L256/461/755/763）+ 三条已论证死支
-  （L707 `: idx0`——chosen[0] 是最小命中下标，`idx0-1` 命中与 `idx0+1` 越界不可能同时成立；
-  L867 即代码注释里已穷举的「使役无主句」第二道防线；L898——need>0 时 lastIndex 不可能为 0）；
-  另有 L318 `origGate[i] ?? 99`（卫生六补注：长度对齐才启用门控 ⇒ `origGate[i]` 必有值，
-  长度不齐 ⇒ 左式短路，兜底侧结构性不可达；coverage-v8 4.1.12 起才计入分支）；
+- structure.ts 余支（卫生八后状态）：除零/缺省池/空数组防御（L256/461/755/763）保留；
+  L707 `: idx0` 与 L318 `origGate[i] ?? 99` 经穷举证明后已删（见卫生八）；
+  L867 即代码注释里已穷举的「使役无主句」第二道防线（有意冗余，保留）；
+  L898 `before = ""` 侧此前记为死支——只对 cap≥1 调用链成立，cap=0（公开 API）
+  实为可达，卫生八已改正并补行为钉测试；
 - burstiness.ts L119「多轮切分后 CV 反而达标」的 break：切分把最长句拆小只会拉平 CV，
   入口守卫又要求 CV<0.4，探针未能构造出触发样本；L86/253/259/298 为防御守卫；
-- classify-genre.ts L66（未导出的内置分句器空串守卫）、L255 `: 0.6`（进入判定分支的所有
-  入口条件都蕴含 combo>0，兜底侧不可达）；
+- classify-genre.ts L66（未导出的内置分句器空串守卫，保留）；L255 `: 0.6`
+  （进入判定分支的所有入口条件都蕴含 combo>0，兜底侧不可达——卫生八已删）；
 - anti-fingerprint.ts assertCaptureRefsValid：模块加载即校验的替换表静态自检，
   当前词表覆盖不到 `(?<name>)`/lookahead 排除等表分支（表变了才会走到）；
 - detector.ts L66 非字符串错误 JSON.stringify 侧（需真实 Worker onerror 环境）；
@@ -129,7 +159,7 @@
 - `llm-chat.ts` L75「Key 池全部鉴权失效」守卫：结构性不可达——末尾 Key 收到 401 时
   先行抛错（L137 分支），`findIndex` 返回 -1 的时机永远轮不到；
 - `humanize-zhuque-apply.ts` L303 `step()` 的 `metric` 形参：全文件无任何 5 参调用点
-  （vocab 一步的 metric 是手写 emit），`{ metric }` 支为死参留的扩展口；
+  （vocab 一步的 metric 是手写 emit）——卫生八复核后连同 spread 一并删除（并非扩展口）；
 - `qualityCheck` 的 `String(e)` 非 Error 侧（llm-quality.ts L528）：既有测试注释已穷举
   四条构造路径全被退避链覆盖，维持已知缺口。
 
