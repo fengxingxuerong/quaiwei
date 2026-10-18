@@ -32,6 +32,11 @@
   注意：编辑器 IntelliSense 仍用 `typescript`（6.0 API 包）——即官方建议的
   稳妥路径（Volar 类工具同样只能依赖 6.0 API）；待 typescript-eslint 支持
   TS ≥7.1 API 后再收回 alias。
+- electron-app 侧同批补齐：electron 43.4.0→43.8.0（^43.2.0 范围内）、
+  @huggingface/transformers 4.2.0→4.3.1（与根一致）；repack + verify-pruned
+  全过（模块可加载 / 随包文档版本一致 / 产物指纹来自当前源码）。electron 44
+  大版本与 electron-packager（上游已废弃，迁移目标 @electron/packager）
+  留作独立事项，不在本批。
 
 ## 未发布 · 工程卫生（六）：依赖补丁升级 + TS 严格位（2026-10-18）
 
