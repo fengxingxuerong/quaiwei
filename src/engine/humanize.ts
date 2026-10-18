@@ -502,7 +502,21 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     //   narrative 与 humanHand 的定位都是"保留作者本人的结构与语气"。
     //   —— 现已被外层 structuralAllowedGenre 统一拦截，此处不再重复判定
     //   （否则 TS 会报「两个类型无交集」的恒假比较）。
-    result = resegmentParagraphsAggressive(result, structRng, intensity);
+    // v0.9.55：给拆段规则带一份「原文每段句数」——拆段不因自家切句而触发（C9 段落 6→7 根因）。
+    // 与上面 join 循环同一套段落归并判定：冻结段/结构行之间沿用原文分隔符（单换行）⇒ 会被并成同一 \n{2,} 段。
+    const origSentCounts: number[] = [];
+    for (let i = 0; i < paragraphs.length; i++) {
+      const n = splitSentences(paragraphs[i]).length;
+      const mergedWithPrev =
+        i > 0 &&
+        (frozen[i] || mdStruct[i]) &&
+        (frozen[i - 1] || mdStruct[i - 1]) &&
+        !/\n{2,}/.test(chunks[i - 1].sep);
+      if (mergedWithPrev && origSentCounts.length > 0)
+        origSentCounts[origSentCounts.length - 1] += n;
+      else origSentCounts.push(n);
+    }
+    result = resegmentParagraphsAggressive(result, structRng, intensity, origSentCounts);
     // P7-D：humanHand 跳过错别字注入
     if (!knobs.disableTyposAnchor) {
       result = injectHumanTypos(result, structRng, intensity);

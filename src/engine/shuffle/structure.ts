@@ -225,10 +225,26 @@ export function resegmentParagraphsAggressive(
   text: string,
   rng: () => number,
   intensity: number,
+  /**
+   * 原始（未改写）每段句子数，与 `text` 按 `\n{2,}` 切出的段落一一对应。
+   *
+   * v0.9.55：拆段（(b) 分支）不许因为**自家切句**而触发。realcase C9-mixed-links
+   * 软提示「段落数变化 6→7」（命中 3/10 组）根因链条实测（分层探针重放
+   * structuralShuffleParagraph → resegmentParagraphsAggressive，配合 onStage 段计数）：
+   *   P3 纯切句把「接口地址变更为 X，旧地址将于 Y 停止服务。」从逗号处切成两句
+   *   ⇒ 本段句数 2→3 恰好够到 (b) 的 `sentences >= 3` 门槛 ⇒ 结构层顺手把
+   *   URL / 邮箱俱全的通告段拆成两段。作者并没有把它断成两段的意思——
+   *   拆段针对的是「AI 典型多句均匀段」，不该拿自家手术制造出来的句子数当改造理由。
+   * ⇒ 只有**原文就 ≥3 句**的段才允许拆；长度对不上（层间已改过段落结构，映射不可信）时保守退回旧行为。
+   */
+  origSentCounts?: number[],
 ): string {
   if (intensity < 0.55) return text;
   const raw = text.split(/\n{2,}/).filter((s) => s.trim());
   if (raw.length < 2) return text;
+  // 对齐才启用门控：长度对不上时索引映射不可信，整段退回旧行为（宁可少一道闸，不要错位闸）
+  const origGate =
+    origSentCounts && origSentCounts.length === raw.length ? origSentCounts : undefined;
   const statsFn = (p: string) => {
     const s = splitSentences(p);
     return { sentences: s.length, chars: p.replace(/\s/g, "").length };
@@ -298,6 +314,8 @@ export function resegmentParagraphsAggressive(
       ps.chars >= 80 &&
       ps.chars <= 220 &&
       ps.sentences >= 3 &&
+      // v0.9.55 拆段门控：原文该段本就 ≥3 句才拆——不因自家切句（逗号→句号）而拆，见函数头注释
+      (origGate === undefined || (origGate[i] ?? 99) >= 3) &&
       (needForce ? !forceOneDone && rng() < 0.85 : rng() < 0.3 + 0.35 * intensity)
     ) {
       const sents = splitSentences(cur);

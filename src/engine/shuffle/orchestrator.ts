@@ -2,7 +2,13 @@
  * 机械扰动层 · 公共 API 编排（crossChunkCleanup / mechanicalShuffle，
  * 自 humanize-shuffle.ts 拆出，逐字搬移）。导入面兼容由 ../humanize-shuffle.ts 门面统一 re-export。
  */
-import { makeRng, MIN_BURSTINESS_CV, HumanizeOptions, isSceneBlockLine } from "../humanize-data.ts";
+import {
+  makeRng,
+  MIN_BURSTINESS_CV,
+  HumanizeOptions,
+  isSceneBlockLine,
+  splitSentences,
+} from "../humanize-data.ts";
 import { classifyGenre } from "../classify-genre.ts";
 import {
   relaxEmDash,
@@ -112,7 +118,14 @@ export function mechanicalShuffle(text: string, opts: HumanizeOptions = {}): str
   working = limitPunctuation(working, "……", 1, "。");
   working = boostBurstiness(working, rng, 0.6 * intensity, style);
   working = varyParagraphs(working, rng, 0.5 * intensity);
-  working = resegmentParagraphsAggressive(working, rng, intensity);
+  // v0.9.55 拆段门控（与 humanize() 主链路同规则）：只拆「原文就 ≥3 句」的段，
+  // 不因自家切句（boostBurstiness 的逗号→句号）而拆。varyParagraphs 若改过段落数，
+  // resegment 内部会因长度对不上自动退回旧行为，这里不必特判。
+  const origSentCounts = text
+    .split(/\n{2,}/)
+    .filter((s) => s.trim())
+    .map((p) => splitSentences(p).length);
+  working = resegmentParagraphsAggressive(working, rng, intensity, origSentCounts);
   // v2 P3-3：段首句长硬方差（跨段全局二次，激进版）→ 仅论说文
   if (applyExpoP3) {
     working = enforceParagraphLeadSentVariance(working, rng, intensity);
