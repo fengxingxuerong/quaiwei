@@ -609,6 +609,21 @@ describe("构建产物脏检查（sync-dist.mjs 的 dirty 硬失败）", () => {
     }
   });
 
+  it("git 派生本身失败（PATH 清空 → ENOENT）→ 同样落回「取不到」三态，不许把盖章炸掉", async () => {
+    // build-stamp.mjs 的 gitOut 对 child.on("error") 走 resolve(null)：
+    // 注释里的约定是「派生失败也要走取不到这条路」。这里真的让 spawn 失败一次。
+    const saved = process.env.PATH;
+    process.env.PATH = "";
+    try {
+      const s = await readGitState(repo);
+      expect(s.dirty).toBeNull();
+      expect(s.head).toContain("取不到");
+      expect(s.files).toEqual([]);
+    } finally {
+      process.env.PATH = saved;
+    }
+  });
+
   /* -------- 逃生口的语义 -------- */
 
   it("逃生口只认精确值 1：'0'/'true'/'yes'/空串/未设一律不放行", () => {

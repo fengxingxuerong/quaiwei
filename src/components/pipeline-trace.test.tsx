@@ -9,7 +9,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/react";
 import { PipelineTracePanel } from "./PipelineTrace";
-import { runTracedHumanize } from "../engine/pipeline-trace";
+import { runTracedHumanize, type PipelineTrace } from "../engine/pipeline-trace";
 
 afterEach(() => cleanup());
 
@@ -67,5 +67,86 @@ describe("PipelineTracePanel", () => {
   it("LLM 路径要说明执行过程不在本地", () => {
     const { container } = render(<PipelineTracePanel trace={trace.trace} llmPath />);
     expect(container.textContent).toContain("执行过程在远端");
+  });
+});
+
+/**
+ * 手工构造的极简 trace：锁真实引擎「恰好没跑到」的格式与交互分支。
+ * 构造的是渲染函数的入参契约（PipelineStage 数据），不是引擎行为——
+ * 归因本身的测试仍全部走真引擎（见 pipeline-trace.test.ts）。
+ */
+function fakeTrace(): PipelineTrace {
+  return {
+    stages: [
+      {
+        id: "fmt-a",
+        name: "短耗时阶段",
+        why: "锁毫秒格式",
+        ms: 3.5,
+        charsBefore: 10,
+        charsAfter: 12,
+        delta: 2,
+        deltaFromPrev: 2,
+        runs: 1,
+        skipped: false,
+        metrics: [],
+        snippets: [{ text: "没有段落号的快照" }],
+      },
+      {
+        id: "fmt-b",
+        name: "长耗时阶段",
+        why: "锁整数毫秒、负差与空文本",
+        ms: 12.5,
+        charsBefore: 12,
+        charsAfter: 9,
+        delta: -3,
+        deltaFromPrev: -3,
+        runs: 1,
+        skipped: false,
+        metrics: [],
+        snippets: [{ para: 2, text: "" }],
+      },
+    ],
+    totalMs: 16,
+    inputChars: 10,
+    outputChars: 9,
+    eventCount: 2,
+  };
+}
+
+describe("PipelineTracePanel 格式边界（构造 trace）", () => {
+  it("毫秒：<10ms 两位小数、≥10ms 取整；Δ 负值带负号且走 minus 配色", () => {
+    const { container } = render(<PipelineTracePanel trace={fakeTrace()} />);
+    const rows = container.querySelectorAll(".pipe-row");
+    expect(rows[0].textContent).toContain("3.50ms");
+    expect(rows[0].textContent).toContain("+2 字");
+    expect(rows[1].textContent).toContain("13ms");
+    expect(rows[1].textContent).toContain("-3 字");
+    expect(rows[1].querySelector(".minus")).toBeTruthy();
+  });
+
+  it("快照标签三态：无段号标「全文」、有段号标「第 N 段」、空文本标「（空）」", () => {
+    const { container } = render(<PipelineTracePanel trace={fakeTrace()} />);
+    fireEvent.click(container.querySelectorAll(".pipe-row")[0]);
+    fireEvent.click(container.querySelectorAll(".pipe-row")[1]);
+    const snips = container.querySelectorAll(".pipe-snip");
+    expect(snips[0].textContent).toContain("全文");
+    expect(snips[0].textContent).toContain("没有段落号的快照");
+    expect(snips[1].textContent).toContain("第 3 段");
+    expect(snips[1].textContent).toContain("（空）");
+  });
+
+  it("再点一次收起该行快照；全部展开后可整体收起", () => {
+    const { container, getByText } = render(<PipelineTracePanel trace={fakeTrace()} />);
+    const firstRow = container.querySelectorAll(".pipe-row")[0];
+    fireEvent.click(firstRow);
+    expect(container.querySelectorAll(".pipe-snips").length).toBe(1);
+    fireEvent.click(firstRow);
+    expect(container.querySelectorAll(".pipe-snips").length).toBe(0);
+
+    fireEvent.click(getByText("展开全部快照"));
+    expect(container.querySelectorAll(".pipe-snips").length).toBe(2);
+    fireEvent.click(getByText("收起全部快照"));
+    expect(container.querySelectorAll(".pipe-snips").length).toBe(0);
   });
 });

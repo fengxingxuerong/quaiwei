@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { humanizeViaApi, humanizeViaApiDeep } from "./llm-humanize.ts";
+import {
+  humanizeViaApi,
+  humanizeViaApiDeep,
+  FabricationVetoError,
+  buildSystemPrompt,
+} from "./llm-humanize.ts";
 import { DEFAULT_API } from "./llm-config.ts";
 import { buildRevisionPrompt } from "./llm-prompts.ts";
 /** 构造 OpenAI 兼容 200 响应 */
@@ -1060,5 +1065,21 @@ describe("全链路失败时的对外契约（探针实证：行 517-521 是死�
         0.6,
       ),
     ).rejects.toThrow(/空内容|回退本地引擎/);
+  });
+});
+
+describe("LLM 层边角：空样例与缺省参数", () => {
+  const cfg = { ...DEFAULT_API, enabled: true, apiKey: "test-key" };
+
+  it("编造否决错误没有样例时也不炸（消息如实写 0 处）", () => {
+    const err = new FabricationVetoError([]);
+    expect(err.name).toBe("FabricationVetoError");
+    expect(err.message).toContain("0 处");
+    expect(Array.isArray(err.fabrications)).toBe(true);
+    expect(err.fabrications.length).toBe(0);
+  });
+
+  it("系统提示词不传 sourceText 与传空串等价 —— 缺省不该改变行为", () => {
+    expect(buildSystemPrompt(cfg, 0.5)).toBe(buildSystemPrompt(cfg, 0.5, ""));
   });
 });

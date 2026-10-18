@@ -7,6 +7,7 @@ import {
   lookupVocab,
   matchInjection,
   INJECTION_MARKERS,
+  type ExplainItem,
 } from "./explain";
 
 /**
@@ -171,5 +172,45 @@ describe("汇总与渲染", () => {
   it("lookupVocab 查不到就返回 null —— 不编一个替身出来", () => {
     expect(lookupVocab("值得注意的是")).toBeTruthy();
     expect(lookupVocab("这个词肯定不在词表里")).toBeNull();
+  });
+});
+
+/**
+ * formatExplain 的渲染契约：手搓 ExplainItem 直接喂。
+ * 这里测的是「三种行形怎么画、汇总头什么时候出」——与归因无关，
+ * 所以不需要真引擎输出；归因正确性由上面的真引擎用例负责。
+ */
+describe("formatExplain（渲染边角）", () => {
+  const item = (over: Partial<ExplainItem>): ExplainItem => ({
+    kind: "vocab",
+    before: "",
+    after: "",
+    reason: "理由",
+    basis: "依据表",
+    certain: true,
+    ...over,
+  });
+
+  it("空清单给「（两稿一致，没有改动）」，不是空白或 undefined", () => {
+    expect(formatExplain([])).toBe("（两稿一致，没有改动）");
+  });
+
+  it("单侧箭形：只有 before 画「删「x」」，只有 after 画「增「y」」", () => {
+    const del = formatExplain([item({ before: "因此", after: "" })]);
+    expect(del).toContain("删「因此」");
+    expect(del).not.toContain("→");
+
+    const add = formatExplain([item({ before: "", after: "你猜怎么着" })]);
+    expect(add).toContain("增「你猜怎么着」");
+    expect(add).not.toContain("→");
+  });
+
+  it("全是推断时不出「确定归因」汇总头，但每条都戴「（推断）」角标", () => {
+    const txt = formatExplain([
+      item({ before: "甲", after: "乙", certain: false }),
+      item({ before: "丙", after: "丁", certain: false }),
+    ]);
+    expect(txt).not.toContain("确定归因");
+    expect(txt.match(/（推断）/g)?.length).toBe(2);
   });
 });

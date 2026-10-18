@@ -105,6 +105,19 @@ describe("审题模式 reviewText", () => {
     expect(r.marks).toEqual([]);
     expect(r.summary).toEqual([]);
   });
+
+  it("刚过门槛的低风险痕迹给「看情况」——是分数线通知，不是催改单", () => {
+    // 「因此」开头的单特征句：risk 落在 [40,45) 的 low 档，此前只测到中/高三档的措辞
+    const r = reviewText("因此，该方案值得考虑。");
+    expect(r.marks.length).toBe(1);
+    const m = r.marks[0];
+    expect(m.risk).toBeGreaterThanOrEqual(RISK_FLOOR);
+    expect(m.risk).toBeLessThan(45);
+    expect(m.severity).toBe("low");
+    expect(m.severityText).toBe("看情况");
+    expect(m.suggestions.length).toBeGreaterThan(0);
+    expect(formatReview(r)).toMatch(/ - 第1句/);
+  });
 });
 
 describe("formatReview", () => {
