@@ -69,6 +69,8 @@ jobs:
         # 2026-10-13 补：版本号有 6+1 处落点（根/electron-app 两处 package.json、README 标题行、
         # README 文末"当前版本"、CHANGELOG 本版章节、产物 resources/app/package.json；
         # 第七处 SKILL.md metadata.version 是手动的，由 skill-md.test.ts 守）。
+        # 2026-10-18 补第八~十一处：electron-app/使用说明.txt、根 使用说明.txt、
+        # 一键启动.bat、环境依赖安装.bat（曾停在 v0.9.5/v0.9.14 漂了一个多月，现一并比对）。
         # 此前只在本机 check:release 里跑，CI 链独缺它 —— 结果就是"漏改一处在 CI 上完全看不见",
         # 历史上 README 落点漏过三次（v0.9.16/18/19），才攒出这条门禁。
         # 干净检出下没有 electron-dist 产物 ⇒ 产物落点自动跳过（check-version-sync.ts 的设计），
@@ -85,6 +87,12 @@ jobs:
         run: npx tsx scripts/scan-bugs.ts
         env:
           SCAN_TIER: fast
+
+      - name: Real-corpus matrix (realcase, 硬缺陷即红)
+        # 2026-10-18 补：check:release 链里最贴近"真实语料是否有硬伤"的门禁此前只在本地跑，
+        # CI 独缺它——历史上有硬缺陷版本能过 CI 却过不了它。零 key、纯本地引擎、
+        # 固定种子（matrix 模式确定性），实测本机 2s、整链 31s，放 CI 是最便宜的一道闸。
+        run: npm run test:realcase
 
       - name: 12-sample regression (D 评分器漂移棘轮 / E 引擎退化棘轮)
         run: npx tsx scripts/regression-12samples.ts
@@ -120,3 +128,14 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      # 失败时保留现场：CI 一红，coverage/ 报告随 runner 一起蒸发，只剩日志可倒推。
+      # 覆盖率为负增量时（覆盖率门禁红）详情全在 HTML 报告里，这一步专为那种失败留证据。
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-diagnostics
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7

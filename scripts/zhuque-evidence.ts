@@ -215,7 +215,7 @@ export function seal(input: SealInput, store: Store = DEFAULT_STORE): { rec: Evi
     label,
     screenshot: rel(store.base, destShot),
     screenshotSha256: shot.hash,
-    by: input.by || process.env.USER || "unknown",
+    by: input.by || process.env.USER || process.env.USERNAME || "unknown",
     proof: "screenshot",
     proofSource: input.proofSource ?? "",
   };
@@ -300,7 +300,7 @@ export function sealApi(input: SealApiInput, store: Store = DEFAULT_STORE): { re
     screenshotSha256: "",
     apiResponse: rel(store.base, destApi),
     apiResponseSha256: api.hash,
-    by: input.by || process.env.USER || "unknown",
+    by: input.by || process.env.USER || process.env.USERNAME || "unknown",
     proof: "api-response",
     proofSource: input.proofSource ?? "",
   };
@@ -379,7 +379,7 @@ export function sealRetro(
     label: labelFromPct(pct),
     screenshot: "",
     screenshotSha256: "",
-    by: input.by || process.env.USER || "unknown",
+    by: input.by || process.env.USER || process.env.USERNAME || "unknown",
     proof: destText ? "text+transcript" : "transcript-only",
     proofSource: src,
   };

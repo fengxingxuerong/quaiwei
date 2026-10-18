@@ -27,6 +27,10 @@ function makeRepo(version = "0.9.19"): string {
   write("electron-app/package.json", JSON.stringify({ name: "x", version }, null, 2));
   write("README.md", `# 趣AI味 · QuAiWei v${version}\n\n**下载**：[Windows 免安装包（v${version}）](https://example.com)——解压即用。\n\n完整版本历史见 CHANGELOG.md。当前版本 **v${version}**（以 \`package.json\` 为准）。\n`);
   write("CHANGELOG.md", `# 更新日志\n\n## v${version} 更新（本版）\n\n内容。\n\n## v0.9.18 更新（上一版）\n`);
+  write("electron-app/使用说明.txt", `══════\n  趣AI味 · QuAiWei v${version} 桌面版（Windows）使用说明\n══════\n`);
+  write("使用说明.txt", `│  趣AI味 · QuAiWei v${version} 使用说明\n`);
+  write("一键启动.bat", `title 趣AI味 QuAiWei v${version} - 一键启动\n`);
+  write("环境依赖安装.bat", `echo    QuAiWei v${version} - 环境依赖安装\n`);
   return dir;
 }
 
@@ -95,6 +99,10 @@ describe("checkVersionSync", () => {
       "README.md 标题行",
       "README.md「当前版本」行",
       "CHANGELOG.md 本版章节",
+      "electron-app/使用说明.txt",
+      "使用说明.txt",
+      "一键启动.bat",
+      "环境依赖安装.bat",
     ]);
     expect(r.rows.every((x) => x.ok)).toBe(true);
   });
@@ -149,6 +157,63 @@ describe("checkVersionSync", () => {
     expect(r.rows.find((x) => x.loc === "electron-app/package.json")?.actual).toBe("0.9.15");
   });
 
+  it("桌面版使用说明落后 → 红（2026-10-17 实测它在 v0.9.14 停了一个多月，还随包发给用户）", () => {
+    makeRepo();
+    write("electron-app/使用说明.txt", "══════\n  趣AI味 · QuAiWei v0.9.14 桌面版（Windows）使用说明\n══════\n");
+    const r = checkVersionSync(dir);
+    expect(r.ok).toBe(false);
+    const bad = r.rows.find((x) => x.loc === "electron-app/使用说明.txt");
+    expect(bad?.actual).toBe("0.9.14");
+    expect(bad?.ok).toBe(false);
+  });
+
+  it("桌面版使用说明标题格式改坏（读不到版本）→ 红且注记不是「文件不存在」（文件在只是匹配不上）", () => {
+    makeRepo();
+    write("electron-app/使用说明.txt", "  趣AI味 · QuAiWei 桌面版使用说明（版本见 README）\n");
+    const r = checkVersionSync(dir);
+    expect(r.ok).toBe(false);
+    const bad = r.rows.find((x) => x.loc === "electron-app/使用说明.txt");
+    expect(bad?.actual).toBeNull();
+    expect(bad?.note).toBeUndefined();
+  });
+
+  it("桌面版使用说明文件不存在 → 该落点照推并注明「文件不存在」→ 红（删了文件不许静默通过）", () => {
+    makeRepo();
+    fs.rmSync(path.join(dir, "electron-app/使用说明.txt"));
+    const r = checkVersionSync(dir);
+    expect(r.ok).toBe(false);
+    const bad = r.rows.find((x) => x.loc === "electron-app/使用说明.txt");
+    expect(bad?.actual).toBeNull();
+    expect(bad?.note).toBe("文件不存在");
+  });
+
+  it("根目录使用说明 / 两个启动脚本落后 → 红（v0.9.5 漂到没人发现的那三个文件）", () => {
+    makeRepo();
+    write("使用说明.txt", "│  趣AI味 · QuAiWei v0.9.5 使用说明\n");
+    write("一键启动.bat", "title 趣AI味 QuAiWei v0.9.5 - 一键启动\n");
+    write("环境依赖安装.bat", "echo    QuAiWei v0.9.14 - 环境依赖安装\n");
+    const r = checkVersionSync(dir);
+    expect(r.ok).toBe(false);
+    expect(r.rows.filter((x) => !x.ok).map((x) => x.loc)).toEqual([
+      "使用说明.txt",
+      "一键启动.bat",
+      "环境依赖安装.bat",
+    ]);
+  });
+
+  it("环境依赖安装.bat 是 GBK 编码（chcp 936）：中文乱码不影响 ASCII 版本号读出", () => {
+    makeRepo();
+    // "趣AI味" 的 GBK 字节 + ASCII 版本号——按 utf-8 读进来中文成替换符，版本号必须照样命中
+    const gbk = Buffer.concat([
+      Buffer.from([0xc8, 0xa4, 0x41, 0x49, 0xce, 0xb6]),
+      Buffer.from(" QuAiWei v0.9.19 - 环境依赖安装\r\n", "ascii"),
+    ]);
+    fs.writeFileSync(path.join(dir, "环境依赖安装.bat"), gbk);
+    const r = checkVersionSync(dir);
+    expect(r.ok).toBe(true);
+    expect(r.rows.find((x) => x.loc === "环境依赖安装.bat")?.actual).toBe("0.9.19");
+  });
+
   it("产物存在且版本落后 → 红；产物不存在 → 不参与比对，不因此变红", () => {
     makeRepo();
     expect(checkVersionSync(dir).rows.some((x) => x.loc.includes("产物"))).toBe(false);
@@ -176,6 +241,10 @@ describe("checkVersionSync", () => {
       "electron-app/package.json",
       "README.md 标题行",
       "CHANGELOG.md 本版章节",
+      "electron-app/使用说明.txt",
+      "使用说明.txt",
+      "一键启动.bat",
+      "环境依赖安装.bat",
     ]);
     const bad = r.rows.find((x) => x.loc === "README.md 标题行");
     expect(bad?.actual).toBeNull();
@@ -188,7 +257,7 @@ describe("checkVersionSync", () => {
     fs.rmSync(path.join(dir, "CHANGELOG.md"));
     const r = checkVersionSync(dir);
     expect(r.ok).toBe(false);
-    expect(r.rows).toHaveLength(5); // 5 行照推：CHANGELOG 行读不到但带注记占位，不是不推
+    expect(r.rows).toHaveLength(9); // 9 行照推：CHANGELOG 行读不到但带注记占位，不是不推
     const bad = r.rows.find((x) => x.loc === "CHANGELOG.md 本版章节");
     expect(bad?.actual).toBeNull();
     expect(bad?.note).toBe("文件不存在");
@@ -264,12 +333,12 @@ describe("checkVersionSync", () => {
 
 /* ---------------- CLI main()：退出码 0/1/2 是对外契约，必须真跑 ---------------- */
 describe("check-version-sync CLI 退出码", () => {
-  it("退出码 0：全部一致 → 5 个落点行逐行 ✅ + 收尾「全部落点一致」，stderr 干净", async () => {
+  it("退出码 0：全部一致 → 9 个落点行逐行 ✅ + 收尾「全部落点一致」，stderr 干净", async () => {
     makeRepo();
     const cli = await runCli({ argv: ["--repo", dir] });
     expect(cli.code).toBe(0);
     expect(cli.out.some((l) => l.includes("期望版本（根 package.json）：0.9.19"))).toBe(true);
-    expect(cli.out.filter((l) => l.includes("✅"))).toHaveLength(6); // 5 个落点行 + 1 行收尾
+    expect(cli.out.filter((l) => l.includes("✅"))).toHaveLength(10); // 9 个落点行 + 1 行收尾
     expect(cli.out.some((l) => l.includes("全部落点一致"))).toBe(true);
     expect(cli.errOut).toEqual([]);
   });

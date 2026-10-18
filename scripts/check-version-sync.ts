@@ -50,6 +50,31 @@ const README_CURRENT_RE = /当前版本\s*\*\*v(\d+\.\d+\.\d+)\*\*/;
  */
 /** CHANGELOG 章节标题：## v0.9.19 更新（…） */
 const CHANGELOG_SEC_RE = /^##\s+v(\d+\.\d+\.\d+)\s+更新/gm;
+/**
+ * 桌面包随行文档 `electron-app/使用说明.txt` 的标题行：
+ *   `  趣AI味 · QuAiWei v0.9.14 桌面版（Windows）使用说明`
+ *
+ * v0.9.54 补这个落点：2026-10-17 体检实测它停在 v0.9.14（当前 v0.9.53），
+ * 而它会被 rebuild-app 复制进桌面包——等于**随包文档对用户谎报版本**。
+ * 根目录 使用说明.txt 与两个 .bat 的标题都是发版时手改的（无门禁），
+ * 至少把这份进产物的文档钉死；格式改动（如删掉"桌面版"字样）会让本行读不到并判红。
+ */
+const DESKTOP_MANUAL_RE = /趣AI味\s*·\s*QuAiWei\s*v(\d+\.\d+\.\d+)\s*桌面版/;
+/**
+ * 根目录 `使用说明.txt` 标题行：
+ *   `│  趣AI味 · QuAiWei v0.9.53 使用说明`
+ *
+ * v0.9.54 补：与桌面版说明同理——2026-10-17 体检抓到它和两个 .bat 一起停在
+ * v0.9.5/v0.9.14（当前 0.9.51），fix 于 fe1cafc 但当时没有门禁；
+ * 注意"v0.9.14 起…"这类**历史叙述**不匹配本正则（版本号后必须紧跟"使用说明"）。
+ */
+const ROOT_MANUAL_RE = /趣AI味\s*·\s*QuAiWei\s*v(\d+\.\d+\.\d+)\s*使用说明/;
+/**
+ * 两个启动脚本的标题/横幅版本号：`QuAiWei v0.9.53 - 一键启动`。
+ * 只用 ASCII 片段匹配：`环境依赖安装.bat` 是 GBK 编码（配 chcp 936），
+ * 按 utf-8 读进来中文会变替换符，但 ASCII 版本号原样保留——正因如此才不用中文锚。
+ */
+const BAT_VERSION_RE = /QuAiWei v(\d+\.\d+\.\d+)/;
 
 function read(root: string, rel: string): string | null {
   try {
@@ -103,6 +128,29 @@ export function checkVersionSync(root: string): VersionCheckResult {
       versions.includes(expected) ? undefined : `现有章节：${versions.slice(0, 3).join(" / ")}…`);
   }
 
+  const desktopManual = read(root, "electron-app/使用说明.txt");
+  if (desktopManual === null) {
+    push("electron-app/使用说明.txt", null, "文件不存在");
+  } else {
+    push("electron-app/使用说明.txt", DESKTOP_MANUAL_RE.exec(desktopManual)?.[1] ?? null);
+  }
+
+  const rootManual = read(root, "使用说明.txt");
+  if (rootManual === null) {
+    push("使用说明.txt", null, "文件不存在");
+  } else {
+    push("使用说明.txt", ROOT_MANUAL_RE.exec(rootManual)?.[1] ?? null);
+  }
+
+  for (const bat of ["一键启动.bat", "环境依赖安装.bat"]) {
+    const content = read(root, bat);
+    if (content === null) {
+      push(bat, null, "文件不存在");
+    } else {
+      push(bat, BAT_VERSION_RE.exec(content)?.[1] ?? null);
+    }
+  }
+
   // 产物是可选落点：不存在时不算失败（门禁要在没打包的机器上也能跑）
   const distPkg = "electron-dist/QuAiWei-win32-x64/resources/app/package.json";
   if (fs.existsSync(path.join(root, distPkg))) {
@@ -134,7 +182,7 @@ function main(): void {
   }
 
   if (result.ok) {
-    console.log("\n✅ 全部落点一致（根 / electron-app / README 标题 / CHANGELOG[/产物]）");
+    console.log("\n✅ 全部落点一致（根 / electron-app / README / CHANGELOG / 说明文档×2 / 启动脚本×2[/产物]）");
     return;
   }
 

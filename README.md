@@ -386,7 +386,7 @@ npm run test:quality   # 词典泄漏质量门禁
 npm run test:calib     # 标定数据源自检（参数一致/拟合误差/x 轴漂移棘轮，退出码可拦）
 npm run test:evidence  # 官方送检凭证审计（哈希复算 + 页面原文互证，见下节）
 npm run check:ledger   # 凭证账本 append-only（历史行被删/改/重排即拦；hook 里也跑这条）
-npm run check:version  # 版本号一致性（根/electron-app/README 标题与下载行/CHANGELOG/产物 六处比对）
+npm run check:version  # 版本号一致性（根/electron-app/README/CHANGELOG/说明文档×2/启动脚本×2 九处比对；产物存在时一并比对）
 npm run check:release  # 上面全部 + 单测，全绿才允许打 tag
 npm run bench          # 性能基准，纯打印给人看；判定在 src/engine/humanize-perf-budget.test.ts
 ```
@@ -642,7 +642,7 @@ Claude Code / Codex）。历经三次复测：首测 2026-10-03、2026-10-05 用
 | [baibanbao/qu-ai-wei](https://github.com/baibanbao/qu-ai-wei) | 71 | 2026-09-23 | Agent Skill | 同名撞车；合并三家规则并**逐条裁决 7 处矛盾** |
 | [qoqu/anti-zhuque](https://github.com/qoqu/anti-zhuque) / [weiyinerzui/humanize-cn](https://github.com/weiyinerzui/humanize-cn) | 28 / 25 | 2026-02 / 2026-05 | 工具 | 直接冲朱雀/知网/维普，**均已停更** |
 | [pengong101/ai-humanizer-cn](https://github.com/pengong101/ai-humanizer-cn) | 1 | 2026-03-25 | Python 包 | pip；质量评分而非 AI 检测 |
-| **本项目**（[fengxingxuerong/quaiwei](https://github.com/fengxingxuerong/quaiwei)） | **3** | 2026-10-16 | **Electron + Web + CLI + Skill** | 内置启发式检测打分 + 朱雀官方 API 闭环 + 1907 条用例回归；免安装 exe / 静态站 / CLI / SKILL.md |
+| **本项目**（[fengxingxuerong/quaiwei](https://github.com/fengxingxuerong/quaiwei)） | **3** | 2026-10-16 | **Electron + Web + CLI + Skill** | 内置启发式检测打分 + 朱雀官方 API 闭环 + 1977 条用例回归；免安装 exe / 静态站 / CLI / SKILL.md |
 
 **同名撞车（2026-10-17 复核，仍未解）**：GitHub 上另有两个也叫 `qu-ai-wei` 的仓库
 （`LifelongLazyLearner` 660★、`baibanbao` 71★），与本项目 Electron **包名**同名，
@@ -656,7 +656,7 @@ Claude Code / Codex）。历经三次复测：首测 2026-10-03、2026-10-05 用
 （看布局 / 动效 / 信息密度）——五者纯属关键词撞车，与本赛道无关。
 
 **结论（诚实版）**：同类**绝大多数**仍是「给 LLM 的规则清单」，无一具备内置检测打分、闭环复测或
-桌面交付；规则清单型项目也没有回归测试可言（本项目 1907 条用例、CI 每次提交全跑）。
+桌面交付；规则清单型项目也没有回归测试可言（本项目 1977 条用例、CI 每次提交全跑）。
 ⇒ **引擎侧仍是能力超集**，本次刷新后这一点依然成立。
 
 分发形态那条差距 **v0.9.24 已补**：根目录薄壳 `SKILL.md` 指向 `scripts/humanize-cli.ts`，

@@ -32,7 +32,11 @@ fi
 # 进文件并被 git 跟踪（34792ea），等于悄悄撤销了 54c12ce 的「Key 移出源码」。当时没有任何
 # 环节拦得住——类型检查、单测、scan-bugs 都不看这个。这里只查本次暂存的新增行，
 # 不让历史存量把仓库永久锁死；命中内容一律截断隐去，避免密钥被打进终端/CI 日志。
-SECRET_RE='sk-[A-Za-z0-9]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{16,}\.'
+# 2026-10-18 补 nvapi-/rc-：本仓库常用的两个网关 Key 形态（NVIDIA integrate.api.nvidia.com
+# 的 nvapi-…、AMD radeon 的 rc-…）此前一个都不在拦截范围里——它们恰恰是最可能被写进
+# endpoints.local.json / 脚本示例的那类。rc- 前面加了边界排除，避免 "src-xxxxx…" 之类
+# 长路径段误报。命中内容一律截断隐去，避免密钥被打进终端/CI 日志。
+SECRET_RE='sk-[A-Za-z0-9]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{16,}\.|nvapi-[A-Za-z0-9_-]{20,}|(^|[^A-Za-z0-9_-])rc-[A-Za-z0-9]{20,}'
 if command -v git >/dev/null 2>&1; then
   hits=$(git diff --cached -U0 | grep -E "^\+" | grep -E "$SECRET_RE" | sed -E 's/^(\+.{0,14}).*/\1…（已隐去）/')
   if [ -n "$hits" ]; then
