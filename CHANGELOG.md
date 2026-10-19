@@ -2,6 +2,48 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.56 更新（SenseNova 预置模型清单校正：网关下线模型不再写死，2026-10-19）
+
+起因是**为验证 LLM API 可用性而做的端到端实测**（`scripts/_live-api-verify.ts`，
+直接 import `src/api/llm.ts` 的 `runHumanize`，与 UI 点「开始去味」同一条链）。
+
+遍历网关 `/v1/models` 返回的全部 7 个模型逐个发真实请求，实测结果：
+
+| 模型                                   | 实测                                              | 处置           |
+| -------------------------------------- | ------------------------------------------------- | -------------- |
+| `deepseek-v4-flash`                    | ✅ 3.0s                                           | 主力（不变）   |
+| `glm-5.2`                              | ✅ 11.5s                                          | 交叉评判（不变）|
+| `kimi-k3`                              | ✅ 17.8s                                          | **新**备选改写 |
+| `sensenova-6.8-flash-lite`              | ✅ 2.6s                                           | 兜底（不变）   |
+| `deepseek-v4-pro`                      | ❌ 404 `model is not found`（网关已下线）          | **移出预置**   |
+| `sensenova-u1.5-lite`                  | ❌ 404 `model is not found`（网关已下线）          | 从未预置       |
+| `deepseek-v4.1-flash`                  | ❌ 403 `not available in the current token plan`   | 不作替代       |
+| `deepseek-flash`                       | ❌ 429 限流（配额耗尽）                            | 从未预置       |
+
+**缺陷**：`SettingsModal` 的「填入 SenseNova 常驻通道」把 `altModel` 写死成
+`deepseek-v4-pro`，`SENSENOVA_PRESET.models` 也列着它。用户一键填入 + 开深度模式后，
+首轮「双模型竞争」必然拿到空输出并白等一轮——`engine` 仍显示 `llm`，
+`note` 里只有一句「换模型 X：空输出」，不看日志发现不了是配置过期。
+实测复现：首轮 311s，`roundScores=[89]`，note 明写「deepseek-v4-pro#2:空输出」。
+
+**修法**：`altModel` 改 `kimi-k3`（实测可用，且与主模型 deepseek **跨族**——
+竞争要的是多样性，同族只是同温重采样）；预置表同步调整。
+
+**为什么值得单列一条教训**：**在售 ≠ 有权限**。`/v1/models` 会列出
+`deepseek-v4.1-flash`，但实际调用 403；而 `deepseek-v4-pro` 连在售列表都没有。
+光看模型清单接口不足以判断可用性，**必须逐个发最小请求**。
+核实办法已写进 `llm-config.ts` 的预置注释。
+
+**守卫**：`llm-config.presetkeys.test.ts` 新增 3 条，其中第 ① 条用**独立黑名单常量**
+`KNOWN_UNAVAILABLE` 断言（不从 `SENSENOVA_PRESET.models` 反查——反查会让
+「把 v4-pro 加回预置表」这条缺陷自动获得通行证）。
+变异检验：注入缺陷（v4-pro 加回预置 + altModel 改回）后 ① 与 settings-modal 各红 1 条，
+还原后 42 条全绿。
+
+**附带确认**：`glm-5.2` 是思考型模型，`max_tokens<1024` 时 content 为空、只回
+`reasoning_content`（实测 300 → content=0/reasoning=602；1024 → content=53）。
+引擎各环节统一传 8000，不受影响；此约束原已记在预置注释里，本次实测复核。
+
 ## v0.9.55 更新（竞品吸收一批 + 工程卫生一批 + npm 首发准备，2026-10-19）
 
 本版把 v0.9.54 之后的 20 个提交合为一个发布单元：**竞品吸收四项**（声线样本模仿 /

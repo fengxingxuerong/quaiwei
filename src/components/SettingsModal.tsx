@@ -173,7 +173,10 @@ export function SettingsModal({
                 apiKeys: SENSENOVA_PRESET.keys.join("\n"),
                 model: "deepseek-v4-flash",
                 judgeModel: "glm-5.2",
-                altModel: "deepseek-v4-pro",
+                // v0.9.56：原为 deepseek-v4-pro，2026-10-19 实测网关已下线（404），
+                // 改写后的 deepseek-v4.1-flash 又在售但套餐无权限（403）。
+                // kimi-k3 实测可用，且与主模型 deepseek 跨族——竞争要的是多样性。
+                altModel: "kimi-k3",
               })
             }
             disabled={SENSENOVA_PRESET.keys.length === 0}

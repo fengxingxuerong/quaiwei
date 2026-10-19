@@ -76,13 +76,21 @@ export interface ApiConfig {
 }
 
 /* ---------------------- SenseNova 常驻预置 ----------------------
- * 2026-09-01 实测（3 Key × 5 模型）：
- *   deepseek-v4-flash      ✅ 1.5~3s，改写质量最好 → 默认主力
- *   deepseek-v4-pro        ✅ 2~22s，质量稳但慢     → 备选改写（altModel）
- *   glm-5.2                ✅ 2~16s，思考型（max_tokens≥1024 才有 content）→ 交叉评判
- *   sensenova-6.8-flash-lite ⚠️ 可用但 12s+ 波动大，不预置
- *   kimi-k3                ⚠️ 网关仅允许 temperature=1 且 TPM 限流紧，不预置（chat 已自动适配）
- *   Key1 曾 429（配额）→ Key 池轮换是刚需，不是锦上添花
+ * 2026-10-19 重新实测（3 Key 套餐，遍历网关全部 7 个在售模型，max_tokens=8000）：
+ *   deepseek-v4-flash        ✅ 3.0s  → 默认主力改写
+ *   glm-5.2                  ✅ 11.5s → 交叉评判（思考型，max_tokens≥1024 才有 content）
+ *   kimi-k3                  ✅ 17.8s → 备选改写（网关强制 temperature=1，chat 已自动适配）
+ *   sensenova-6.8-flash-lite ✅ 2.6s  → 兜底备选（同族，多样性差）
+ *   deepseek-v4-pro          ❌ 404 model is not found（网关已下线）
+ *   sensenova-u1.5-lite      ❌ 404 model is not found（网关已下线）
+ *   deepseek-v4.1-flash      ❌ 403 not available in the current token plan（套餐无权限）
+ *   deepseek-flash           ❌ 429 限流（配额耗尽）
+ * ⚠️ 这份清单会随网关变更而过期。核实办法：`GET {baseUrl}/models` 看在售清单，
+ *   再逐个发最小请求确认套餐权限——**在售 ≠ 有权限**（上面两个反例：v4-pro 已下线、
+ *   v4.1-flash 在售但 403）。
+ * ⚠️ altModel 指向不可用模型的症状：深度模式首轮「双模型竞争」拿到空输出并白等一轮——
+ *   engine 仍为 llm，但 note 里出现「换模型 X：空输出」。且 altModel 不宜与主模型同族
+ *   （否则「竞争」只是同温重采样，没有互补价值）。
  * baseUrl 用同源相对路径 /sensenova/v1：dev 由 vite 代理转发、桌面版由 Electron
  * main.js 内置代理转发（网关 OPTIONS 预检 404，浏览器直连必挂）。静态托管 dist
  * 的用户需自备反代或改填 CORS 放行的服务商。
@@ -190,10 +198,12 @@ export const SENSENOVA_PRESET = {
   keys: loadPresetKeys(),
   models: [
     "deepseek-v4-flash",
-    "deepseek-v4-pro",
     "glm-5.2",
-    "sensenova-6.8-flash-lite",
+    // v0.9.56 换掉 deepseek-v4-pro：2026-10-19 实测网关已下线它（404），
+    // 且 deepseek-v4.1-flash 在售却无套餐权限（403）。kimi-k3 实测可用（17.8s），
+    // 且与主模型 deepseek 跨族——「双模型竞争」要的是多样性，同族只是同温重采样。
     "kimi-k3",
+    "sensenova-6.8-flash-lite",
   ],
 };
 

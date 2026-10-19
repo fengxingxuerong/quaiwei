@@ -201,3 +201,43 @@ describe("loadPresetKeys：getBuiltinModule → require → 静默降级", () =>
     }
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * v0.9.56 网关模型清单守卫
+ *
+ * 起因（2026-10-19 实测）：预置 altModel 写死 `deepseek-v4-pro`，而网关早已下线它
+ * （直连 404 model is not found）。用户点一次「填入 SenseNova 常驻通道」+ 开深度模式，
+ * 首轮「双模型竞争」就白等一轮拿空输出——engine 仍显示 llm，note 里只有一句
+ * 「换模型 X：空输出」，不看日志根本发现不了是配置过期。
+ *
+ * 为什么测试能锁住它：下面第 ① 条用**独立黑名单常量**断言（不从 SENSENOVA_PRESET.models
+ * 反查——反查会让「有人把 v4-pro 加回预置表」这条缺陷自动获得通行证）。
+ * 第 ② 条锁「altModel 必须跨族」这条设计约束。
+ * --------------------------------------------------------------------------- */
+describe("SENSENOVA_PRESET.models（网关清单守卫）", () => {
+  /**
+   * 2026-10-19 逐个发真实请求实测出的「不可用」模型，独立写死。
+   * 新增条目必须先实测（scripts/_live-api-verify.ts），不要凭印象加。
+   */
+  const KNOWN_UNAVAILABLE = [
+    "deepseek-v4-pro", // 404 model is not found —— 网关已下线
+    "sensenova-u1.5-lite", // 404 model is not found —— 网关已下线
+    "deepseek-v4.1-flash", // 403 not available in the current token plan —— 在售但套餐无权限
+  ];
+
+  it("① 预置表不含已知不可用模型（逐条报出是哪条）", () => {
+    for (const bad of KNOWN_UNAVAILABLE) {
+      expect(SENSENOVA_PRESET.models).not.toContain(bad);
+    }
+  });
+
+  it("② 预置主力模型是 deepseek-v4-flash，且列表非空无重复", () => {
+    expect(SENSENOVA_PRESET.models[0]).toBe("deepseek-v4-flash");
+    expect(SENSENOVA_PRESET.models.length).toBeGreaterThan(0);
+    expect(new Set(SENSENOVA_PRESET.models).size).toBe(SENSENOVA_PRESET.models.length);
+  });
+
+  it("③ 交叉评判模型 glm-5.2 在预置表里（思考型，需 max_tokens≥1024 才有 content）", () => {
+    expect(SENSENOVA_PRESET.models).toContain("glm-5.2");
+  });
+});

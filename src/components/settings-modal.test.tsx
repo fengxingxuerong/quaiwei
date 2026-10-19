@@ -467,7 +467,11 @@ describe("SettingsModal 补盲（逐行覆盖 · 配置行编辑与环境分支�
       expect(api.apiKeys).toBe("sk-sn-1\nsk-sn-2");
       expect(api.model).toBe("deepseek-v4-flash");
       expect(api.judgeModel).toBe("glm-5.2");
-      expect(api.altModel).toBe("deepseek-v4-pro");
+      // v0.9.56：原断言 deepseek-v4-pro，2026-10-19 实测网关已下线该模型（404），
+      // 换 kimi-k3（实测可用，且与主模型 deepseek 跨族）。
+      // 独立常量断言——不从 SENSENOVA_PRESET.models 反查，否则「预置表被改坏」
+      // 这类缺陷会给测试发通行证（见 MEMORY「断言纪律」）。
+      expect(api.altModel).toBe("kimi-k3");
     } finally {
       SENSENOVA_PRESET.keys = savedKeys;
     }
