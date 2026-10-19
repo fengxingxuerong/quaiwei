@@ -24,7 +24,13 @@ function startProxy() {
         return res.end();
       }
       const url = new URL(req.url, "http://127.0.0.1");
-      const target = UPSTREAM + url.pathname + url.search;
+      // UI 里baseUrl 填的是同源相对路径 /sensenova/v1（dev 走 vite 代理、桌面版走本机转发），
+      // main.js 的 onBeforeRequest 又把 file:///sensenova/* 整体重写到这里，所以本进程收到的
+      // pathname 一定带 /sensenova 前缀。而上游网关只认 /v1/*，
+      // 直接拼过去会变成 /sensenova/v1/chat/completions → 网关 404 NOT_FOUND(code 5)。
+      //⇒ 这里剥掉前缀，只把 /v1/* 之后的部分转发给上游。
+      const pathname = url.pathname.replace(/^\/sensenova(?=\/|$)/, "") || "/";
+      const target = UPSTREAM + pathname + url.search;
       const chunks = [];
       req.on("data", (c) => chunks.push(c));
       req.on("end", () => {

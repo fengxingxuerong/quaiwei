@@ -2,6 +2,71 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.57 更新（桌面端 SenseNova 转发层路径前缀修正：常驻通道从必然 404 到可用，2026-10-19）
+
+起因是**用户在自己机器上跑桌面端、要求实测 API 功能**。实测发现 API 侧一切正常
+（Key 有效、模型可用、产品链路 8.1s 出稿、深度闭环多轮正常），但桌面端点
+「填入 SenseNova 常驻通道」后**去味永远拿不到结果**——且 UI 不报错、`engine` 仍显示 `llm`。
+
+### 缺陷：转发层把同源路径前缀原样带给了上游
+
+链路是四段接力：
+
+1. `src/api/llm-config.ts` 的 `SENSENOVA_PRESET.baseUrl` 填的是**同源相对路径** `/sensenova/v1`
+   （dev 走 vite 代理、桌面版由主进程转发，同一份配置通吃两端）；
+2. `src/api/llm-chat.ts:48` 按 `baseUrl + "/chat/completions"` 拼出
+   `/sensenova/v1/chat/completions`；
+3. 页面是 `file://` 加载的，`main.js` 的 `onBeforeRequest` 把它重写到本机转发服务，
+   但那行只剥了 `file://` 协议头——`replace(/^file:\/\/[^/]*/, "")` **把 `/sensenova` 前缀留下了**；
+4. `startProxy()` 原本 `UPSTREAM + url.pathname`，于是上游收到
+   `https://token.sensenova.cn/sensenova/v1/chat/completions`。
+
+而网关只认 `/v1/*`，多这一段就返回 `404 {"code":5,"message":"NOT_FOUND"}`。
+
+### 实测证据（curl 打真实上游，不是推断）
+
+| 请求路径 | 结果 |
+| --- | --- |
+| `POST /v1/chat/completions` | 200 `"Hi! How can I help you today?"` |
+| `POST /sensenova/v1/chat/completions` | 404 `{"code":5,"message":"NOT_FOUND","details":[]}` |
+
+顺带把本机代理也探了一遍，确认是前缀问题而不是 Key 或网络：
+`OPTIONS` 预检 204 且 `Access-Control-Allow-Origin: *` 正常，
+带前缀的请求恰好落到 404、不带前缀的能打到上游。
+
+### 修法
+
+`electron-app/main.js` 的 `startProxy()` 在拼上游前剥掉前缀：
+
+```js
+const pathname = url.pathname.replace(/^\/sensenova(?=\/|$)/, "") || "/";
+const target = UPSTREAM + pathname + url.search;
+```
+
+剥完立刻与不带前缀的直连形态对齐——这也是为什么 dev 端（vite 代理自己剥）一直没事、
+只有桌面端坏：**同一份 baseUrl 配置，两条链路对前缀的处理不一致**。
+
+### 守卫
+
+`scripts/electron-preset-keys.test.ts` 新增 4 条：预置 baseUrl 形态、重写逻辑现状、
+必须剥离前缀、拼接时必须用剥离后的变量（不能再出现裸 `url.pathname`）。
+其中「重写逻辑」那条用**字面量 includes** 而非从代码反查的正则——
+反查会让「改掉重写逻辑」这个动作自动获得通行证。
+
+**变异检验**：把 `startProxy` 改回 `UPSTREAM + url.pathname`（还原缺陷）后，
+其中 2 条精准变红；`cp` 还原后 10 条全绿。`src/api` 354 条一并全绿。
+
+### 同轮 API 实测结论（均通过）
+
+| 项 | 结果 |
+| --- | --- |
+| 直连上游 | 200，`finish_reason: stop` |
+| 单轮去味（产品真实链路 `runHumanize`） | 8.1s，aiScore 27 → 0，`engine=llm` |
+| 交叉评判 `glm-5.2` | 7.1s，27 → 1 |
+| 深度闭环 | 99.7s（27→11）/ 39.7s（27→3）/ 第 3 关首轮评分 85 |
+| Key 池轮换 | 3 条 Key 逐个实调均 200 |
+| 可用模型 | `deepseek-v4-flash` / `glm-5.2` / `kimi-k3` / `sensenova-6.8-flash-lite` |
+
 ## v0.9.56 更新（SenseNova 预置模型清单校正：网关下线模型不再写死，2026-10-19）
 
 起因是**为验证 LLM API 可用性而做的端到端实测**（`scripts/_live-api-verify.ts`，
