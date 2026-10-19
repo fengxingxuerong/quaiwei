@@ -2,6 +2,28 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## 未发布 · npm 首发：ai-humanizer CLI 上架准备（2026-10-19）
+
+本赛道同类清一色 Agent Skill（靠 `npx skills add` 分发），npm 上的 CLI 位一直是空的
+（`ai-humanizer` 名字至今无人占）。上架前把包做"干净"：
+
+- `package.json` 补齐 npm 门面元数据：`license` / `author` / `homepage` / `repository` /
+  `bugs` / `keywords`——此前 npm 页面会是空白一角。
+- **`@huggingface/transformers` 从 optionalDependencies 移到 devDependencies**：
+  它是浏览器 PPL 的构建期依赖（vite 给它出独立 chunk），CLI 单文件产物不引用；
+  留在 optional 里会让**每个 `npx` 用户**被拖进 100MB+ 原生依赖链。CI 自 v0.9.16
+  起已全量安装（`--omit=optional` 会连 rollup 平台二进制一起省掉的经典坑），
+  这次移位对 CI 零成本；`src/types/optional-deps.d.ts` 的 ambient 兜底照常保留。
+- 新增 `prepack: npm run build:cli`——发布产物永远从当前源码现打，杜绝 stale bundle
+  （本仓库 repack 链已两次栽在"静默留 stale"上，npm 侧不重蹈）。
+- 修 `--help` 门面 bug：stdin 示例写的是**不存在的 `-s` 参数**（实为 `--intensity`）。
+  `npx ai-humanizer --help` 是命令行工具的第一印象，v0.9.40 修过退出码、这次修示例。
+- 端到端验证（未发布只差 `npm publish`）：`npm pack` 内容 5 个文件 168.5KB
+  （LICENSE / README×2 / dist-cli / package.json，无源码无密钥）；tarball 全局安装
+  **只装 1 个包**（依赖为空）；Windows shim 可运行；本地引擎对样例真实出稿、
+  stdin 模式验证通过。
+- 门禁：2099 用例全绿；lint / tsc / check:release 全链过。
+
 ## 未发布 · 工程卫生（十）：electron-packager → @electron/packager 迁移（2026-10-19）
 
 旧包 `electron-packager@17.1.2` 在 npm 已标废弃（"Please use @electron/packager moving

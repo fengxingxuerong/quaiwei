@@ -182,7 +182,7 @@ const USAGE =
   " [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only]" +
   " [--recursive] [--jobs <n>] [--dry-run]\n" +
-  "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer -s 0.8（正文 stdout，诊断 stderr）\n" +
+  "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
   "  --base-url 填网关绝对地址（如 https://token.sensenova.cn/v1）。UI 设置里的 /sensenova/v1" +
   " 是同源代理专用写法（代理会剥掉 /sensenova 前缀再转发），CLI 直连勿带这段前缀。\n" +
   "  --recursive 目录扫描进子目录（默认不进）；--jobs 仅 --api 模式生效（并发路数）；" +

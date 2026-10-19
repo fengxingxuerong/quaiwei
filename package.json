@@ -3,6 +3,27 @@
   "version": "0.9.54",
   "type": "module",
   "description": "趣AI味 · 本地离线可用、可选接 LLM 的中文 AI 文本拟人化工具，对标朱雀",
+  "license": "MIT",
+  "author": "飞行雪绒",
+  "homepage": "https://fengxingxuerong.github.io/quaiwei/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fengxingxuerong/quaiwei.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fengxingxuerong/quaiwei/issues"
+  },
+  "keywords": [
+    "ai-humanizer",
+    "humanize-ai-text",
+    "chinese",
+    "去ai味",
+    "朱雀",
+    "ai-text",
+    "text-rewriting",
+    "offline",
+    "cli"
+  ],
   "bin": {
     "ai-humanizer": "dist-cli/humanize-cli.mjs"
   },
@@ -19,6 +40,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/sync-dist.mjs",
     "build:cli": "node scripts/build-cli.mjs",
+    "prepack": "npm run build:cli",
     "preview": "vite preview",
     "test:engine": "vitest run src/engine/humanize.test.ts",
     "test:regress": "tsx scripts/scan-bugs.ts",
@@ -42,11 +64,9 @@
     "fmt": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{ts,tsx,json,mjs}\" \"vite.config.ts\"",
     "build:electron": "tsc -b && vite build && node scripts/sync-dist.mjs"
   },
-  "optionalDependencies": {
-    "@huggingface/transformers": "^4.2.0"
-  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@huggingface/transformers": "^4.2.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.5",
