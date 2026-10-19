@@ -4,6 +4,8 @@
  * 朱雀官方 API 已于 2026-09 确认可用，见下方 ZHUQUE_OFFICIAL_DETECTOR。
  * 没有外部接口时，用 llm.ts 的 judgeAiScore（复用已配的 LLM）当评判也行。
  */
+import { resolveDesktopBaseUrl } from "./desktop-proxy";
+
 export interface DetectorConfig {
   enabled: boolean;
   url: string;
@@ -115,7 +117,9 @@ export async function classifyViaDetector(
     "Content-Type": "application/json",
   };
   if (cfg.apiKey) headers["Authorization"] = "Bearer " + cfg.apiKey;
-  const resp = await fetch(cfg.url, {
+  // 与 llm-chat.ts 同理：桌面版把「/sensenova」相对路径改写成本机转发服务绝对地址
+  const url = await resolveDesktopBaseUrl(cfg.url);
+  const resp = await fetch(url, {
     method: "POST",
     signal: AbortSignal.timeout(30_000), // 防挂起
     headers,

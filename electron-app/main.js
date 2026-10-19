@@ -66,7 +66,10 @@ function startProxy() {
         if (port > 18974) return resolve(null);
         tryListen();
       });
-      server.listen(port, "127.0.0.1", () => resolve(port));
+      server.listen(port, "127.0.0.1", () => {
+        PROXY_PORT = port;
+        resolve(port);
+      });
     };
     tryListen();
   });
@@ -77,6 +80,10 @@ const pplMirrorRef = { value: null };
 const path = require("path");
 const fs = require("fs");
 
+/** 本机转发服务最终监听的端口（被占会自动 +1）。渲染层经 preload 查它，
+ *  才能把「/sensenova/v1」这种相对路径拼成绝对地址——见 src/api/desktop-proxy.ts。 */
+let PROXY_PORT = null;
+
 // 单实例锁：防止双击图标开多个窗口（改用已有实例聚焦）
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -84,6 +91,7 @@ if (!gotLock) {
 } else {
   registerSecureStore();
   registerPresetKeys();
+  registerProxyPort();
   registerPplIpc(ipcMain, pplMirrorRef);
   createWindowWhenReady();
 
@@ -180,6 +188,13 @@ function registerPresetKeys() {
       return ""; // 公开包形态：没有文件 → 空串 → 按钮照旧置灰
     }
   });
+}
+
+/* ----------------------------- 转发服务端口查询 ----------------------------- */
+// 渲染层要把「/sensenova/v1」改写成绝对地址，必须先知道端口（被占会自动 +1）。
+// 没有这个桥时，desktop-proxy.ts 原样返回相对路径，dev 的 vite proxy 照旧接管。
+function registerProxyPort() {
+  ipcMain.handle("proxy-port", () => PROXY_PORT);
 }
 
 /* ----------------------------- 窗口创建 ----------------------------- */

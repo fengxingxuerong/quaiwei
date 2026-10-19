@@ -3,6 +3,7 @@
  */
 
 import { ApiConfig, effectiveKeys } from "./llm-config";
+import { resolveDesktopBaseUrl } from "./desktop-proxy";
 
 /* ----------------------------- 底层调用 ----------------------------- */
 
@@ -45,7 +46,10 @@ export async function chat(
    *  必须允许越过时限跑完（否则"未核查的稿"会被静默交付）。 */
   overBudget?: () => boolean,
 ): Promise<{ content: string; reasoning: string }> {
-  const url = cfg.baseUrl.replace(/\/+$/, "") + "/chat/completions";
+  // 桌面版要把「/sensenova/v1」这种相对路径改写成本机转发服务的绝对地址
+  // （file:// 页取不到 file:// URL，且 CSP 原先只放行 https——见 desktop-proxy.ts）。
+  // Web/dev 下没有 window.proxy，resolveDesktopBaseUrl 原样返回，行为不变。
+  const url = (await resolveDesktopBaseUrl(cfg.baseUrl)).replace(/\/+$/, "") + "/chat/completions";
   // Key 池：429/401/403 先换下一个 Key 立即重试（Key 轮换），池耗尽或网络瞬断
   // 再走指数退避（深度模式一轮发多次请求，网关限流常见）
   const keys = effectiveKeys(cfg);

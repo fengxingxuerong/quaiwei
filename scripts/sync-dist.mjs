@@ -44,12 +44,20 @@ cpSync(dist, electron, { recursive: true, force: true });
 console.log("✅ dist/ → electron-app/ 同步完成");
 
 // 注入 CSP meta（如果新构建的 index.html 没有 CSP）
+// ⚠️ v0.9.58：connect-src 必须放行 http://127.0.0.1:* / http://localhost:*。
+//   桌面版唯一的内置 LLM 通道是主进程起的本机转发服务（main.js startProxy，
+//   http://127.0.0.1:18964，端口被占自动 +1 到 18974）。原先只有 https:，
+//   整条 SenseNova 常驻通道被 CSP 毙掉（CDP Network.loadingFailed
+//   .blockedReason === "csp"），表现为桌面端 LLM 一律 TypeError: Failed to fetch。
+//   另一半改写逻辑在 src/api/desktop-proxy.ts（file:// 页取不到 file:// URL）。
+//   ⚠️ dev/Web 版用的是根 index.html（无 CSP），所以这个坑只在 Electron 包里现形。
+//   scripts/electron-csp-guard.test.ts 锁着这段字符串，别在这里删放行项。
 const htmlPath = join(electron, "index.html");
 let html = readFileSync(htmlPath, "utf8");
 if (!html.includes("Content-Security-Policy")) {
   html = html.replace(
     '<meta name="viewport"',
-    `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src https:; media-src 'self' data:;" />\n    <meta name="viewport"`,
+    `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src https: http://127.0.0.1:* http://localhost:*; media-src 'self' data:;" />\n    <meta name="viewport"`,
   );
   writeFileSync(htmlPath, html, "utf8");
   console.log("✅ CSP meta 已注入 electron-app/index.html");

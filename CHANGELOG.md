@@ -2,6 +2,63 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.58 更新（修复桌面版 LLM 通道被 CSP 与 file:// 双层拦死，2026-10-20）
+
+起因是**用户反馈「桌面端 API 用不了」**。用 CDP 实测打包产物，定位到两个**互相独立、
+且都只在 Electron 包里现形**的缺陷——dev 与 Web 版用的是根 `index.html`（无 CSP），
+所以这条链路一直是绿的，从来没被测到过。
+
+### 缺陷一：CSP `connect-src https:` 把本机转发服务毙了
+
+`scripts/sync-dist.mjs` 在 build 时给 `electron-app/index.html` 注入的 CSP 只放行 `https:`，
+而桌面版**唯一的内置 LLM 通道**是主进程起的本机转发服务 `http://127.0.0.1:18964`
+（端口被占自动 +1 到 18974）。`http:` 不在白名单 ⇒ 请求根本出不了渲染进程。
+
+CDP 证据（`Network.loadingFailed.blockedReason`）：
+
+```
+REQ   http://127.0.0.1:18964/favicon.ico   type=Image
+FAIL  blockedReason=csp
+```
+
+**修法**：`connect-src https: http://127.0.0.1:* http://localhost:*`。
+补丁后复测：渲染进程 `fetch('http://127.0.0.1:18964/v1/chat/completions')`（真 Key）
+→ **200**，`content="正常"`。
+
+### 缺陷二：`/sensenova` 相对路径在 file:// 页是条死路
+
+`SENSENOVA_PRESET.baseUrl`（以及说明书教用户填的值）是**相对路径** `/sensenova/v1`。
+`file://` 页面把它解析成 `file:///sensenova/v1/...`，而 **Chromium 禁止 file:// 页
+fetch file:// URL**——对照组：`fetch('QuAiWei-start.bat')`（同目录普通文件）同样 throw。
+⇒ `main.js` 里对 `file:///sensenova/*` 的 `webRequest` 重写是**死代码**，
+请求永远到不了网络栈，CDP 连 `requestWillBeSent` 都看不到。给 CSP 加 `file:` 也没用。
+
+**修法**：主进程把 `listen` 成功的端口记下来，经 preload 新桥 `window.proxy.port()`
+暴露给渲染层；`src/api/desktop-proxy.ts` 在发请求前把 `/sensenova[/v1]` 改写成
+`http://127.0.0.1:<port>/v1`。dev 没有这个桥、Web 版没有 `window.proxy` ⇒ 原样返回，
+vite proxy 与自备反代行为不变。
+
+### 影响面
+
+| 用户形态 | 修复前 | 修复后 |
+| --- | --- | --- |
+| 走内置 SenseNova 常驻通道 | ❌ 必然 `Failed to fetch` | ✅ |
+| 自定义 https 网关（deepseek / moonshot / bigmodel） | ✅ 本来就能用 | ✅ 不变 |
+| dev / Web 版 | ✅ | ✅ 不变 |
+
+（实测各家网关从桌面渲染进程的可达性：deepseek / moonshot / bigmodel / sensenova /
+tokenrhythm 均通；`api.openai.com` 21.4s 后失败，是网络层问题，与本次修复无关。）
+
+### 测试
+
+- 新增 `src/api/desktop-proxy.test.ts`（12 条）：相对路径判定、端口桥三态、
+  改写结果，以及 `chat()` 端到端发出的 URL。
+- 新增 `scripts/electron-csp-guard.test.ts`（8 条）：锁 sync-dist.mjs 的 CSP 注入模板、
+  main.js/preload.js 的端口接线、渲染层改写逻辑。
+- `scripts/electron-shell-scripts.test.ts` 的 preload 暴露面守卫同步加 `proxy`。
+- 六重变异检验全部被抓（CSP 退回 `https:`、漏调用 `registerProxyPort()`、
+  不记 `PROXY_PORT`、preload 改名、`resolveDesktopBaseUrl` 原样返回、`chat()` 不调用改写）。
+
 ## v0.9.57 更新（桌面端 SenseNova 转发层路径前缀修正：常驻通道从必然 404 到可用，2026-10-19）
 
 起因是**用户在自己机器上跑桌面端、要求实测 API 功能**。实测发现 API 侧一切正常

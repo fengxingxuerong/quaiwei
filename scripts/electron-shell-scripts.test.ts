@@ -242,12 +242,15 @@ describe("electron 安全基线", () => {
     expect(preload).not.toMatch(/exposeInMainWorld\(\s*["']process["']/);
   });
 
-  it("preload 的暴露面就是这三个 namespace（改名会静默打断渲染层）", () => {
+  it("preload 的暴露面就是这四个 namespace（改名会静默打断渲染层）", () => {
     const exposed = [...preload.matchAll(/exposeInMainWorld\(\s*["']([^"']+)["']/g)]
       .map((m) => m[1])
       .sort();
     // 期望值是独立常量，不从 preload 自己反查——否则删掉一个暴露面测试也跟着"通过"
-    expect(exposed).toEqual(["ppl", "preset", "secureStore"]);
+    // v0.9.58 新增 proxy：本机 LLM 转发服务的端口查询。没有它，渲染层无法把
+    // 「/sensenova/v1」相对路径改写成本机绝对地址（file:// 页取不到 file:// URL），
+    // 桌面版整条 SenseNova 常驻通道必挂。只暴露一个取值函数，不泄漏 ipcRenderer。
+    expect(exposed).toEqual(["ppl", "preset", "proxy", "secureStore"]);
   });
 
   it("preload 调用的每个 invoke 通道，主进程都必须有 handler", () => {
