@@ -1,7 +1,7 @@
 /**
  * prune-dist.cjs —— Electron 打包产物裁剪（Windows x64）
  *
- * 背景：electron-packager 会把整个 node_modules 拷进 resources/app，
+ * 背景：@electron/packager（原 electron-packager）会把整个 node_modules 拷进 resources/app，
  * 其中包括 runtime 根本不会加载的东西：
  *   · onnxruntime-web  —— 130MB，浏览器版 ORT。主进程走 onnxruntime-node（已实测：
  *                         import("@huggingface/transformers") 后 require.cache 里没有它）

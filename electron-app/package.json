@@ -7,14 +7,14 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-packager . QuAiWei --platform=win32 --arch=x64 --out=../electron-dist --overwrite",
+    "dist": "electron-packager . QuAiWei --platform=win32 --arch=x64 --out=../electron-dist --overwrite --no-asar",
     "repack": "node rebuild-app.cjs && node prune-dist.cjs && node verify-pruned.cjs",
     "prune": "node prune-dist.cjs",
     "verify": "node verify-pruned.cjs"
   },
   "devDependencies": {
-    "electron": "^43.2.0",
-    "electron-packager": "^17.1.2"
+    "@electron/packager": "^20.3.0",
+    "electron": "^43.2.0"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0"

@@ -1,14 +1,19 @@
 /**
- * rebuild-app.cjs —— 绕过 electron-packager 的 app 内容重建
+ * rebuild-app.cjs —— 绕过 @electron/packager（原 electron-packager）的 app 内容重建
  *
- * 为什么需要它：electron-packager 在本机打包时卡死在拷贝阶段
+ * 为什么需要它：@electron/packager（v17 时代为 electron-packager）在本机打包时曾卡死在拷贝阶段
  * （12:34 建好空的 resources/app 后 18 分钟零进展，非符号链接、非 pnpm 结构问题，
  *   判定为 Windows 大目录拷贝 + 实时防护扫描的开销）。而它要复制的 Electron 运行时
  *   与现有 electron-dist 里的**完全一致**（Chrome/150.0.7871.224，exe 与 icudtl.dat 字节数相同），
  *   所以没必要每次重拷 216MB 运行时——只重建 resources/app 即可。
  *
+ * （2026-10-19 复核：迁 @electron/packager 20 后做过全流程冒烟——此前两次"长时间无进展"
+ *   主因其实是 **Electron zip 下载**：本机缓存为空时 GitHub 直连 5~9 分钟零产出，
+ *   换 ELECTRON_MIRROR 镜像后 1 分钟内完成「下载→解压→拷贝→产出」。拷贝阶段未复现卡死；
+ *   repack 仍保留为日常路径——底座只在升级 Electron 时才需重建，没必要每次重拷。）
+ *
  * 做法：用 `npm ls --omit=dev --parseable --all` 取真实生产依赖树（自动排除
- * electron / electron-packager 等 devDeps，避免把 348MB 的 electron 拷进去），
+ * electron / @electron/packager 等 devDeps，避免把 348MB 的 electron 拷进去），
  * 再补上 app 顶层文件。onnxruntime-web 直接跳过（已实测主进程不加载它）。
  *
  * 用法：node rebuild-app.cjs [--dist <目录>]
@@ -63,12 +68,12 @@ const mb = (n) => (n / 1024 / 1024).toFixed(1) + " MB";
 
 /* 0. 前置检查 */
 if (!fs.existsSync(DIST)) {
-  console.error(`✗ 找不到 ${DIST}\n  需要先有一次成功的 electron-packager 产物作为运行时底座。`);
+  console.error(`✗ 找不到 ${DIST}\n  需要先有一次成功的打包产物（npm run dist，@electron/packager）作为运行时底座。`);
   process.exit(1);
 }
 for (const f of ["QuAiWei.exe", "icudtl.dat", "resources.pak"]) {
   if (!fs.existsSync(path.join(DIST, f))) {
-    console.error(`✗ 运行时文件缺失：${f} —— electron-dist 不完整，需重新跑 electron-packager。`);
+    console.error(`✗ 运行时文件缺失：${f} —— electron-dist 不完整，需重新跑 npm run dist（@electron/packager）。`);
     process.exit(1);
   }
 }
@@ -160,7 +165,7 @@ for (const entry of APP_ENTRIES) {
 console.log(`    app 顶层文件已复制：${APP_ENTRIES.join(" / ")}`);
 
 /* 2b. 随包《使用说明.txt》——放交付目录根，不进 app 内部。
- * 为什么 repack 要管它：这一层此前只有 electron-packager 会写，而 repack 才是日常重建路径，
+ * 为什么 repack 要管它：这一层此前只有打包器（electron-packager 时代）会写，而 repack 才是日常重建路径，
  * 结果产物根目录那份文档一直停在 v0.8.2、里面还写着"内置 3 Key 轮换"（桌面版从 v0.8.6 起
  * 根本不内置 Key）。用户真正读的是根目录这份，不是 resources/app 里那份。
  * verify-pruned.cjs 会逐字节比对它，落后即不给发布。 */
@@ -175,7 +180,7 @@ for (const doc of ["使用说明.txt"]) {
 }
 
 /* 3. 补齐运行时缺失文件
- * electron-packager 的 --overwrite 会先清空目标目录再重建；它中途卡死时，
+ * @electron/packager 的 --overwrite 会先清空目标目录再重建；它中途卡死时，
  * 运行时文件可能已被删走（实测 locales/ 就是这样丢的）。
  * 从本机 electron dist 补齐，locales 只留 zh-CN / en-US（其余 46MB 无谓）。 */
 console.log("\n[3] 运行时文件补齐");

@@ -246,7 +246,7 @@ ai-humanizer - --explain < 稿子.txt          # 附「为什么这么改」清�
   SenseNova 这类预检 404 的网关需要自备反向代理（把 `/v1` 转发到 `https://token.sensenova.cn/v1`，
   然后 Base URL 填你的代理地址）；
 - **Electron 桌面版**：`electron-app/` 已同步最新 Web 构建（含深度模式）。
-  打包：`cd electron-app && npm install && npx electron-packager . QuAiWei --platform=win32 --arch=x64 --out=../electron-dist`。
+  打包：`cd electron-app && npm install && npm run dist`（@electron/packager，见下方「构建桌面版」）。
   注意：桌面版里 LLM 直连同样受 CORS 约束，SenseNova 用户请填 CORS 放行的服务商或本地代理。
 
 ---
@@ -277,9 +277,17 @@ npm run dist
 npm run repack           # = rebuild-app → prune-dist → verify-pruned
 ```
 
-**为什么日常要走 `repack`**：`electron-packager` 会把整个 `node_modules` 拷进 `resources/app`，
-在本机实测长时间无进展（Windows 大目录拷贝叠加实时防护扫描）。而运行时底座只在升级 Electron 时
-才需重建 —— `repack` 复用底座、只拷真实生产依赖（`npm ls --omit=dev`），单次约 60 秒。
+**为什么日常要走 `repack`**：`@electron/packager`（原 `electron-packager`）会把整个 `node_modules`
+拷进 `resources/app`，在本机实测长时间无进展（Windows 大目录拷贝叠加实时防护扫描）。而运行时底座
+只在升级 Electron 时才需重建 —— `repack` 复用底座、只拷真实生产依赖（`npm ls --omit=dev`），单次约 60 秒。
+
+**打包器两个坑（2026-10-19 迁移 @electron/packager 20 时实测钉住）**：
+
+- **asar 默认开启**：v18 起 `asar` 默认 `true`，产出 `resources/app.asar`——本仓库 repack 链
+  依赖平铺的 `resources/app/`（rebuild-app 整目录重建 / verify-pruned 逐文件断言），故 `dist`
+  脚本已显式 `--no-asar`；手工调用打包器时也要带上。
+- **首次下载**：默认从 GitHub 下载约 139MB 的 Electron zip，国内直连可能长时间零进展
+  （本机实测 5~9 分钟无产出）。用镜像：`ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm run dist`。
 
 **体积**：`repack` 自动裁掉无用的 `onnxruntime-web`（约 128MB，仅浏览器版 ORT，主进程实测不加载）、
 非 win32 平台二进制（约 87MB）与冗余语言包（约 46MB），参考体积 **485MB**（未裁剪约 752MB）。

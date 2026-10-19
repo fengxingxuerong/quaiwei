@@ -2,6 +2,29 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## 未发布 · 工程卫生（十）：electron-packager → @electron/packager 迁移（2026-10-19）
+
+旧包 `electron-packager@17.1.2` 在 npm 已标废弃（"Please use @electron/packager moving
+forward. There is no API change, just a package name change"），迁到 `@electron/packager@20.3.0`。
+bin 名未变（仍是 `electron-packager`），`dist` 脚本主体零改动；但冒烟实测挖出两个必须处理
+的差异：
+
+- **`--no-asar`（必须钉）**：v18 起 asar 默认开启，实测产出 `resources/app.asar` 单文件——
+  而 repack 链依赖平铺 `resources/app/`（rebuild-app 整目录重建、prune-dist / verify-pruned
+  逐文件断言），不钉住则下次底座重建后整条链失效。`dist` 脚本已显式 `--no-asar` 保形，
+  README 同步警示（手工调用也要带）。
+- **下载慢是主因（判断修正）**：本机 electron 缓存为空时，GitHub 直连下载 zip 5~9 分钟零产出
+  （两次冒烟均如此，且无任何提示）；换 `ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`
+  后 1 分钟内完成「下载→解压→拷贝→产出」——**拷贝阶段并未复现卡死**。此前 2026-09-28 那次
+  "卡死在拷贝阶段"的归因据此修正（rebuild-app.cjs 头部补了 2026-10-19 复核注记）。
+- 冒烟校验：产出含 `QuAiWei.exe` / `icudtl.dat` / `resources.pak` / `locales/zh-CN.pak` +
+  平铺 `resources/app`（main.js / preload.js / index.html / node_modules…）；全程 `--out`
+  到临时目录，未触碰现有 electron-dist 底座。
+- engines：@electron/packager 20 要求 Node ≥ 22.12（本机 24.18 满足；CI 不装 electron-app，
+  不受影响）。
+- 门禁：2099 用例全绿（本次无 src 改动）；lint / tsc / check:release / build / repack +
+  verify-pruned 全过。
+
 ## 未发布 · 竞品吸收（四）：回译洗稿（深度模式收尾轮）（2026-10-19）
 
 对标来源：lynote-ai 的"中→外→中回译"——绕一圈外语再回来，句式与用词换了一茬，
