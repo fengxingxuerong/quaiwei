@@ -3,7 +3,7 @@ name: qu-ai-wei
 description: 去 AI 味（简体中文）——调用本仓库自带的本地离线引擎（零成本、不联网）或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后 AI 味评分与逐条痕迹报告。当用户要求「降 AI 率 / 去 AI 味 / 去 AIGC 痕迹 / 让这段更像人写的 / 自检朱雀类检测」时使用。
 license: MIT
 metadata:
-  version: 0.9.58
+  version: 0.9.59
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 
@@ -25,7 +25,7 @@ metadata:
 
 ```bash
 # 本地引擎：零成本、离线、不联网（默认推荐）
-npx tsx scripts/humanize-cli.ts ./in --out ./out --intensity 0.9 --zhuque
+npx tsx scripts/humanize-cli.ts ./in --out ./out
 
 # 想更强：走 LLM 深度闭环（Key 走环境变量，别写进命令行历史）
 QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
@@ -41,9 +41,9 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | 参数 | 取值 | 说明 |
 |---|---|---|
 | `--out <dir>` | 目录 | 输出目录（不给则写到输入旁） |
-| `--intensity <0~1>` | 默认 0.9 | 去味强度滑块 |
+| `--intensity <0~1>` | 默认 0.6 | 去味强度滑块；要更强再显式给 0.9 |
 | `--zhuque` | 开关 | 朱雀增强（反指纹特征注入） |
-| `--style` | `casual` \| `plain` \| `academic` | 文风；**论文/公文必须给 `academic` 或 `plain`** |
+| `--style` | `plain` \| `casual` \| `academic` | 文风，默认 `plain`；**论文/公文必须给 `academic` 或 `plain`** |
 | `--seed <n>` | 默认 20260905 | 本地引擎种子，给定即可复现 |
 | `--suffix <s>` | 默认 `.humanized` | 输出文件后缀 |
 | `--out-format` | `follow` \| `txt` \| `docx` | 强制输出格式 |

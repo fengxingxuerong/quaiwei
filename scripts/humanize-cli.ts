@@ -13,7 +13,7 @@
  * 输出格式默认**跟随输入**（.docx 进 → .docx 出），`--out-format txt|docx` 可强制覆盖。
  *
  * 用法：
- *   npx tsx scripts/humanize-cli.ts <input-dir-or-file> [--out <dir>] [--intensity 0.9]
+ *   npx tsx scripts/humanize-cli.ts <input-dir-or-file> [--out <dir>] [--intensity 0.6]
  *       [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]
  *       [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]
  *       [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]
@@ -175,7 +175,7 @@ interface Args {
 }
 
 const USAGE =
-  "用法: ai-humanizer <input-dir-or-file> [--out <dir>] [--intensity 0.9]" +
+  "用法: ai-humanizer <input-dir-or-file> [--out <dir>] [--intensity 0.6]" +
   " [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]" +
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
@@ -195,9 +195,9 @@ function parseArgs(argv: string[]): Args {
   const args: Args = {
     input: "",
     out: "",
-    intensity: 0.9,
+    intensity: 0.6,
     zhuque: false,
-    style: "casual",
+    style: "plain",
     suffix: ".humanized",
     seed: 20260905,
     api: false,
@@ -290,13 +290,13 @@ function parseArgs(argv: string[]): Args {
         args.out = a[++i] ?? "";
         break;
       case "--intensity":
-        args.intensity = Math.max(0, Math.min(1, num(a[++i], 0.9)));
+        args.intensity = Math.max(0, Math.min(1, num(a[++i], 0.6)));
         break;
       case "--zhuque":
         args.zhuque = true;
         break;
       case "--style":
-        args.style = (a[++i] as Args["style"]) || "casual";
+        args.style = (a[++i] as Args["style"]) || "plain";
         break;
       case "--suffix":
         args.suffix = a[++i] ?? ".humanized";

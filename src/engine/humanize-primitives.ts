@@ -431,9 +431,17 @@ export function fragmentFrontCanStand(front: string): boolean {
   // 于是这个纯名词短语被判成"有谓语"（实测：守卫加了却 119/119 一动不动）。
   if (NP_TAIL_RE.test(lastSeg) && !NP_PREDICATE_RE.test(lastSeg)) return false;
   if (QUANTIFIER_HEAD_RE.test(lastSeg) && !CLAUSE_PREDICATE_RE.test(lastSeg)) return false;
+  // v0.9.59：末段以「随着」开头 = 从句没等到主句，句号化必成悬空状语。
+  // 不能只查 front 的 `^随着`：插入语前缀（「说起来，随着…」）会把 ^ 遮住，
+  // 实测默认 0.6/plain seed 2/4 产出「说起来，随着人工智能技术的快速发展。」
+  if (/^随着/.test(lastSeg)) return false;
   // v0.9 长尾：末段为悬空状语/时间名词短语（「说到底，在后摩尔时代」切点在时代后）
-  // ——以介词/时间词开头且无任何谓语标记，句号化即无谓语残句
-  if (ADVERBIAL_HEAD_RE.test(lastSeg) && !CLAUSE_PREDICATE_RE.test(lastSeg)) return false;
+  // ——以介词/时间词开头且无任何谓语标记，句号化即无谓语残句。
+  // ⚠️ 这里必须用 NP_PREDICATE_RE，不能用 CLAUSE_PREDICATE_RE：后者是单字宽表，
+  //   「随着人工智能技术的快速发展」会被「智**能**」误判成有谓语。
+  //   还要先剥掉状语头再测——「随着」里的「着」会被体标记分支误当成谓语。
+  const adverbialBody = lastSeg.replace(ADVERBIAL_HEAD_RE, "");
+  if (ADVERBIAL_HEAD_RE.test(lastSeg) && !NP_PREDICATE_RE.test(adverbialBody)) return false;
   if (
     /^(?:前|后)?摩?尔?时代|^(?:古|新|旧|大)?时代$|时期$|阶段$|节点$/.test(lastSeg) &&
     !CLAUSE_PREDICATE_RE.test(lastSeg)

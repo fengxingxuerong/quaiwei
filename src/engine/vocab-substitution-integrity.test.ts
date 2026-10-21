@@ -377,6 +377,38 @@ describe("递进连词被改成限定（端到端，v0.9.24 实测缺陷）", ()
     expect(outs.some((o) => o.includes("不光"))).toBe(true);
   });
 
+  it("「而且」替身不得在句号后留下「外加」碎片", () => {
+    // 实测（默认 0.6 / plain）：
+    //   原文：…不仅极大地提升了工作效率，而且有效地降低了运营成本。
+    //   产出：…岂止明显提高了工作效率。外加有效地降低了运营成本。
+    // 「外加」只能接名词性成分，不能独立成句；而 burstiness 先断句、词表后替换，
+    // dropLeadingConnectives 已跑过，句首「外加」无人清理。直接从替身池移除。
+    expect(VOCAB["而且"]).not.toContain("外加");
+    const src = "综上所述，数字化办公不仅极大地提升了工作效率，而且有效地降低了运营成本。";
+    for (let seed = 0; seed < 20; seed++) {
+      const out = humanize(src, { intensity: 0.6, seed });
+      expect(out, `seed=${seed}：${out}`).not.toMatch(/[。！？]外加/);
+    }
+  });
+
+  it("v0.9.59：句首「而且」不得被削成「且」碎片", () => {
+    const src =
+      "值得注意的是，随着人工智能技术的快速发展，越来越多的企业开始将人工智能技术应用于生产流程，不仅极大地提升了工作效率，而且有效地降低了运营成本。";
+    for (let seed = 0; seed < 20; seed++) {
+      const out = humanize(src, { intensity: 0.6, seed });
+      expect(out, `seed=${seed}：${out}`).not.toMatch(/[。！？]且/);
+    }
+  });
+
+  it("v0.9.59：「随着…发展」不得在句号前悬空", () => {
+    const src =
+      "值得注意的是，随着人工智能技术的快速发展，越来越多的企业开始将人工智能技术应用于生产流程，不仅极大地提升了工作效率，而且有效地降低了运营成本。";
+    for (let seed = 0; seed < 20; seed++) {
+      const out = humanize(src, { intensity: 0.6, seed });
+      expect(out, `seed=${seed}：${out}`).not.toMatch(/随着[^，。！？]{1,30}发展。/);
+    }
+  });
+
   /**
    * 【已修复 v0.9.24】「不光仅」副词叠用——**守卫层**修的，不是删词条。
    *

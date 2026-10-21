@@ -20,9 +20,9 @@ export interface CalibEntry {
   note: string;
   /** 饱和下界 aiScore ≥ x → 预测 100%（显示饱和提示）；负数或 Infinity 代表不适用（斜率为负） */
   satX: number;
-  /** 过人线反推：官方朱雀 ≤40% 所需 aiScore；负数代表"天然已过（如纯人写无处理 H0=15% 直接过）" */
+  /** 40% 参考线反推：官方朱雀 ≤40% 所需 aiScore；负数代表截距本身低于 40%，仅作参考 */
   x40: number;
-  /** docs §3.7 过人线提示用的短名，如 "论说线 10.4" */
+  /** docs §3.7 40% 参考线提示用的短名，如 "论说参考线 10.4" */
   x40Tag: string;
   /** 若启用：显示人写警示横幅 */
   humanWarn?: boolean;
@@ -41,7 +41,7 @@ export const CALIB: Record<CalibTrack, CalibEntry> = {
     note: "v3 论说线 · n=5 · R²=0.98 · 最大残差 5.8pp · 适用：结构化/总分总/职场/学术作业；P3 结构拆解可额外再降官% 5~6pp",
     satX: 40.2,
     x40: 10.4,
-    x40Tag: "论说过人线 aiScore ≤ 10.4",
+    x40Tag: "论说参考线 aiScore ≈ 10.4（仅参考）",
     group: "体裁(v3)",
   },
   narrative: {
@@ -51,7 +51,7 @@ export const CALIB: Record<CalibTrack, CalibEntry> = {
     note: "v3 叙事线 · n=4 · R²=0.99 · 最大残差 3.7pp · 适用：故事/游记/散文/随笔",
     satX: 47.6,
     x40: 12.6,
-    x40Tag: "叙事过人线 aiScore ≤ 12.6（v2 基础上放宽 0.7）",
+    x40Tag: "叙事参考线 aiScore ≈ 12.6（仅参考）",
     group: "体裁(v3)",
   },
   dialogue: {
@@ -61,17 +61,17 @@ export const CALIB: Record<CalibTrack, CalibEntry> = {
     note: "v3 对话线 · n=3 · R²=0.999 · 最大残差 1.5pp · 2026-09-05 漂移重拟合：v0.8.5 词表使 D2/D3 的 aiScore 由 6/7 降至 0（官方%不变），旧线预测偏低 4~8pp；斜率 0.88≈论说的 0.44 倍",
     satX: 83.3,
     x40: 15.3,
-    x40Tag: "对话过人线 aiScore ≤ 15.3（旧线 20.5 已随漂移收紧）",
+    x40Tag: "对话参考线 aiScore ≈ 15.3（仅参考）",
     group: "体裁(v3)",
   },
   human: {
     label: "纯人写稿对照（无 AI）",
     a: -0.3,
     b: 18.0,
-    note: "v3 人写线 · n=4 · R²=0.77 · 斜率为负：越去味反而越像 AI！H0=15% 天然过线（docs §3.5.3）；本轮 H2 新检=18% 再次验证",
+    note: "v3 人写线 · n=4 · R²=0.77 · 斜率为负：去味可能让官方分升高；H0=15%（存档样本，非保证），H2 新检=18%",
     satX: Number.POSITIVE_INFINITY, // 斜率为负 → x 越大越安全，不存在饱和
     x40: -1, // 负值 → 代表无论如何都天然过 40% 线
-    x40Tag: "纯人写天然过人：H0官=15%",
+    x40Tag: "纯人写存档 H0 官=15%（仅参考）",
     humanWarn: true,
     group: "体裁(v3)",
   },
@@ -82,8 +82,8 @@ export const CALIB: Record<CalibTrack, CalibEntry> = {
     b: 57.441,
     note: "n=3 · R²=0.919 · 仅用于带桥接段（约100字口语过渡）的拼接送检加工件 · 截距偏倚≈+38% · 不可反推单篇阈值",
     satX: 90.4,
-    x40: (40 - 57.441) / 0.471, // 负值：副线即使 aiScore=0 预测也 > 40%，代表不可用于过人线推算
-    x40Tag: "副线不用于推算过人线",
+    x40: (40 - 57.441) / 0.471, // 负值：副线即使 aiScore=0 预测也 > 40%，不可用于阈值推算
+    x40Tag: "副线不用于阈值推算",
     advanced: true,
     group: "高级(副线)",
   },

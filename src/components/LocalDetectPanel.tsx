@@ -10,13 +10,13 @@ function LevelBadge({ label, rep }: { label: string; rep: DetectReport }) {
         {mark} {rep.levelText}
       </div>
       <div className="score-sub">
-        AI 概率 {rep.probability}% · 置信 {rep.confidence}%
+        启发式风险分 {rep.probability}% · 规则置信 {rep.confidence}%
       </div>
     </div>
   );
 }
 
-/** 本地 AI 检测（14 特征离线启发式）：原文与去味稿一起测，形成"降档"对照 */
+/** 本地启发式检测（14 特征离线规则）：原文与去味稿一起测，只作同篇相对对照 */
 export function LocalDetectPanel({
   detectIn,
   detectOut,
@@ -31,7 +31,7 @@ export function LocalDetectPanel({
   return (
     <div className="bench">
       <div className="bench-head">
-        本地 AI 检测（朱雀风格三档 · 离线启发式，非朱雀官方分）
+        本地启发式检测（朱雀风格三档 · 离线规则，非朱雀官方分）
         <button className="ghost sm" style={{ marginLeft: 10 }} onClick={onToggleFeatures}>
           {showFeatures ? "收起特征" : "看特征明细"}
         </button>
@@ -42,7 +42,7 @@ export function LocalDetectPanel({
         {detectOut && <LevelBadge label="去味稿" rep={detectOut} />}
         {detectIn && detectOut && (
           <div className="delta">
-            <div className="delta-label">降幅</div>
+            <div className="delta-label">风险分差</div>
             <div
               className="delta-value"
               style={{

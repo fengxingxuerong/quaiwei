@@ -39,7 +39,7 @@ describe("App 冒烟（默认空配置）", () => {
     expect((getByText("复制").closest("button") as HTMLButtonElement).disabled).toBe(true);
     expect((getByText("对比").closest("button") as HTMLButtonElement).disabled).toBe(true);
     expect((getByText("指纹体检").closest("button") as HTMLButtonElement).disabled).toBe(true);
-    expect((getByText("AI 检测").closest("button") as HTMLButtonElement).disabled).toBe(true);
+    expect((getByText("本地检测").closest("button") as HTMLButtonElement).disabled).toBe(true);
     expect(container.textContent).toContain("去味强度 60%");
   });
 
@@ -60,7 +60,7 @@ describe("App 冒烟（默认空配置）", () => {
     const input = container.querySelector("section.pane textarea") as HTMLTextAreaElement;
     expect(input.value.length).toBeGreaterThan(150);
     expect((getByText("指纹体检").closest("button") as HTMLButtonElement).disabled).toBe(false);
-    expect((getByText("AI 检测").closest("button") as HTMLButtonElement).disabled).toBe(false);
+    expect((getByText("本地检测").closest("button") as HTMLButtonElement).disabled).toBe(false);
     expect((getByText("朱雀检测").closest("button") as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -83,10 +83,10 @@ describe("App 冒烟（默认空配置）", () => {
     expect(container.textContent).toContain("官方口径");
   });
 
-  it("点「AI 检测」渲染本地检测面板", () => {
+  it("点「本地检测」渲染本地检测面板", () => {
     const { getByText, container } = renderPro();
     fireEvent.click(getByText("示例"));
-    fireEvent.click(getByText("AI 检测"));
+    fireEvent.click(getByText("本地检测"));
     expect(container.textContent).toContain("原文");
     expect(container.textContent).toContain("AI生成");
   });

@@ -102,10 +102,10 @@ function intensityWord(v: number): string {
  * 分档数值仍沿用引擎口径（12 / 27 / 45），只改说法，不改判据。
  */
 function scoreVerdict(score: number): string {
-  if (score <= 12) return "套话清得很干净，可以直接交";
-  if (score <= 27) return "剩下的多是正常书面词，基本可以交";
+  if (score <= 12) return "套话清得很干净；本地分低不等于能过检测";
+  if (score <= 27) return "剩下的多是正常书面词；仍需真实检测器复核";
   if (score <= 45) return "还有一批套话，可以把强度调高一档再跑一次";
-  return "AI 味偏重，建议提到「彻底」重跑";
+  return "套话偏多，建议提到「彻底」重跑";
 }
 
 /** 「示例」按钮载入的样例文本 */
@@ -774,7 +774,7 @@ export default function App({
               指纹体检
             </button>
             <button className="ghost" onClick={handleLocalDetect} disabled={!inputHasText}>
-              AI 检测
+              本地检测
             </button>
             <button
               className="ghost"
@@ -802,14 +802,19 @@ export default function App({
           <div className="result-score">
             {before && after ? (
               <>
-                <span className="result-label">AI 味</span>
+                <span
+                  className="result-label"
+                  title="本地规则命中分，只能比较同一篇稿子的前后变化，不能判断朱雀等检测器是否判为人写"
+                >
+                  套话指数
+                </span>
                 <b className="result-num">{before.score}</b>
                 <span className="result-arrow">→</span>
                 <b className="result-num ok">{after.score}</b>
                 <span className="result-hint">{scoreVerdict(after.score)}</span>
               </>
             ) : (
-              <span className="result-hint">已生成，可直接复制走</span>
+              <span className="result-hint">已生成，复制后请用真实检测器复核</span>
             )}
           </div>
           <div className="result-actions">

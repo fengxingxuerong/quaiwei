@@ -1,4 +1,4 @@
-# 趣AI味 · QuAiWei v0.9.58
+# 趣AI味 · QuAiWei v0.9.59
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
@@ -7,7 +7,7 @@
 定位：中文 AI 文本**去味预处理工具 + 送检前自检清单**——可接入朱雀（网页版半自动 / EdgeOne API 全自动）等真实检测器做闭环验证。
 
 **在线试玩**（无需安装，浏览器直接跑，✅ 已上线）：<https://fengxingxuerong.github.io/quaiwei/> ｜
-**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)——解压双击 `QuAiWei.exe` 即用 ｜
+**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（约 199MB zip / 解压 517MB；已发布桌面包可能落后于仓库版本，以 release 页为准）——解压双击 `QuAiWei.exe` 即用 ｜
 [English](README_EN.md) ｜ [贡献指南](CONTRIBUTING.md) ｜ [Discussions](https://github.com/fengxingxuerong/quaiwei/discussions)
 
 > ⚠️ 诚实声明：本项目**不承诺"通过朱雀检测"**——aiScore → 朱雀官方分的换算**不可靠**：
@@ -137,11 +137,11 @@ npm link                 # 可选：全局注册 ai-humanizer 命令
 ai-humanizer --help
 ```
 
-目录下所有 `.txt` 批量去味，输出到指定目录：
+目录下所有 `.txt` 批量去味，输出到指定目录（默认强度 0.6、`plain` 书面风；要更激进再显式加 `--intensity 0.9 --zhuque`）：
 
 ```bash
 # 本地引擎（零成本、离线）
-npx tsx scripts/humanize-cli.ts ./docs-txt --out ./out --intensity 0.9 --zhuque
+npx tsx scripts/humanize-cli.ts ./docs-txt --out ./out
 
 # LLM 深度模式（与界面同一条闭环；Key 走环境变量，别写进命令行历史）
 QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --api \
@@ -276,6 +276,9 @@ npm run dist
 # ② 日常重建：只重建 resources/app，复用已校验的运行时底座（推荐，实测约 60 秒）
 npm run repack           # = rebuild-app → prune-dist → verify-pruned
 ```
+
+> CI：在 GitHub Actions 手动运行 `Windows build` 可产出 `QuAiWei-win32-x64-v<版本>.zip`
+> 与 SHA256 artifact；该工作流只构建、不自动创建 Release。
 
 **为什么日常要走 `repack`**：`@electron/packager`（原 `electron-packager`）会把整个 `node_modules`
 拷进 `resources/app`，在本机实测长时间无进展（Windows 大目录拷贝叠加实时防护扫描）。而运行时底座
@@ -528,17 +531,17 @@ npx tsx scripts/regression-12samples.ts --rebaseline "<为什么这批数字是�
 > 最后一次真实送检是 2026-09-13，v0.9.9 之后没有新的官方数据；重拟合需要新的官方送检点，
 > 不要靠重生成基线把当前输出当真值。新送检点请用 `npm run test:evidence` 的 `seal` 留凭证。
 
-| 体裁线 | 公式（官% = a·aiScore + b） | R² | 过人线（官≤40%） |
+| 体裁线 | 公式（官% = a·aiScore + b） | R² | 40% 参考线（仅参考，非过检承诺） |
 |---|---|---|---|
 | 论说/公告/学术 | `2.014x + 19.06` | 0.98 | aiScore ≤ 10.4 |
 | 叙事/散文/小说 | `1.716x + 18.33` | 0.99 | aiScore ≤ 12.6 |
 | 对话/剧本/访谈 | `0.8827x + 26.5` | 0.999 | aiScore ≤ 15.3 |
-| 纯人写稿对照 | `−0.3x + 18.0` | 0.77 | 天然过（H0 官=15%） |
+| 纯人写稿对照 | `−0.3x + 18.0` | 0.77 | 截距低于 40%（H0 存档官=15%） |
 
 关键发现与警示：
 
-- **人写稿别跑去味**：纯人写线斜率为负——真人原稿越去味，官方朱雀分反而越高（H0=15% → H1/H2=17~19%），确认人写原稿直接提交即可；
-- **对话体裁最宽容**：对话线斜率仅 0.88，本地 aiScore 20 的对话文本实际官分已稳过 40% 线；
+- **人写稿别跑去味**：纯人写线斜率为负——存档样本里去味后官方分反而略升（H0=15% → H1/H2=17~19%）；确认是人写原稿可考虑直接提交，但这只是 4 个存档点的观察，不是保证；
+- **对话体裁的存档点偏低**：对话线斜率仅 0.88，但只有 3 个点，不能据此承诺任何一篇对话稿都能低于 40%；
 - **论说线已过时（2026-09-08 漂移体检）**：v0.8.x 词表改动导致论说 3 个归档点 aiScore 全部漂移（原文 33→92），论说线刻度不再可信，v4 送检（论说中段 x≈16 / 原文 x≈92）待回传后重拟合；
 - **本地引擎的边界**：本地引擎"换词不换骨"，不打散段落结构与句序；结构级去味需走 LLM 深度模式。
 
@@ -702,5 +705,5 @@ MIT（见 LICENSE）。
 
 ## 更新日志
 
-完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.58**（以 `package.json` 的 `version` 为准）。
+完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.59**（以 `package.json` 的 `version` 为准）。
 

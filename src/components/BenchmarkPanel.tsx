@@ -6,7 +6,7 @@
  * v3 更新（2026-08-26）：
  *  · 样本数从 v2 的 12 点 → v3 18 点（送官网新检 6 点 + v2 归档 12 点）
  *  · 各体裁 R² 普遍提升：论说 0.962→0.98（n=3→5）/ 叙事 0.998→0.99 / 对话 0.998→1.00（n=3→5）/ 人写 0.75→0.77
- *  · 论说过人线仍为 aiScore ≤ 10.4；叙事放宽至 12.6；对话保持 ≈ 20.5；人写负斜率天然过人
+ *  · 论说参考线仍为 aiScore ≈ 10.4；叙事 ≈ 12.6；对话 ≈ 15.3；人写线斜率为负
  */
 import { useState, useMemo, useEffect } from "react";
 import { DEEP_TARGET_SCORE, type ApiConfig } from "../api/llm";
@@ -30,36 +30,29 @@ function predictAdvice(
   const saturated =
     !cur.humanWarn && typeof score === "number" && cur.satX < 1e9 && score >= cur.satX;
   const pct = Math.max(0, Math.min(100, predPct));
-  /** v3 2026-08-26：离过人线（≤40%）还差 X pp / 已经领先 X pp
-   *  —— 正数 = 还差，越大约危险；0 或负数 = 已过（绝对值 = 缓冲安全边际）
-   */
-  const gapToPass = pct - 40;
 
-  // 进度条：从 0%(深绿) → 40%(过人线白红分界) → 100%(深红)
-  // 建议行动卡
+  // 40% 只是存档公式上的参考刻度，不是官方过检线，更不是交付承诺。
+  const referenceGap = pct - 40;
+
+  // 建议行动卡：只给下一步，不承诺结果
   let recAction: string;
   if (cur.humanWarn) {
     recAction =
-      "纯人写稿 → 关闭朱雀增强、强度拉到 ≤0.48，仅做轻微 shuffle，禁止注入错别字/自问自答/第一人称锚";
+      "若确认是纯人写原稿：不建议再跑本地去味；如确需处理，强度 ≤0.48，只做轻微调整并真实送检复核。";
   } else if (pct <= 20) {
-    recAction =
-      "已稳过。如果还想更稳：跑一轮 intensity 0.9 + 朱雀增强，再补 5pp 边际；或切换叙事/对话体裁公式放宽阈值。";
+    recAction = "本地估计偏低。建议先用朱雀网页/API 实测一次再决定是否继续；不要仅凭这个预测交稿。";
   } else if (pct <= 40) {
-    recAction =
-      "已过但离过线近。建议：① 强度调到 0.9+ 开朱雀增强（补 -7~-12pp）② 切换到叙事/对话体裁下拉看放宽后的值 ③ 再跑 1 轮深度闭环；";
+    recAction = "本地估计中等偏低。建议真实送检一次；若要继续，可小幅提高强度并复查。";
   } else if (pct <= 60) {
-    recAction =
-      "压线 5pp 以上！核心瓶颈是结构（三部曲/编号列举/段首雷同）：① 开朱雀增强 + 强度 0.95 ② 若是论说文，P3 会自动注入第一人称经验锚 + 倒序拆解 ③ 换叙事视角改写";
+    recAction = "本地估计中等。可优先处理结构（总分总/编号列举/段首雷同），再用真实检测器复核。";
   } else if (pct <= 80) {
-    recAction =
-      '高危！词级已基本干净，请重点处理结构：① 把"总分总"的开头和结尾打散 ② "首先/其次/最后"三部曲改插叙颠倒 ③ "1./2./3."编号改反问/括号/补充';
+    recAction = "本地估计偏高。可打散总分总、把“首先/其次/最后”改插叙、编号改散写，再送检。";
   } else {
-    recAction =
-      "接近饱和！先用 humanize-vocab 清套话连接词（套话命中 -8 个以上 ≈ -48pp），再走结构级拆解最后再跑 LLM 深度重写。";
+    recAction = "本地估计很高。先清套话连接词，再做结构级改写；最终以官方检测为准。";
   }
 
   let icon = "🔴";
-  let tip = "严重 AI 味（几乎必中官方检测）";
+  let tip = "本地估计很高（非官方结论）";
   let tint = "rgba(255,93,108,0.12)";
   let border = "rgba(255,93,108,0.35)";
   let fg = "#ff5d6c";
@@ -67,35 +60,29 @@ function predictAdvice(
   if (saturated || pct >= 98) {
     icon = "🔴";
     tip = saturated
-      ? `预测已饱和到 98~99% 区（aiScore≥${cur.satX.toFixed(0)} 进入饱和），官方基本必判 AI`
-      : "严重 AI 味（几乎必中官方检测）";
+      ? `本地估计已饱和（aiScore≥${cur.satX.toFixed(0)}）；官方分无法由本地分可靠推算`
+      : "本地估计很高（非官方结论）";
   } else if (pct <= 20) {
-    icon = "✅";
-    tip = `过人区间（${cur.x40 < 0 ? cur.x40Tag : "已过 " + cur.x40Tag}）`;
-    tint = "rgba(34,197,94,0.14)";
-    border = "rgba(34,197,94,0.4)";
-    fg = "#22c55e";
+    icon = "🔵";
+    tip = `本地估计偏低（${cur.x40Tag}）；必须真实送检确认`;
+    tint = "rgba(96,165,250,0.12)";
+    border = "rgba(96,165,250,0.35)";
+    fg = "#60a5fa";
   } else if (pct <= 40) {
     icon = "🟢";
-    tip =
-      cur.x40 >= 0
-        ? `已过 ${cur.x40Tag}；如需更稳，再跑一轮 0.9 朱雀档`
-        : `低风险（${cur.x40Tag} 天然过线）`;
+    tip = `本地估计中等偏低（${cur.x40Tag}）；必须真实送检确认`;
     tint = "rgba(61,220,151,0.12)";
     border = "rgba(61,220,151,0.35)";
     fg = "#3ddc97";
   } else if (pct <= 60) {
     icon = "🟡";
-    tip =
-      cur.x40 >= 0
-        ? `中风险：建议压到 ${cur.x40Tag}（强度≥0.9+朱雀增强）`
-        : "中风险（对话/叙事体裁放宽阈值）";
+    tip = `本地估计中等（${cur.x40Tag}）；最终以真实检测为准`;
     tint = "rgba(250,204,21,0.12)";
     border = "rgba(250,204,21,0.35)";
     fg = "#facc15";
   } else if (pct <= 80) {
     icon = "🟠";
-    tip = "高风险；加深 1~2 档；必要时改写成叙事/对话体裁（阈值更宽松）";
+    tip = "本地估计偏高；建议先处理结构再送检";
     tint = "rgba(249,115,22,0.12)";
     border = "rgba(249,115,22,0.35)";
     fg = "#fb923c";
@@ -103,32 +90,32 @@ function predictAdvice(
 
   // 副线/人写线：顶部打横幅提示
   const banner: string | null = cur.humanWarn
-    ? "🚩 若确认是 100% 纯人写原稿：请不要跑去味！H0 实测不去味=15%，跑去味反而升到 17~19%（越跑越像 AI）。docs §3.5.3"
+    ? "🚩 若确认是 100% 纯人写原稿：不建议再去味。存档样本里 H0 未处理=15%，去味后升到 17~19%，但这不是保证，最终请真实送检。"
     : cur.advanced
       ? "⚠️ 副线仅存档" + cur.label + "的拼接送检流程，显示的预测值不能用于交付件阈值判断"
       : null;
 
-  // 2026-08-26 v3："还差 X pp / 领先 Y pp"
-  const gapAbs = Math.abs(gapToPass).toFixed(1);
+  // 2026-08-26 v3：高于/低于 40% 参考线的描述（仅参考，不表示已过检）
+  const gapAbs = Math.abs(referenceGap).toFixed(1);
   const badge = {
     text:
-      gapToPass > 0
-        ? `⚠️ 离过人线还差 ${gapAbs} pp`
-        : gapToPass === 0
-          ? "🤏 刚好过人线"
-          : `✅ 领先过人线 ${gapAbs} pp 边际`,
+      referenceGap > 0
+        ? `⚠️ 高于 40% 参考线 ${gapAbs} pp`
+        : referenceGap === 0
+          ? "在 40% 参考线上（仅参考）"
+          : `低于 40% 参考线 ${gapAbs} pp（仅参考）`,
     color:
-      gapToPass <= 0
-        ? "#22c55e"
-        : gapToPass <= 5
+      referenceGap <= 0
+        ? "#8a98b5"
+        : referenceGap <= 5
           ? "#facc15"
-          : gapToPass <= 20
+          : referenceGap <= 20
             ? "#fb923c"
             : "#ff5d6c",
   };
 
-  // 进度条刻度：0 |-- 绿 --| 40(过人线白红分界) |-- 黄/橙/红 --| 100
-  const passRatio = 0.4; // 40%
+  // 进度条刻度：0 |-- 低 --| 40(参考线) |-- 高 --| 100
+  const passRatio = 0.4; // 40% 参考线，不是过检线
   const ratio = pct / 100;
   const progressBg: React.CSSProperties = {
     position: "relative",
@@ -172,7 +159,6 @@ function predictAdvice(
     banner,
     saturated,
     pct,
-    gapToPass,
     badge,
     progressBg,
     progressCursor,
@@ -300,7 +286,7 @@ export function BenchmarkPanel({
 
   return (
     <div className="bench">
-      <div className="bench-head">对标评分（真实通道，非本地代理分）</div>
+      <div className="bench-head">评分与外部验证（本地分为套话指数，非朱雀官方分）</div>
       {roundScores.length > 0 && (
         <div className="bench-row">
           <span>
@@ -312,7 +298,7 @@ export function BenchmarkPanel({
       )}
       <div className="bench-row">
         <span>
-          本地代理分（去味后）：<b>{after?.score}</b>
+          本地套话指数（去味后）：<b>{after?.score}</b>
         </span>
         <button
           className="ghost sm"
@@ -389,13 +375,17 @@ export function BenchmarkPanel({
               {adv.banner}
             </div>
           )}
+          <div style={{ width: "100%", fontSize: 11, color: "#facc15", lineHeight: 1.55 }}>
+            实验性换算：官方凭证 0/18，公式未经凭证校准。仅用于同一篇稿子的前后趋势，
+            <b>不能作为是否过检的依据</b>。
+          </div>
           <span style={{ fontSize: 12, color: "var(--muted)" }}>
-            官方朱雀%预测（v3 四体裁分层 18 点 OLS）：
+            朱雀分趋势预测（18 点存档拟合 · 未标定）：
           </span>
           <b style={{ color: adv.fg }}>
             {adv.icon} {adv.pct.toFixed(1)}%
           </b>
-          {/* 2026-08-26 v3：「离过人线还差 X pp」进度徽章 */}
+          {/* 2026-08-26 v3：与 40% 参考线的差距徽章（仅参考） */}
           <span
             className="tag"
             style={{
@@ -492,10 +482,10 @@ export function BenchmarkPanel({
             </optgroup>
           </select>
 
-          {/* 2026-08-26 v3：过人线进度条（0→深绿，40%白红分界）*/}
+          {/* 2026-08-26 v3：参考线进度条（40% 只是存档刻度，不是过检线） */}
           <div style={{ width: "100%" }}>
             <div style={adv.progressBg}>
-              <div style={adv.passTick} title="过人线 = 40%" />
+              <div style={adv.passTick} title="40% 参考线（不是过检线）" />
               <div style={adv.progressCursor} title={`当前预测朱雀 ${adv.pct.toFixed(1)}%`} />
             </div>
             <div
@@ -507,9 +497,9 @@ export function BenchmarkPanel({
                 marginTop: 2,
               }}
             >
-              <span>0% (深绿)</span>
-              <span style={{ color: "#ffffff" }}>▌过人线 40%</span>
-              <span>100% (深红)</span>
+              <span>0%（低）</span>
+              <span style={{ color: "#ffffff" }}>▌40% 参考线</span>
+              <span>100%（高）</span>
             </div>
           </div>
 
@@ -527,7 +517,7 @@ export function BenchmarkPanel({
             }}
           >
             <span style={{ color: "var(--muted)", fontSize: 11 }}>
-              💡 建议行动 · 基于当前预测分 {adv.pct.toFixed(1)}% 的下一次操作：
+              💡 建议行动 · 基于当前预测分 {adv.pct.toFixed(1)}% 的下一次操作（非过检承诺）：
             </span>
             <div style={{ marginTop: 3 }}>{adv.recAction}</div>
           </div>
@@ -561,7 +551,7 @@ export function BenchmarkPanel({
                 <button
                   className="ghost sm"
                   onClick={() => onTrackChange("human")}
-                  title="系统检测到极多过去时(口述回忆) + 低论说分 + 无对话，疑似纯人写原稿 → 切换到负斜率轨道 (朱雀%不随去味下降，H0=15% 天然过人)"
+                  title="系统检测到极多过去时(口述回忆) + 低论说分 + 无对话，疑似纯人写原稿 → 切换到人写对照轨道（存档样本 H0=15%，非保证）"
                   style={{
                     fontSize: 11,
                     padding: "2px 10px",
@@ -571,7 +561,7 @@ export function BenchmarkPanel({
                     borderRadius: 999,
                   }}
                 >
-                  🚩 疑似纯人写原稿 → 切负斜率轨道(H0 官=15%)
+                  🚩 疑似纯人写原稿 → 切人写对照轨道（H0=15%）
                 </button>
               )}
             {auto && track === "human" && (
@@ -628,15 +618,14 @@ export function BenchmarkPanel({
         {zhuqueManualScore && (
           <span
             className="tag"
+            title="你手动回填的官方检测结果，仅作记录；这里的颜色不构成过检判断"
             style={{
-              color: Number(zhuqueManualScore) < 30 ? "#3ddc97" : "#ff5d6c",
-              borderColor:
-                Number(zhuqueManualScore) < 30 ? "rgba(61,220,151,0.3)" : "rgba(255,93,108,0.3)",
-              background:
-                Number(zhuqueManualScore) < 30 ? "rgba(61,220,151,0.1)" : "rgba(255,93,108,0.1)",
+              color: "var(--muted)",
+              borderColor: "var(--border)",
+              background: "rgba(148,163,184,0.08)",
             }}
           >
-            朱雀：{zhuqueManualScore} {Number(zhuqueManualScore) < 30 ? "✅" : "❌"}
+            朱雀回填：{zhuqueManualScore} 分（仅记录）
           </span>
         )}
       </div>
@@ -648,10 +637,11 @@ export function BenchmarkPanel({
           开放（EdgeOne Makers <code>@makers/zhuque-text</code>，每月 50 万 token 免费，只需一个 API
           Key），去味后自动送检。
           <br />
-          显示的「官方朱雀%预测」仅为本地代理分对标估算，真实结果以官方网页或 API 直接返回为准。
+          显示的「朱雀分趋势预测」只是本地套话指数经存档公式换算的估算，不是官方分，
+          真实结果以官方网页或 API 直接返回为准。
           <br />
-          📌 <b>v3 新（2026-08-26 · 18 点 OLS）</b>：按文本实际体裁切换下拉（论说默认 / 叙事 / 对话
-          / 纯人写），阈值会联动重算。本轮 6 点新检最大预测误差仅 +1.8pp。
+          📌 <b>v3 存档（2026-08-26 · 18 点 OLS）</b>：按文本实际体裁切换下拉（论说默认 / 叙事 /
+          对话 / 纯人写），参考线会联动重算。样本仅 18 点且凭证未认证，误差数字不外推。
         </div>
       )}
     </div>

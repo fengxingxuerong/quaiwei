@@ -57,9 +57,9 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("渲染标题与本地代理分；双通道按钮在未配置时禁用", () => {
+  it("渲染标题与本地套话指数；双通道按钮在未配置时禁用", () => {
     const { getByText } = render(<BenchmarkPanel {...base()} />);
-    expect(getByText("对标评分（真实通道，非本地代理分）")).toBeTruthy();
+    expect(getByText("评分与外部验证（本地分为套话指数，非朱雀官方分）")).toBeTruthy();
     expect(getByText("20")).toBeTruthy();
     const judge = getByText("用 LLM 评判").closest("button") as HTMLButtonElement;
     const detect = getByText("用外部检测器").closest("button") as HTMLButtonElement;
@@ -117,72 +117,72 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(getByText(/目标 ≤10/)).toBeTruthy();
   });
 
-  it("v3 预测区：显示官方朱雀%预测、过人线徽章与建议行动卡", () => {
+  it("预测区：显示实验性换算、40% 参考线徽章与建议行动卡", () => {
     const { container } = render(<BenchmarkPanel {...base()} />);
-    expect(container.textContent).toContain("官方朱雀%预测");
-    // main 线：2.014 × 20 + 19.06 ≈ 59.3% → 离 40% 过人线还差
-    expect(container.textContent).toContain("离过人线还差");
+    expect(container.textContent).toContain("实验性换算");
+    expect(container.textContent).toContain("不能作为是否过检的依据");
+    // main 线：2.014 × 20 + 19.06 ≈ 59.3% → 高于 40% 参考线
+    expect(container.textContent).toContain("高于 40% 参考线 19.3 pp");
     expect(container.textContent).toContain("💡 建议行动");
+    expect(container.textContent).toContain("非过检承诺");
   });
 
   /* ---- v3 建议行动卡的三档预测分支（pct ≤20 / 20~40 / >80 + 饱和区） ---- */
 
-  it("预测 ≤20% 且非人写线：建议行动给「已稳过」，徽章显示领先边际", () => {
-    // aiScore=0 → main 线 2.014×0+19.06=19.06% ≤20：走 pct≤20 的 recAction（非 humanWarn 那档）
+  it("预测 ≤20%：只给低分区提示与送检建议，不再写「已稳过」", () => {
+    // aiScore=0 → main 线 2.014×0+19.06=19.06% ≤20
     const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 0 } })} />);
-    expect(container.textContent).toContain("已稳过。如果还想更稳");
-    expect(container.textContent).toContain("✅ 19.1%");
-    expect(container.textContent).toContain("✅ 领先过人线 20.9 pp 边际");
+    expect(container.textContent).toContain("本地估计偏低。建议先用朱雀网页/API 实测一次");
+    expect(container.textContent).toContain("🔵 19.1%");
+    expect(container.textContent).toContain("低于 40% 参考线 20.9 pp（仅参考）");
   });
 
-  it("预测 20~40%：建议行动给「已过但离过线近」，🟢 图标 + 过人线 tip", () => {
-    // aiScore=10 → main 线 2.014×10+19.06≈39.2%：走 20<pct≤40 的 recAction + 🟢 图标档
+  it("预测 20~40%：🟢 图标 + 参考线提示，要求真实送检", () => {
+    // aiScore=10 → main 线 2.014×10+19.06≈39.2%
     const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 10 } })} />);
-    expect(container.textContent).toContain("已过但离过线近");
+    expect(container.textContent).toContain("本地估计中等偏低。建议真实送检一次");
     expect(container.textContent).toContain("🟢 39.2%");
-    expect(container.textContent).toContain(
-      "已过 论说过人线 aiScore ≤ 10.4；如需更稳，再跑一轮 0.9 朱雀档",
-    );
-    expect(container.textContent).toContain("✅ 领先过人线 0.8 pp 边际");
+    expect(container.textContent).toContain("论说参考线 aiScore ≈ 10.4（仅参考）");
+    expect(container.textContent).toContain("低于 40% 参考线 0.8 pp（仅参考）");
   });
 
-  it("预测恰好压在 40% 过人线上：徽章显示「刚好过人线」边界文案", () => {
-    // score 取 (40-b)/a 使预测浮点恰为 40 → gapToPass === 0 的边界分支
+  it("预测恰好落在 40% 参考线：徽章显示边界文案（仅参考）", () => {
+    // score 取 (40-b)/a 使预测浮点恰为 40 → referenceGap === 0 的边界分支
     const edge = (40 - CALIB.main.b) / CALIB.main.a;
     const { container } = render(
       <BenchmarkPanel {...base({ after: { ...after, score: edge } })} />,
     );
     expect(container.textContent).toContain("🟢 40.0%");
-    expect(container.textContent).toContain("🤏 刚好过人线");
+    expect(container.textContent).toContain("在 40% 参考线上（仅参考）");
   });
 
-  it("预测进入饱和区（aiScore ≥ satX）：饱和 tip + 接近饱和建议 + 60pp 差距徽章", () => {
-    // aiScore=50 ≥ main 线 satX=40.2 → 预测 clamp 到 100%：saturated tip + pct>80 的 recAction
+  it("预测进入饱和区（aiScore ≥ satX）：饱和 tip + 60pp 差距徽章", () => {
+    // aiScore=50 ≥ main 线 satX=40.2 → 预测 clamp 到 100%
     const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 50 } })} />);
     expect(container.textContent).toContain("🔴 100.0%");
     expect(container.textContent).toContain(
-      "预测已饱和到 98~99% 区（aiScore≥40 进入饱和），官方基本必判 AI",
+      "本地估计已饱和（aiScore≥40）；官方分无法由本地分可靠推算",
     );
-    expect(container.textContent).toContain("接近饱和！先用 humanize-vocab");
-    expect(container.textContent).toContain("⚠️ 离过人线还差 60.0 pp");
+    expect(container.textContent).toContain("本地估计很高。先清套话连接词");
+    expect(container.textContent).toContain("⚠️ 高于 40% 参考线 60.0 pp");
   });
 
-  it("预测 80~98% 高危区间：越过 🟠 档落入空 else，保持默认红色图标与「严重 AI 味」", () => {
-    // aiScore=35 → main 线 ≈89.5%：既不 ≤80（🟠 档）也未到 98/饱和 → 图标保持初始 🔴
+  it("预测 80~98% 区间：保持红色图标与「本地估计很高」", () => {
+    // aiScore=35 → main 线 ≈89.5%：既不 ≤80（🟠 档）也未到 98/饱和
     const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 35 } })} />);
     expect(container.textContent).not.toContain("🟠");
-    expect(container.textContent).toContain("严重 AI 味（几乎必中官方检测）");
+    expect(container.textContent).toContain("本地估计很高（非官方结论）");
     expect(container.textContent).toMatch(/🔴 89\.[0-9]%/);
-    expect(container.textContent).toMatch(/离过人线还差 49\.[0-9] pp/);
+    expect(container.textContent).toMatch(/高于 40% 参考线 49\.[0-9] pp/);
   });
 
-  it("副线 concat 低分落在 40~60%：中风险档走 x40<0 的放宽阈值文案", () => {
-    // concat 截距 57.441、x40 为负：score=0 → pct 57.4 ∈ (40,60] → 🟡 档取 x40<0 分支
+  it("副线 concat 低分落在 40~60%：中档走副线不推算阈值的文案", () => {
+    // concat 截距 57.441、x40 为负：score=0 → pct 57.4 ∈ (40,60]
     const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 0 } })} />);
     const select = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "concat" } });
     expect(container.textContent).toContain("🟡 57.4%");
-    expect(container.textContent).toContain("中风险（对话/叙事体裁放宽阈值）");
+    expect(container.textContent).toContain("本地估计中等（副线不用于阈值推算）");
   });
 
   it("自动识别徽章显示体裁（论说文）且默认轨道为 main", () => {
@@ -273,25 +273,25 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(onGenreChange).toHaveBeenCalledWith(null);
   });
 
-  it("疑似纯人写原稿快捷按钮：点击切 human 负斜率轨道并显示人写警示横幅", () => {
+  it("疑似纯人写原稿快捷按钮：点击切人写对照轨道并显示警示横幅", () => {
     const onGenreChange = vi.fn();
     const { container, getByText, queryByText } = render(
       <BenchmarkPanel {...base({ output: NARR_TEXT, onGenreChange })} />,
     );
     const select = container.querySelector("select") as HTMLSelectElement;
     expect(select.value).toBe("narrative"); // 自动识别命中叙事线（rule 3）
-    fireEvent.click(getByText("🚩 疑似纯人写原稿 → 切负斜率轨道(H0 官=15%)"));
+    fireEvent.click(getByText("🚩 疑似纯人写原稿 → 切人写对照轨道（H0=15%）"));
     // 上抛 humanHand + 轨道切到 human：-0.3×20+18 = 12.0%
     expect(onGenreChange).toHaveBeenLastCalledWith("humanHand");
     expect(select.value).toBe("human");
     expect(container.textContent).toContain("⚙️ 手动轨道");
-    expect(container.textContent).toContain("✅ 12.0%");
-    expect(container.textContent).toContain("请不要跑去味"); // humanWarn 警示横幅
-    expect(queryByText(/切负斜率轨道/)).toBeNull(); // 切走后快捷按钮消失
+    expect(container.textContent).toContain("🔵 12.0%");
+    expect(container.textContent).toContain("不建议再去味"); // humanWarn 警示横幅
+    expect(queryByText(/切人写对照轨道/)).toBeNull(); // 切走后快捷按钮消失
     expect(getByText(/回到三分自动识别/)).toBeTruthy(); // 换成「回到三分」按钮
   });
 
-  it("朱雀送检行：手动分数上抛；回填 <30 显示 ✅、≥30 显示 ❌", () => {
+  it("朱雀送检行：手动分数上抛；回填只记录、不显示过检标记", () => {
     const onManualScore = vi.fn();
     const p = base({ onManualScore });
     const { container, rerender } = render(<BenchmarkPanel {...p} />);
@@ -299,9 +299,9 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     fireEvent.change(input, { target: { value: "28" } });
     expect(onManualScore).toHaveBeenCalledWith("28");
     rerender(<BenchmarkPanel {...base({ onManualScore, zhuqueManualScore: "28" })} />);
-    expect(container.textContent).toContain("朱雀：28 ✅");
+    expect(container.textContent).toContain("朱雀回填：28 分（仅记录）");
     rerender(<BenchmarkPanel {...base({ onManualScore, zhuqueManualScore: "65" })} />);
-    expect(container.textContent).toContain("朱雀：65 ❌");
+    expect(container.textContent).toContain("朱雀回填：65 分（仅记录）");
   });
 
   it("朱雀送检按钮：复制去味文本、打开官方送检页并上抛提示语", () => {
@@ -331,12 +331,12 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(container.textContent).toContain("对标检测两条路径");
   });
 
-  /* ---- 本地代理分 vs 外部通道分的分歧横幅（2026-09-22 外评证据） ---- */
+  /* ---- 本地套话指数 vs 外部通道分的分歧横幅（2026-09-22 外评证据） ---- */
 
   it("本地分低报：渲染 severe 横幅，点名通道并写明别看降幅", () => {
-    // 本地 20（人写带内）/ 评判 85 → gap 65，实测形态与「政务报告 本地 2 / 外部 90」同类
+    // 本地 20（低分区）/ 评判 85 → gap 65，实测形态与「政务报告 本地 2 / 外部 90」同类
     const { container } = render(<BenchmarkPanel {...base({ judgeScore: 85 })} />);
-    expect(container.textContent).toContain("本地代理分 20");
+    expect(container.textContent).toContain("本地套话指数 20");
     expect(container.textContent).toContain("LLM 评判 85");
     expect(container.textContent).toContain("降幅");
   });
@@ -360,13 +360,13 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(container.textContent).not.toContain("外部检测器 75");
   });
 
-  it("分歧在人写带之外（本地 40 / 评判 90）：warn 级黄色横幅，文案不扣「人写带」帽子", () => {
+  it("分歧在低分区之外（本地 40 / 评判 90）：warn 级黄色横幅，文案不扣「低分区」帽子", () => {
     // local 40 > AI_SCORE_HUMAN_MAX(27)，gap 50 ≥30、外部 90 ≥60 → warn 而非 severe
     const { container, getByText } = render(
       <BenchmarkPanel {...base({ after: { ...after, score: 40 }, judgeScore: 90 })} />,
     );
-    expect(container.textContent).toContain("两把尺分歧 50 分（本地 40 / LLM 评判 90）");
-    expect(container.textContent).not.toContain("（人写带）");
+    expect(container.textContent).toContain("两把尺分歧 50 分（本地套话指数 40 / LLM 评判 90）");
+    expect(container.textContent).not.toContain("（低分区）");
     // warn 用黄色底（rgba(250,204,21,0.1)），不是 severe 的红色底
     const row = getByText(/两把尺分歧/).closest(".bench-row") as HTMLElement;
     const style = (row.getAttribute("style") ?? "").replace(/\s/g, "");

@@ -90,10 +90,10 @@ export function scoreConflict(
   const name = SOURCE_ZH[source];
   const severe = l <= AI_SCORE_HUMAN_MAX;
   const message = severe
-    ? `⚠️ 本地代理分 ${l}（人写带）与${name} ${e} 差 ${gap} 分——2026-09-22 外部席位复评发现` +
+    ? `⚠️ 本地套话指数 ${l}（低分区）与${name} ${e} 差 ${gap} 分——2026-09-22 外部席位复评发现` +
       `本地分在书面体上系统性低报（政务报告 本地 2 / 外部 90）。这一篇请以${name}为准，` +
       `不要用上面的降幅判断安全性。`
-    : `两把尺分歧 ${gap} 分（本地 ${l} / ${name} ${e}）——本地代理分与真实检测器无标定关系，` +
+    : `两把尺分歧 ${gap} 分（本地套话指数 ${l} / ${name} ${e}）——本地分与真实检测器无标定关系，` +
       `判断请以${name}为准。`;
 
   return { source, local: l, external: e, gap, level: severe ? "severe" : "warn", message };

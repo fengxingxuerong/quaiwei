@@ -140,6 +140,23 @@ describe("fixOrphanConnectiveLeads（残句开头守卫）", () => {
     expect(out).toContain("就这样。");
     expect(out).toContain("你懂的。");
   });
+
+  it("v0.9.59：多字连词整词删除，不留下「且/是/外」碎片", () => {
+    // 实测默认 0.6/plain seed 1：原文「…而且有效地降低了运营成本」被断句后，
+    // 旧正则先命中单字「而」，删完留下「且有效地降低了运营成本。」。
+    expect(fixOrphanConnectiveLeads("这是一句挺长的正文。而且有效地降低了成本")).toBe(
+      "这是一句挺长的正文。有效地降低了成本",
+    );
+    expect(fixOrphanConnectiveLeads("这是一句挺长的正文。并且有效地降低了成本")).toBe(
+      "这是一句挺长的正文。有效地降低了成本",
+    );
+    expect(fixOrphanConnectiveLeads("这是一句挺长的正文。但是整体效果相当不错")).toBe(
+      "这是一句挺长的正文。整体效果相当不错",
+    );
+    expect(fixOrphanConnectiveLeads("这是一句挺长的正文。另外还有一点需要说明")).toBe(
+      "这是一句挺长的正文。还有一点需要说明",
+    );
+  });
 });
 
 describe("isSceneMetaSentence（场景块行识别）", () => {

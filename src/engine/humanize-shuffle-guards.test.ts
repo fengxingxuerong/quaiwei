@@ -151,6 +151,18 @@ describe("clampAvgSentenceLenUnder25（句长硬上限）", () => {
     expect(fragmentCanStand("这次改版将推动整个行业重新洗牌。")).toBe(true);
   });
 
+  it("v0.9.59：递进/转折连词开头的 rest 不能独立成句（而且/并且/但是/而是）", () => {
+    // 实测默认 0.6/plain seed 1：原文「不仅…，而且有效地降低了运营成本」被劈开后，
+    // 下游 fixOrphanConnectiveLeads 只删「而」→「且有效地降低了运营成本。」碎片。
+    // 切点层直接否决，保留完整递进关系。
+    expect(fragmentCanStand("而且有效地降低了运营成本")).toBe(false);
+    expect(fragmentCanStand("并且降低了成本")).toBe(false);
+    expect(fragmentCanStand("但是整体效果相当不错")).toBe(false);
+    expect(fragmentCanStand("而是选择了另一条路")).toBe(false);
+    // 对照组：不是连词开头 → 照常放行
+    expect(fragmentCanStand("这次改版将推动整个行业重新洗牌。")).toBe(true);
+  });
+
   it("v0.9.43：递进副词 + 系词「是」不能独立成句（真实议论文 10/10 seed 必现）", () => {
     // 成因：PREDICATE_HINT 的注释从 2026-09-30 起就写着收"判断动词"，
     // 正则里却漏了最典型的系词「是」⇒「更是一场…」被判"可独立成句"，

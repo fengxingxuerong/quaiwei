@@ -276,9 +276,9 @@ describe("humanize-cli parseArgs", () => {
     const a = parseArgs(base(["./docs"]));
     expect(a.input).toBe("./docs");
     expect(a.out).toBe("./docs");
-    expect(a.intensity).toBe(0.9);
+    expect(a.intensity).toBe(0.6);
     expect(a.zhuque).toBe(false);
-    expect(a.style).toBe("casual");
+    expect(a.style).toBe("plain");
     expect(a.suffix).toBe(".humanized");
   });
 
@@ -381,7 +381,7 @@ describe("humanize-cli parseArgs", () => {
     expect(off.explain).toBe(false);
     const on = parseArgs(base(["./in", "--explain"]));
     expect(on.explain).toBe(true);
-    expect(on.intensity).toBe(0.9);
+    expect(on.intensity).toBe(0.6);
     expect(on.outFormat).toBe("follow");
   });
 

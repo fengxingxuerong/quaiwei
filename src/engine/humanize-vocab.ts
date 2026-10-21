@@ -126,7 +126,7 @@ export const VOCAB: Record<string, string[]> = {
   //
   // 移除后本词条剩 2 个替身——仍高于单替身下限，pick 的多样性不受影响。
   不仅: ["不光", "岂止"],
-  而且: ["还", "并且", "外加"],
+  而且: ["还", "并且"],
   // —— 以下为扩充词典（书面腔/互联网黑话/套话 → 口语化）——
   具体而言: ["具体说", "说具体点", "拆开看"],
   换言之: ["换个说法", "也就是说", "意思就是说"],
@@ -754,6 +754,11 @@ const BARE_VO_START_RE =
  *  或"对于X具有Y"（缺主语的评述句）都不能切，否则产生无主句病句 */
 export function fragmentCanStand(s: string): boolean {
   if (PREDICATE_ONLY_START.test(s)) return false;
+  // v0.9.59：递进/转折连词开头的后半句承接前句，不能劈成独立句。
+  // 实测默认 0.6/plain seed 1：原文「不仅…，而且有效地降低了运营成本」被
+  // burstiness 在逗号处劈开，下游 fixOrphanConnectiveLeads 只删「而」，
+  // 留下「且有效地降低了运营成本。」碎片。切点层直接否决，保留完整递进关系。
+  if (/^(?:而且|并且|但是|而是)(?=[\u4e00-\u9fa5])/.test(s)) return false;
   // v0.9.31：并列谓语残句（见 BARE_VO_START_RE 注释）——只看首段；动词顶在句首即无主语
   if (BARE_VO_START_RE.test(s.split(/[；;，,。！？：:]/)[0])) return false;
   // v0.8.5 使役无主句守卫："让/使/帮/叫"开头的分句承接前句宾语做主语

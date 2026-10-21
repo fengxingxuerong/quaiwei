@@ -574,10 +574,10 @@ describe("App 集成：评分 / 检测闭环 / 设置 / 历史 / 草稿 / 面板
     }
   });
 
-  it("「AI 检测」：14 特征面板出现，特征明细可展开收起", async () => {
+  it("「本地检测」：14 特征面板出现，特征明细可展开收起", async () => {
     const utils = render(<App />);
     await humanizeFirst(utils);
-    fireEvent.click(utils.getByText("AI 检测"));
+    fireEvent.click(utils.getByText("本地检测"));
     fireEvent.click(utils.getByText("看特征明细"));
     expect(utils.getByText("收起特征")).toBeTruthy();
     fireEvent.click(utils.getByText("收起特征"));
@@ -1417,7 +1417,7 @@ describe("App 接线边角（进度 / 非 Error / 热键 / 剪贴板 / 目标回
     saveViewMode("simple"); // 结果条只属于简洁档；本文件默认 pro
     const { getByText, getByPlaceholderText } = render(<App />);
     const scores = [5, 20, 40, 99];
-    const verdicts = [/套话清得很干净/, /剩下的多是正常书面词/, /还有一批套话/, /AI 味偏重/];
+    const verdicts = [/套话清得很干净/, /剩下的多是正常书面词/, /还有一批套话/, /套话偏多/];
     for (let i = 0; i < scores.length; i++) {
       const base = makeRunResult(OUTPUT_TEXT, "local");
       runHumanizeMock.mockResolvedValueOnce({

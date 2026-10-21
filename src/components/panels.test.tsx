@@ -32,7 +32,7 @@ describe("LocalDetectPanel（本地 14 特征检测）", () => {
     );
     expect(getByText("原文")).toBeTruthy();
     expect(getByText("去味稿")).toBeTruthy();
-    expect(getByText("降幅")).toBeTruthy();
+    expect(getByText("风险分差")).toBeTruthy();
     expect(getByText("AI生成", { exact: false })).toBeTruthy();
   });
 
@@ -90,7 +90,7 @@ describe("ZhuquePanel（朱雀检测本地近似）", () => {
       semLoading: false,
       weight: 0.8,
       canRunSemantic: false,
-      genreEstimate: { pct: 88.3, tag: "论说过人线 aiScore ≤ 10.4" },
+      genreEstimate: { pct: 88.3, tag: "论说参考线 aiScore ≈ 10.4（仅参考）" },
       onPaste: vi.fn(),
       onSaveCalib: vi.fn(),
       onClearCalib: vi.fn(),

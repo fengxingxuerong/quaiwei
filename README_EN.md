@@ -14,7 +14,7 @@ engine with a regression suite** — every rule is anchored to a real text sampl
 
 | | Rule-list skills | QuAiWei |
 |---|---|---|
-| Engine | A markdown file the LLM reads | TypeScript engine, **1907 test cases**, CI on every push |
+| Engine | A markdown file the LLM reads | TypeScript engine, **2100+ test cases**, CI on every push |
 | Runs offline | No (needs an LLM) | **Yes** — default path is local, costs nothing, sends nothing |
 | Built-in scoring | No | Yes — heuristic proxy score + explainable per-item trace |
 | Real detector loop | No | Optional — Zhuque API (`EdgeOne Makers`) closed loop |
@@ -30,8 +30,8 @@ The tools you compare this against at the top of the topic (`blader/humanizer`, 
 
 **Try it in your browser** — no install needed: **[online demo](https://fengxingxuerong.github.io/quaiwei/)** (live)
 
-**Desktop (Windows, no install, ~474 MB):** [latest release](https://github.com/fengxingxuerong/quaiwei/releases/latest)
-— unzip, double-click `QuAiWei.exe`.
+**Desktop (Windows, no install, ~199 MB zip / ~517 MB extracted):** [latest release](https://github.com/fengxingxuerong/quaiwei/releases/latest)
+— unzip, double-click `QuAiWei.exe`. The published desktop build can lag behind the repo version; check the release page.
 
 **CLI:**
 
@@ -54,8 +54,8 @@ npx skills add fengxingxuerong/quaiwei
 
 | Flag | Default | Notes |
 |---|---|---|
-| `--intensity <0-1>` | `0.9` | Rewrite strength |
-| `--style` | `casual` | `casual` \| `plain` \| `academic` — use `academic`/`plain` for papers and official documents |
+| `--intensity <0-1>` | `0.6` | Rewrite strength; use `0.9` explicitly for aggressive rewriting |
+| `--style` | `plain` | `plain` \| `casual` \| `academic` — use `academic`/`plain` for papers and official documents |
 | `--zhuque` | off | Injects anti-fingerprint features |
 | `--seed <n>` | `20260905` | Fixes randomness, makes runs reproducible |
 | `--explain` | off | Emits a per-edit trace: which rule fired, which table it came from |

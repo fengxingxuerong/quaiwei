@@ -32,7 +32,7 @@ const PRO_ONLY: { text?: string; sel?: string }[] = [
   { text: "为什么这么改" },
   { text: "历史" },
   { text: "指纹体检" },
-  { text: "AI 检测" },
+  { text: "本地检测" },
   { text: "朱雀检测" },
 ];
 
@@ -121,12 +121,12 @@ describe("简洁模式：去味闭环与结果条", () => {
 
     const before = aiScore(INPUT_TEXT).score;
     const scoreBox = utils.container.querySelector(".result-score")!;
-    expect(scoreBox.textContent).toContain("AI 味");
+    expect(scoreBox.textContent).toContain("套话指数");
     expect(scoreBox.textContent).toContain(String(before));
 
     // 结论必须是四种人话之一，不能是空白或技术术语
     expect(scoreBox.textContent).toMatch(
-      /套话清得很干净|剩下的多是正常书面词|还有一批套话|AI 味偏重/,
+      /套话清得很干净|剩下的多是正常书面词|还有一批套话|套话偏多/,
     );
 
     expect(utils.getByText("复制结果")).toBeTruthy();
@@ -156,7 +156,7 @@ describe("简洁模式：去味闭环与结果条", () => {
     await waitFor(() => expect(utils.getByText(/已恢复/)).toBeTruthy());
     const bar = utils.container.querySelector(".resultbar");
     expect(bar, "产出已恢复，但结果条没出现").toBeTruthy();
-    expect(bar!.textContent).toContain("已生成，可直接复制走");
+    expect(bar!.textContent).toContain("已生成，复制后请用真实检测器复核");
     // 兜底形态不冒充评分：分数位不渲染
     expect(utils.container.querySelector(".result-score b")).toBeNull();
   });

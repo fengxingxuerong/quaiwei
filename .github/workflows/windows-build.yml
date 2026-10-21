@@ -1,0 +1,87 @@
+name: Windows build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            electron-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-fund --no-audit
+
+      - name: Type check
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npx prettier --check "src/**/*.{ts,tsx,css}" "*.{ts,tsx,json,mjs}" "vite.config.ts"
+
+      - name: Version consistency
+        run: npm run check:version
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build web and sync desktop assets
+        run: npm run build:electron
+
+      - name: Install desktop dependencies
+        working-directory: electron-app
+        run: npm ci --no-fund --no-audit
+
+      - name: Package Electron runtime
+        working-directory: electron-app
+        run: npm run dist
+
+      - name: Rebuild app payload
+        working-directory: electron-app
+        run: npm run repack
+
+      - name: Verify package
+        working-directory: electron-app
+        run: npm run verify
+
+      - name: Refuse public zip with bundled keys
+        shell: pwsh
+        run: |
+          $keyFile = "electron-dist/QuAiWei-win32-x64/resources/app/preset-keys.txt"
+          if (Test-Path $keyFile) {
+            throw "Refusing to package: $keyFile is present. Remove electron-app/preset-keys.txt and rebuild."
+          }
+
+      - name: Create zip
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $zip = "electron-dist/QuAiWei-win32-x64-v$version.zip"
+          Remove-Item $zip -Force -ErrorAction SilentlyContinue
+          7z a -tzip -mx=6 $zip ".\electron-dist\QuAiWei-win32-x64\*" | Out-Null
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  $(Split-Path $zip -Leaf)" | Tee-Object -FilePath "$zip.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuAiWei-win32-x64
+          path: |
+            electron-dist/*.zip
+            electron-dist/*.zip.sha256
+          compression-level: 0
+          retention-days: 14

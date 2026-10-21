@@ -181,7 +181,7 @@ export function ZhuquePanel({
       {genreEstimate && (
         <div className="bench-row" style={{ justifyContent: "flex-start" }}>
           <span style={{ color: "var(--muted)", fontSize: 12 }}>
-            📐 体裁线预测（v3 18 点 OLS · 官方实测校准）：
+            📐 体裁线预测（v3 18 点存档拟合 · 实验性，非官方分）：
             <b
               style={{
                 color:

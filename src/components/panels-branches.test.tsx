@@ -48,21 +48,21 @@ function benchProps(score: number) {
 describe("BenchmarkPanel 分档建议文案", () => {
   it("高 AI 味产出：渲染高危/饱和区建议（结构级处理指引）", () => {
     const { container, getByText } = render(<BenchmarkPanel {...benchProps(95)} />);
-    expect(getByText(/对标评分/)).toBeTruthy();
+    expect(getByText(/评分与外部验证/)).toBeTruthy();
     const t = container.textContent ?? "";
     expect(/饱和|重点处理结构|清套话/.test(t)).toBe(true);
   });
 
-  it("中段产出：渲染过渡档建议（补边际/再跑一轮）", () => {
-    const { container } = render(<BenchmarkPanel {...benchProps(45)} />);
+  it("中段产出：渲染中等风险建议（先处理结构再送检）", () => {
+    const { container } = render(<BenchmarkPanel {...benchProps(10)} />);
     const t = container.textContent ?? "";
-    expect(/已过|继续|再跑|稳/.test(t)).toBe(true);
+    expect(/本地估计中等偏低|本地估计中等|建议真实送检/.test(t)).toBe(true);
   });
 
-  it("低分产出：渲染已稳过档建议", () => {
+  it("低分产出：渲染低分区送检建议", () => {
     const { container } = render(<BenchmarkPanel {...benchProps(3)} />);
     const t = container.textContent ?? "";
-    expect(/已稳过|低风险|已过/.test(t)).toBe(true);
+    expect(/本地估计偏低|本地估计中等偏低|本地估计中等/.test(t)).toBe(true);
   });
 });
 
@@ -79,7 +79,7 @@ describe("ZhuquePanel 语义权重滑块", () => {
       semLoading: false,
       weight: 0.8,
       canRunSemantic: false,
-      genreEstimate: { pct: 88.3, tag: "论说过人线 aiScore ≤ 10.4" },
+      genreEstimate: { pct: 88.3, tag: "论说参考线 aiScore ≈ 10.4（仅参考）" },
       onPaste: vi.fn(),
       onSaveCalib: vi.fn(),
       onClearCalib: vi.fn(),

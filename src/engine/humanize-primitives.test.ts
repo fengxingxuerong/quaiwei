@@ -43,6 +43,16 @@ describe("fragmentFrontCanStand —— 必须拒绝的（残句防线）", () =>
     expect(fragmentFrontCanStand("随着技术发展")).toBe(false);
   });
 
+  it("v0.9.59：插入语前缀不能遮住后面的「随着」从句", () => {
+    // 实测默认 0.6/plain seed 2/4：原文「值得注意的是，随着人工智能技术的快速发展，
+    // 越来越多的企业…」被 rhythm 切成「说起来，随着人工智能技术的快速发展。」。
+    // 原守卫只看 front 的 ^随着，插入语「说起来，」把 ^ 遮住了。
+    expect(fragmentFrontCanStand("说起来，随着人工智能技术的快速发展")).toBe(false);
+    expect(fragmentFrontCanStand("顺带一提，随着人工智能技术的快速发展")).toBe(false);
+    // 对照组：插入语后接的是完整主句 → 照常放行
+    expect(fragmentFrontCanStand("说起来，越来越多的企业开始应用人工智能")).toBe(true);
+  });
+
   it("状语头 + 状语尾（在下/中/时/后…）", () => {
     expect(fragmentFrontCanStand("在28纳米工艺节点下")).toBe(false);
     expect(fragmentFrontCanStand("在这种情况下")).toBe(false);
@@ -208,6 +218,11 @@ describe("findGuardedCutNear —— 切点守卫", () => {
   it("后半句不能独立成句时否决该切点", () => {
     // 「增长了」这种无主语残片 → -1
     expect(findGuardedCutNear("数据显示，增长了", 4)).toBe(-1);
+  });
+
+  it("插入语 + 随着从句后的逗号不切（v0.9.59 悬空状语回归）", () => {
+    const s = "说起来，随着人工智能技术的快速发展，越来越多的企业开始应用";
+    expect(findGuardedCutNear(s, 17)).toBe(-1);
   });
 
   it("preferPos 越近越优先，但可切成性优先于距离", () => {

@@ -294,7 +294,7 @@ describe("detectZhuque × 困惑度层融合", () => {
 });
 
 describe("zhuque-calib（v3 四体裁 18 点 OLS 体裁线）", () => {
-  it("论说过人线：aiScore 10.4 → 官方约 40%", () => {
+  it("论说参考线：aiScore 10.4 → 官方约 40%", () => {
     expect(predictOfficialPct(10.4, "main")).toBeCloseTo(40.0, 1);
   });
 
