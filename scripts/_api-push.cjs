@@ -90,13 +90,51 @@ async function gitMessage(c) {
   return raw.slice(i + 2);
 }
 
+/**
+ * 直接问 GCM 目录里的 `git-credential-wincred.exe` 要凭据。
+ *
+ * 为什么需要：本机 `git credential fill` 会走 selector → `git-credential-manager.exe`，
+ * 而后者在本机进程里**必然崩溃**（退出码 3221225477 = 0xC0000005 访问冲突），
+ * 连 `--check` 之外的正常路径都过不去。同目录的 wincred 后端本身是好的。
+ * 凭据仍只在内存里流转（不打印、不落盘），只是换个后端去取。
+ */
+const CRED_HELPER =
+  "C:/Program Files/WorkBuddy/resources/vendor/PortableGit/mingw64/bin/git-credential-wincred.exe";
+
+function getTokenViaHelper() {
+  return new Promise((resolve, reject) => {
+    const child = spawn(CRED_HELPER, ["get"], { stdio: ["pipe", "pipe", "pipe"] });
+    let out = "";
+    let err = "";
+    child.stdout.setEncoding("utf-8");
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.setEncoding("utf-8");
+    child.stderr.on("data", (d) => (err += d));
+    child.on("error", (e) => reject(new Error(`派生 credential helper 失败：${e.code || e.message}`)));
+    child.on("close", (code) => {
+      if (code !== 0) return reject(new Error(`credential helper → 退出码 ${code}\n${err.trim()}`));
+      const m = out.match(/^password=(.+)$/m);
+      if (!m) return reject(new Error("credential helper 里没有 password —— 无法调用 API"));
+      resolve(m[1].trim());
+    });
+    child.stdin.end("protocol=https\nhost=github.com\n\n");
+  });
+}
+
 async function getToken() {
-  const out = (
-    await run(["credential", "fill"], { input: "protocol=https\nhost=github.com\n\n" })
-  ).toString("utf8");
-  const m = out.match(/password=(.+)/);
-  if (!m) throw new Error("credential fill 里没有 password —— 无法调用 API");
-  return m[1].trim();
+  try {
+    return await getTokenViaHelper();
+  } catch (e) {
+    // 回退：官方通道（本机 GCM 会崩，正常走不到这里）
+    const out = (
+      await run(["credential", "fill"], { input: "protocol=https\nhost=github.com\n\n" })
+    ).toString("utf8");
+    const m = out.match(/password=(.+)/);
+    if (!m) {
+      throw new Error("credential fill 里没有 password —— 无法调用 API", { cause: e });
+    }
+    return m[1].trim();
+  }
 }
 
 async function api(token, method, path, body) {

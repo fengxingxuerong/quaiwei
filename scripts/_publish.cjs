@@ -180,7 +180,29 @@ const probeTcp = (host, port, ms = 8000) =>
   }
 
   /* ---------- 3. 取凭据（只在内存）——提前：核对远端不再依赖 git ls-remote ---------- */
-  const cred = await git(["credential", "fill"], { input: "protocol=https\nhost=github.com\n\n" });
+  /* 本机 `git credential fill` 会经 selector 调 git-credential-manager.exe，
+   * 而后者在本机必崩（0xC0000005）。同目录的 wincred 后端正常，直接问它要。
+   * 凭据仍只在内存里流转：不打印、不落盘。 */
+  const CRED_HELPER =
+    "C:/Program Files/WorkBuddy/resources/vendor/PortableGit/mingw64/bin/git-credential-wincred.exe";
+  const readToken = () =>
+    new Promise((resolve, reject) => {
+      const child = spawn(CRED_HELPER, ["get"], { stdio: ["pipe", "pipe", "pipe"] });
+      let out = "";
+      let err = "";
+      child.stdout.setEncoding("utf-8");
+      child.stdout.on("data", (d) => (out += d));
+      child.stderr.setEncoding("utf-8");
+      child.stderr.on("data", (d) => (err += d));
+      child.on("error", (e) => reject(new Error(`派生 credential helper 失败：${e.code || e.message}`)));
+      child.on("close", (code) => {
+        if (code !== 0) return reject(new Error(`credential helper → 退出码 ${code}\n${err.trim()}`));
+        resolve(out);
+      });
+      child.stdin.end("protocol=https\nhost=github.com\n\n");
+    });
+
+  const cred = await readToken();
   const token = (cred.match(/^password=(.+)$/m) || [])[1];
   if (!token) die("没取到 GitHub 凭据（Git Credential Manager 里没有？）");
 
