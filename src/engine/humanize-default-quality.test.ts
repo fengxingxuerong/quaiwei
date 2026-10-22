@@ -3,6 +3,7 @@ import { humanize } from "./humanize.ts";
 import { replaceWithDevelopment, replaceVocab, softenPassive } from "./humanize-replace.ts";
 import { fragmentCanStand } from "./humanize-vocab.ts";
 import { fragmentFrontCanStand } from "./humanize-primitives.ts";
+import { aiScore } from "./humanize-metrics.ts";
 
 /**
  * 默认档（0.6 / plain）的用户路径回归。
@@ -218,5 +219,47 @@ describe("replaceVocab：搭配守卫", () => {
     expect(formal).not.toMatch(/大家|盯着看|挺受/);
     expect(formal).toMatch(/广受关注|备受关注/);
     expect(softenPassive("得到广泛认可", last, 1, true)).not.toMatch(/大家|口碑|叫好/);
+  });
+});
+
+describe("产品文案：承前分句不被切成无主残句（2026-10-22 C21）", () => {
+  const SAMPLE = `本产品基于先进的分布式架构设计，能够为用户提供高效、稳定、安全的数据处理能力。
+一方面，系统采用了多层次的缓存机制，大幅降低了请求延迟；另一方面，通过智能调度算法，实现了资源的动态分配与优化配置。
+此外，平台还提供了丰富的开放接口，便于开发者进行二次集成。无论是中小型团队还是大型企业，都可以借助该平台显著提升自己的研发效率。
+总的说来，该产品致力于为用户创造长期价值，助力企业实现数字化转型。`;
+
+  const SEEDS = Array.from({ length: 40 }, (_, i) => i + 1);
+
+  it("程度副词 + 动词不当句首（不再产出「。大幅降低了请求延迟」）", () => {
+    for (const seed of SEEDS) {
+      const out = humanize(SAMPLE, { intensity: 0.9, style: "plain", seed });
+      expect(out, `seed=${seed}\n${out}`).not.toMatch(
+        /[。；]\s*(?:大幅|显著|明显)(?:降低|提高|提升|减少|增加)/,
+      );
+    }
+  });
+
+  it("便于 / 助力 开头的分句挂回前句", () => {
+    for (const seed of SEEDS) {
+      const out = humanize(SAMPLE, { intensity: 0.9, style: "plain", seed });
+      expect(out, `seed=${seed}\n${out}`).not.toMatch(/[。]\s*便于/);
+      expect(out, `seed=${seed}\n${out}`).not.toMatch(/[。]\s*助力/);
+    }
+  });
+
+  it("守卫单元级：fragmentCanStand 直接否掉这些开头", () => {
+    expect(fragmentCanStand("大幅降低了请求延迟")).toBe(false);
+    expect(fragmentCanStand("便于开发者进行二次集成")).toBe(false);
+    expect(fragmentCanStand("助力企业实现数字化转型")).toBe(false);
+    // 反例：自带主语的合法句仍要放行，别把守卫做成"一律不切"
+    expect(fragmentCanStand("团队大幅降低了成本")).toBe(true);
+    expect(fragmentCanStand("这个功能便于上手")).toBe(true);
+  });
+
+  it("相对改善门禁的同款样本仍达 50% 阈值（防止守卫把分数改成退步）", () => {
+    const before = aiScore(SAMPLE).score;
+    const out = humanize(SAMPLE, { intensity: 0.9, style: "plain", seed: 20260826 });
+    const after = aiScore(out).score;
+    expect((before - after) / before).toBeGreaterThanOrEqual(0.5);
   });
 });
