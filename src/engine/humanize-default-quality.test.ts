@@ -4,6 +4,7 @@ import { replaceWithDevelopment, replaceVocab, softenPassive } from "./humanize-
 import { fragmentCanStand } from "./humanize-vocab.ts";
 import { fragmentFrontCanStand } from "./humanize-primitives.ts";
 import { aiScore } from "./humanize-metrics.ts";
+import { fixOrphanConnectiveLeads } from "./anti-fingerprint.ts";
 
 /**
  * 默认档（0.6 / plain）的用户路径回归。
@@ -261,5 +262,46 @@ describe("产品文案：承前分句不被切成无主残句（2026-10-22 C21�
     const out = humanize(SAMPLE, { intensity: 0.9, style: "plain", seed: 20260826 });
     const after = aiScore(out).score;
     expect((before - after) / before).toBeGreaterThanOrEqual(0.5);
+  });
+});
+
+describe("关联词与构词：替换后仍须成对、不得砍头（2026-10-22）", () => {
+  const SAMPLE = `综上所述，数字化办公不仅极大地提升了工作效率，而且有效地降低了运营成本。`;
+  const PAIR = `一方面，系统采用了多层次的缓存机制，大幅降低了请求延迟；另一方面，通过智能调度算法，实现了资源的动态分配与优化配置。`;
+  const SEEDS = Array.from({ length: 40 }, (_, i) => i + 1);
+
+  it("「不仅」不换成正反问语气的「岂止」（破坏 不仅…而且 配对）", () => {
+    for (const seed of SEEDS) {
+      for (const style of ["plain", "casual"] as const) {
+        const out = humanize(SAMPLE, { intensity: 0.9, style, seed });
+        expect(out, `seed=${seed} style=${style}\n${out}`).not.toContain("岂止");
+      }
+    }
+  });
+
+  it("「另一方面」的替身与「一边/这头」成对，不出递进侧「再一头」", () => {
+    for (const seed of SEEDS) {
+      for (const style of ["plain", "casual"] as const) {
+        const out = humanize(PAIR, { intensity: 0.9, style, seed });
+        expect(out, `seed=${seed} style=${style}\n${out}`).not.toContain("再一头");
+        expect(out, `seed=${seed} style=${style}\n${out}`).not.toContain("从另一头");
+      }
+    }
+  });
+
+  it("孤立连接词守卫不得砍掉合法构词的前半", () => {
+    // 这四条是实测被砍过的（产品文案 40 种子 24 次「另外，」→「外，」）
+    const keep = [
+      "另外，平台还提供了开放接口。",
+      "并非所有算子都支持。",
+      "但愿如此。",
+      "另有一些细节。",
+      "并且，这还没完。",
+    ];
+    for (const text of keep) {
+      expect(fixOrphanConnectiveLeads(text), text).toBe(text);
+    }
+    // 反向对照：真·孤立连接词仍要删（守卫不是"一律不删"）
+    expect(fixOrphanConnectiveLeads("而我们需要先定标准。")).toBe("我们需要先定标准。");
   });
 });
