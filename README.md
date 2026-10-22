@@ -1,4 +1,4 @@
-# 趣AI味 · QuAiWei v0.9.62
+# 趣AI味 · QuAiWei v0.9.63
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
@@ -84,7 +84,9 @@
 ## 快速开始（小白）
 
 解压后**双击 `一键启动.bat`** 即可：自动检查 Node.js → 首次自动装依赖 → 起服务并打开浏览器。
-唯一的环境要求是 [Node.js 18+](https://nodejs.org/)。详见压缩包内《使用说明.txt》。
+唯一的环境要求是 [Node.js 22.12+](https://nodejs.org/)（20.19+ 亦可；这是 vite 8 的 `engines` 要求，
+旧文档写的「18+」已不成立）。详见压缩包内《使用说明.txt》。
+> 桌面版（`QuAiWei.exe`）与在线试用**都不需要 Node**——Node 只在「从源码跑 Web 版 / 自己构建」这条路上才是前提。
 
 ---
 
@@ -727,5 +729,5 @@ MIT（见 LICENSE）。
 
 ## 更新日志
 
-完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.62**（以 `package.json` 的 `version` 为准）。
+完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.63**（以 `package.json` 的 `version` 为准）。
 

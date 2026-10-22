@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
-title 趣AI味 QuAiWei v0.9.62 - 一键启动
+title 趣AI味 QuAiWei v0.9.63 - 一键启动
 cd /d "%~dp0"
 
 echo ================================================
-echo    趣AI味 QuAiWei v0.9.62 - 一键启动
+echo    趣AI味 QuAiWei v0.9.63 - 一键启动
 echo    把 AI 写的文章改得更像人写的
 echo    本地引擎离线可用 + 可选 LLM + 朱雀增强
 echo ================================================
@@ -23,21 +23,33 @@ where node >nul 2>nul
 if errorlevel 1 (
     echo [错误] 未检测到 Node.js。
     echo.
-    echo 请先安装 Node.js 18 或更高版本：https://nodejs.org/ 下载 LTS 版一路下一步安装。
+    echo 请先安装 Node.js 22.12 或更高版本（20.19+ 也可）：https://nodejs.org/ 下载 LTS 版一路下一步安装。
     echo 安装完成后再次双击本文件即可。
     echo.
     pause
     exit /b 1
 )
 for /f "tokens=*" %%i in ('node -v') do set "NODEV=%%i"
-rem ---- 1.5 版本门槛校验（项目要求 Node 18+，Vite 6 最低 Node 18）----
-set "NODE_MAJOR=%NODEV:v=%"
-for /f "tokens=1 delims=." %%a in ("%NODE_MAJOR%") do set "NODE_MAJOR=%%a"
-if %NODE_MAJOR% LSS 18 (
-    echo [错误] 当前 Node.js 版本为 %NODEV%，低于项目要求的 Node 18。
+rem ---- 1.5 版本门槛校验（vite 8 的 engines 是 ^20.19 || >=22.12）----
+rem 此前这里写的是「Node 18+」，与 Vite 6 时代的文档一致，但构建链升到 vite 8 后
+rem 18 和 20.0~20.18 都已不受支持：npm install 只报 EBADENGINE 警告，到 npm run dev
+rem 才炸，用户看到的是"双击没反应"。改成按 engines 逐档判定。
+set "NV=%NODEV:v=%"
+set "NODE_MAJOR=0"
+set "NODE_MINOR=0"
+for /f "tokens=1,2 delims=." %%a in ("%NV%") do (
+    set "NODE_MAJOR=%%a"
+    set "NODE_MINOR=%%b"
+)
+set "NODE_OK="
+if %NODE_MAJOR% EQU 20 if %NODE_MINOR% GEQ 19 set "NODE_OK=1"
+if %NODE_MAJOR% EQU 22 if %NODE_MINOR% GEQ 12 set "NODE_OK=1"
+if %NODE_MAJOR% GTR 22 set "NODE_OK=1"
+if not defined NODE_OK (
+    echo [错误] 当前 Node.js 版本为 %NODEV%，低于本项目的构建链要求。
     echo.
-    echo Vite 6 构建链需要 Node 18 及以上，请到 https://nodejs.org/ 下载 LTS 版升级。
-    echo 安装完成后再次双击本文件即可。
+    echo 本项目的构建链是 vite 8：要求 Node 20.19+ 或 22.12+（推荐装 22 LTS）。
+    echo 请到 https://nodejs.org/ 下载 LTS 版升级，装完再次双击本文件即可。
     echo.
     pause
     exit /b 1
