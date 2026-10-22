@@ -120,6 +120,8 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
       persona: "netgen" as const,
       voiceSample: "probe-voice-sample",
       backTranslation: true,
+      // v0.9.62 深度模式达标线（非默认值，否则漏读会被 toEqual 的 undefined 忽略骗过）
+      deepTargetScore: 33,
     };
     saveApi(probe);
     const back = loadApi();
@@ -144,6 +146,7 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
         reasoningEffort: "ultra", // 越界 → undefined
         maxWaitSeconds: -5, // 负数 → 0
         maxApiCalls: -1, // 负数 → 0
+        deepTargetScore: 0, // 0/负数 → 默认（「≤0 分」永远不成立，会让闭环跑满轮数）
       }),
     );
     const cfg = loadApi();
@@ -152,6 +155,22 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
     expect(cfg.reasoningEffort).toBeUndefined();
     expect(cfg.maxWaitSeconds).toBe(0);
     expect(cfg.maxApiCalls).toBe(0);
+    expect(cfg.deepTargetScore).toBe(DEFAULT_API.deepTargetScore);
+  });
+
+  it("deepTargetScore：越界钳到 1~100，非数字回默认", () => {
+    const raw = (v: unknown) => {
+      localStorage.setItem("aihumanizer.api", JSON.stringify({ deepTargetScore: v }));
+      return loadApi().deepTargetScore;
+    };
+    expect(raw(0)).toBe(DEFAULT_API.deepTargetScore);
+    expect(raw(-7)).toBe(DEFAULT_API.deepTargetScore);
+    expect(raw(1)).toBe(1);
+    expect(raw(100)).toBe(100);
+    expect(raw(101)).toBe(100); // 上限
+    expect(raw(23.7)).toBe(23); // 取整
+    expect(raw("30")).toBe(DEFAULT_API.deepTargetScore); // 字符串 → 默认
+    expect(raw(null)).toBe(DEFAULT_API.deepTargetScore);
   });
 
   it("JSON 坏数据 / 数组 / 基本类型按缺失处理返回默认", () => {

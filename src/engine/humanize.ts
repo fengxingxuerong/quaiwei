@@ -100,6 +100,7 @@ import {
   isProtectedBlock,
   isFactDenseParagraph,
   spanGuard,
+  maskCodeSpans,
   splitParagraphChunks,
 } from "./text-shield.ts";
 export { wouldCascade, DIR_MODIFIER_VERB_CLASH_RE, FORMAL_FORBIDDEN_SUBSTITUTES };
@@ -789,7 +790,10 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     );
   // 行首残留标点清理（结构重排/模板删除可留下「，一句话概括」式残逗号）
   const tFinal = nowMs();
-  result = result
+  // v0.9.62：代码区间先挖走再清——清尾这几条是按行首/标点位置生效的，
+  // 落到代码块里就是把代码改坏（同 capLongTemplateRepetition 那个吞 `??` 的缺陷一族）。
+  const finalMask = maskCodeSpans(result);
+  const finalText = finalMask.text
     .replace(/(^|\n)\s*[，、；：]+/g, "$1")
     .replace(/([。！？])\s*([，、；：]+)/g, "$1");
 
@@ -804,9 +808,11 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   //
   // 修法：这类独句把句号还原成逗号，让它回到"引导后文"的位置。
   // 只动句号/叹号/问号，不动已经是逗号的（那种本来就对）。
-  result = result.replace(
-    /(^|\n)(首先|其次|再次|再说|另外|此外|总的来看|总而言之|总的说来|最后|其一|其二)[。！？]/g,
-    (_m: string, lead: string, word: string) => lead + word + "，",
+  result = finalMask.restore(
+    finalText.replace(
+      /(^|\n)(首先|其次|再次|再说|另外|此外|总的来看|总而言之|总的说来|最后|其一|其二)[。！？]/g,
+      (_m: string, lead: string, word: string) => lead + word + "，",
+    ),
   );
   if (onStage)
     emitStage(

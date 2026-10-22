@@ -35,10 +35,6 @@ function base(overrides: Partial<Parameters<typeof SettingsModal>[0]> = {}) {
   };
 }
 
-function numInputs(container: HTMLElement): HTMLInputElement[] {
-  return Array.from(container.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
-}
-
 // 配置行定位：label.row 的首个 span 即配置名，返回该行的输入控件。
 // 为什么不用 getByLabelText：「模型」行里挂了 datalist，label 文本会被
 // 选项文本污染，精确匹配会落空；按行内首个 span 取对下拉/复选框/输入框统一。
@@ -108,7 +104,7 @@ describe("SettingsModal（设置弹窗）", () => {
     fireEvent.click(enabled);
 
     // 温度：输入 5 越界 → 失焦归一化为 2
-    const temp = numInputs(container)[0];
+    const temp = rowControl(container, "温度") as HTMLInputElement;
     fireEvent.change(temp, { target: { value: "5" } });
     fireEvent.blur(temp);
 
@@ -140,7 +136,7 @@ describe("SettingsModal（设置弹窗）", () => {
     const { container, getByText } = render(
       <SettingsModal {...base({ onSave, api: { ...DEFAULT_API, temperature: 0.9 } })} />,
     );
-    const temp = numInputs(container)[0];
+    const temp = rowControl(container, "温度") as HTMLInputElement;
     fireEvent.change(temp, { target: { value: "" } });
     fireEvent.blur(temp);
     fireEvent.click(getByText("保存"));
@@ -151,7 +147,9 @@ describe("SettingsModal（设置弹窗）", () => {
   it("候选数夹取 1~30：输入 99 保存后为 30", () => {
     const onSave = vi.fn();
     const { container, getByText } = render(<SettingsModal {...base({ onSave })} />);
-    const candidates = numInputs(container)[1];
+    // 按配置行定位，不按 input[type=number] 的序号——序号会被新增输入框挤歪
+    // （v0.9.62 加「达标线」时正好踩过：第 2 个 number 输入从候选数变成了达标线）
+    const candidates = rowControl(container, "候选数（1~30）") as HTMLInputElement;
     fireEvent.change(candidates, { target: { value: "99" } });
     fireEvent.click(getByText("保存"));
     const local = onSave.mock.calls[0][4] as LocalSettings;
@@ -501,7 +499,7 @@ describe("SettingsModal 补盲（逐行覆盖 · 配置行编辑与环境分支�
   it("候选数：0 夹到 1，非数字回退默认 8", () => {
     const onSave = vi.fn();
     const { container, getByText } = render(<SettingsModal {...base({ onSave })} />);
-    const candidates = numInputs(container)[1]; // [0]=温度，[1]=候选数
+    const candidates = rowControl(container, "候选数（1~30）") as HTMLInputElement;
     fireEvent.change(candidates, { target: { value: "0" } });
     fireEvent.click(getByText("保存"));
     expect((onSave.mock.calls[0][4] as LocalSettings).candidates).toBe(1);
@@ -509,5 +507,28 @@ describe("SettingsModal 补盲（逐行覆盖 · 配置行编辑与环境分支�
     fireEvent.change(candidates, { target: { value: "abc" } });
     fireEvent.click(getByText("保存"));
     expect((onSave.mock.calls[1][4] as LocalSettings).candidates).toBe(8);
+  });
+
+  it("深度达标线：越界钳到 1~100，清空回默认（上抛 undefined）", () => {
+    const onSave = vi.fn();
+    const { container, getByText } = render(<SettingsModal {...base({ onSave })} />);
+    const target = rowControl(container, "达标线") as HTMLInputElement;
+
+    // 清空 = 回到默认：上抛 undefined，下游沿用 DEEP_TARGET_SCORE（10）
+    fireEvent.change(target, { target: { value: "" } });
+    fireEvent.blur(target);
+    fireEvent.click(getByText("保存"));
+    expect((onSave.mock.calls[0][0] as ApiConfig).deepTargetScore).toBeUndefined();
+    expect(target.value).toBe("10");
+
+    // 0 会被钳成 1（0 分永远不成立，闭环会白跑满轮数），101 钳成 100
+    fireEvent.change(target, { target: { value: "0" } });
+    fireEvent.blur(target);
+    expect(target.value).toBe("1");
+    fireEvent.change(target, { target: { value: "101" } });
+    fireEvent.blur(target);
+    expect(target.value).toBe("100");
+    fireEvent.click(getByText("保存"));
+    expect((onSave.mock.calls[1][0] as ApiConfig).deepTargetScore).toBe(100);
   });
 });

@@ -285,7 +285,7 @@ export default function App({
           if (runSeqRef.current !== seq) return; // 已被新一轮/清空取代：进度文案不再回写
           setNote(
             score !== null && score >= 0
-              ? `${stage ?? ""}深度去味第 ${round} 轮完成，LLM 评分 ${score}${score <= DEEP_TARGET_SCORE ? "（已达标）" : "，继续压…"}`
+              ? `${stage ?? ""}深度去味第 ${round} 轮完成，LLM 评分 ${score}${score <= (api.deepTargetScore ?? DEEP_TARGET_SCORE) ? "（已达标）" : "，继续压…"}`
               : `${stage ?? ""}深度去味第 ${round} 轮完成，本轮评分失败，继续…`,
           );
         },

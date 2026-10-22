@@ -16,7 +16,7 @@
  * 全部确定性实现（同输入必同输出），零第三方依赖。
  */
 
-import { SCENE_BLOCK_LINE_RE } from "./text-shield.ts";
+import { SCENE_BLOCK_LINE_RE, maskCodeSpans } from "./text-shield.ts";
 
 /** 是否为剧本块头行（场景/人物/角色/地点/时间/背景/旁白/简介） */
 export function isSceneMetaLine(line: string): boolean {
@@ -113,7 +113,12 @@ const REPEAT_PHRASES: string[] = [
 const MAX_TEMPLATE_TOTAL = 4;
 
 export function capLongTemplateRepetition(text: string): string {
-  let out = text;
+  // v0.9.62：先把围栏代码块与行内代码挖走。
+  // 本函数在 humanize() 里是**对整篇拼接后**跑的（intensity ≥0.65），段落级冻结管不到它；
+  // 收尾的 `[。！？!?]{2,} → 。` 会把代码里的 `??` / `!!` 改成「。」（0.9 档实测必现）。
+  // 代码与 URL / 书名号同性质：改它不叫去味，叫篡改。
+  const masked = maskCodeSpans(text);
+  let out = masked.text;
   // 第一轮：完整模板去重（保留首次出现）
   for (const { re } of REPEAT_TEMPLATES) {
     // v0.9.23 真缺陷：`re` 是**模块级且带 g 标志**的常量，而 `exec()` 会读写 `lastIndex`
@@ -194,7 +199,7 @@ export function capLongTemplateRepetition(text: string): string {
     .replace(/[。！？!?]{2,}/g, "。")
     .replace(/[，]{2,}/g, "，")
     .replace(/\n{3,}/g, "\n\n");
-  return out;
+  return masked.restore(out);
 }
 
 /* =========================================================

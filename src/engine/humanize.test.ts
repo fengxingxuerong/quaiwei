@@ -627,3 +627,51 @@ describe("adviceFor（低风险提示）", () => {
     expect(adviceFor(HUMAN).code).toBe(adviceFor(HUMAN, aiScore(HUMAN).score).code);
   });
 });
+
+/**
+ * v0.9.62 回归：0.9 档的「整篇清理」不得改动代码区间。
+ *
+ * 实测缺陷（CLI 复现）：强度 0.9 下
+ *   const ok = !!value;   →   const ok = 。value;
+ *   const x = a ?? b;     →   const x = a 。 b;
+ * 成因：`humanize()` 在 intensity ≥0.65 时对**拼接后的整篇**调
+ * `capLongTemplateRepetition`，它的收尾清理有一条 `[。！？!?]{2,} → 。`；
+ * 段落级冻结（fencedCodeSpans + spanGuard）跑在拼接之前，管不到这一步。
+ * 修法：整篇清理前用 `maskCodeSpans` 把围栏块与行内代码挖走，改完原样放回。
+ */
+describe("代码区间不被整篇标点清理破坏（v0.9.62）", () => {
+  /** 代码块夹在正文中间：段数 > 1 才会走「逐段跑 + 拼接 + 整篇清理」那条路 */
+  const wrap = (code: string) =>
+    ["前面先铺垫一句普通的话，说明背景。", code, "后面再补一句总结，综上所述就这些。"].join("\n\n");
+
+  it("围栏代码块：`??` / `!!` 在 0.9 档逐字保留", () => {
+    const out = humanize(wrap("```ts\nconst ok = !!value;\nconst x = a ?? b;\n```"), {
+      intensity: 0.9,
+      seed: 20260905,
+    });
+    expect(out).toContain("const ok = !!value;");
+    expect(out).toContain("const x = a ?? b;");
+    expect(out).not.toContain("。value");
+    expect(out).not.toContain("a 。 b");
+  });
+
+  it("行内代码：`a ?? b` 里的 `??` 不被改成「。」", () => {
+    const out = humanize(wrap("代码里 `a ?? b` 表示空值合并。"), {
+      intensity: 1,
+      seed: 7,
+    });
+    // 只锁「代码语义被改坏」这一层：中英空格是否被收（`a ??b`）属另一条已知问题，
+    // 单独跟踪，别让这条用例替它背锅变成假红。
+    expect(out).not.toContain("a 。");
+    expect(out).toContain("a ??");
+  });
+
+  it("正文里的 !!/?? 照旧收敛（护栏只挡代码，不是把整条规则关掉）", () => {
+    const out = humanize(wrap("他居然真的来了！！这谁能想到？？"), {
+      intensity: 1,
+      seed: 11,
+    });
+    expect(out).not.toContain("！！");
+    expect(out).not.toContain("？？");
+  });
+});

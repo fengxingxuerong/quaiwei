@@ -17,7 +17,7 @@
  *       [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]
  *       [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]
  *       [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]
- *       [--strict] [--persona default|netgen|classic] [--report <file.json>]
+ *       [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]
  *       [--out-format follow|txt|docx] [--explain] [--detect-only]
  *       [--recursive] [--jobs <n>] [--dry-run]
  *
@@ -149,6 +149,8 @@ interface Args {
   contest: number;
   maxCalls: number;
   maxWait: number;
+  /** v0.9.62 深度模式达标线：LLM 评判 ≤ 此分即收手。0 = 沿用默认（DEEP_TARGET_SCORE） */
+  target: number;
   strict: boolean;
   persona: string;
   report: string;
@@ -179,7 +181,7 @@ const USAGE =
   " [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]" +
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
-  " [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
+  " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only]" +
   " [--recursive] [--jobs <n>] [--dry-run]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
@@ -210,6 +212,7 @@ function parseArgs(argv: string[]): Args {
     contest: 1,
     maxCalls: 0,
     maxWait: 0,
+    target: 0,
     strict: false,
     persona: "default",
     report: "",
@@ -334,6 +337,10 @@ function parseArgs(argv: string[]): Args {
       case "--max-wait":
         args.maxWait = Math.max(0, Math.floor(num(a[++i], 0)));
         break;
+      case "--target":
+        // 1~100：0 与负数留给"不设、走默认"，>100 等于永不达标之外的反效果
+        args.target = Math.max(0, Math.min(100, Math.floor(num(a[++i], 0))));
+        break;
       case "--strict":
         args.strict = true;
         break;
@@ -399,6 +406,8 @@ function buildApiConfig(args: Args): ApiConfig {
     maxWaitSeconds: args.maxWait,
     style: args.style,
   };
+  // 达标线：只覆盖用户显式给过的（0 = 沿用 DEEP_TARGET_SCORE），保持"不传即旧行为"
+  if (args.target > 0) cfg.deepTargetScore = args.target;
   if (args.baseUrl) cfg.baseUrl = args.baseUrl;
   if (args.model) cfg.model = args.model;
   if (args.judgeModel) cfg.judgeModel = args.judgeModel;

@@ -179,7 +179,7 @@ export async function runHumanize(
                 chunks[i],
                 cfg,
                 (r, sc) => onProgress?.(r, sc, stage),
-                DEEP_TARGET_SCORE,
+                cfg.deepTargetScore ?? DEEP_TARGET_SCORE,
                 2,
                 intensity,
                 true,
@@ -252,7 +252,7 @@ export async function runHumanize(
           text,
           cfg,
           onProgress,
-          DEEP_TARGET_SCORE,
+          cfg.deepTargetScore ?? DEEP_TARGET_SCORE,
           DEEP_MAX_ROUNDS,
           intensity,
         );

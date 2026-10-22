@@ -292,7 +292,7 @@ export function BenchmarkPanel({
           <span>
             深度去味各轮 LLM 评分：
             <b>{roundScores.map((s) => (s < 0 ? "失败" : s)).join(" → ")}</b>（目标 ≤
-            {DEEP_TARGET_SCORE}）
+            {api.deepTargetScore ?? DEEP_TARGET_SCORE}）
           </span>
         </div>
       )}

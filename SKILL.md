@@ -62,6 +62,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--no-deep` | 开关 | 单轮改写，不开深度闭环 |
 | `--contest <n>` | ≥1 | 首轮多候选择优（调用数 ×n） |
 | `--max-calls <n>` / `--max-wait <sec>` | 预算 | 整篇调用预算 / 轮间最长等待 |
+| `--target <1~100>` | 默认 10 | 深度模式达标线：LLM 评判 ≤ 此分即收手。调低=多压几轮更彻底也更慢，调高=更快收手；不给则沿用默认 |
 | `--strict` | 开关 | 严格保真：发现编造事实即拒绝交付并回退 |
 | `--persona` | `default` \| `netgen` \| `classic` | 人味人格分档 |
 | `--recursive` | 开关 | 目录扫描进子目录（默认不进；隐藏目录一律跳过） |

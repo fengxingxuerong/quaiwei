@@ -353,3 +353,92 @@ export function isFactDenseParagraph(para: string): boolean {
   const unique = new Set([...arabic, ...chinese].map((s) => s.replace(/\s+/g, "")));
   return unique.size >= 3;
 }
+
+/* ------------------------------------------------------------------ *
+ * v0.9.62：整篇清理的代码护栏（占位符挖走 → 改完再原样放回）
+ *
+ * 起因（2026-10-22 实测，0.9 档）：`humanize()` 在 intensity ≥0.65 时对**整篇拼接后**
+ * 调 `capLongTemplateRepetition`，而它的收尾清理有一条
+ * `[。！？!?]{2,} → 。`。代码里的 `??`（空值合并）和 `!!`（双否定）因此被改成「。」：
+ *   const ok = !!value;  →  const ok = 。value;
+ * 段落级冻结（`fencedCodeSpans` + `spanGuard`）管不到这一步——它跑在拼回之后。
+ *
+ * 与 `spanGuard` 的分工：切句要保留偏移，只能用区间表；这里是**整串替换**，
+ * 没有偏移概念，占位符更省事（还原时放回原字节，长度变化无所谓）。
+ *
+ * ⚠️ 占位符不能用「固定槽位」（v0.9.24 ⑩ 踩过 16 槽上限溢出丢串），这里按序号编码。
+ * ------------------------------------------------------------------ */
+
+/** 行内代码：单/双反引号成对，内容不跨行（Markdown 行内代码语义） */
+const INLINE_CODE_RE = /(`{1,2})([^`\n]*?)\1/g;
+
+export function inlineCodeSpans(text: string): TextSpan[] {
+  if (!text) return [];
+  const out: TextSpan[] = [];
+  INLINE_CODE_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = INLINE_CODE_RE.exec(text)) !== null) {
+    if (m[0].length === 0) {
+      INLINE_CODE_RE.lastIndex++;
+      continue;
+    }
+    out.push({ start: m.index, end: m.index + m[0].length });
+  }
+  return out;
+}
+
+/** 围栏块 + 行内代码，合并嵌套后的区间（按起点升序、互不重叠） */
+export function codeSpans(text: string): TextSpan[] {
+  const all = fencedCodeSpans(text)
+    .concat(inlineCodeSpans(text))
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+  const out: TextSpan[] = [];
+  for (const s of all) {
+    const last = out[out.length - 1];
+    if (last && s.start < last.end) {
+      // 嵌套（围栏块里的行内代码）→ 并进上一段，别让占位符套娃
+      last.end = Math.max(last.end, s.end);
+      continue;
+    }
+    out.push({ start: s.start, end: s.end });
+  }
+  return out;
+}
+
+const MASK_OPEN = "\uE000";
+const MASK_CLOSE = "\uE001";
+const MASK_RE = /\uE000(\d+)\uE001/g;
+
+/**
+ * 把 `spans` 里的内容换成占位符，返回挖空后的文本与还原器。
+ *
+ * 文本里本来就含私用区哨兵时**原样返回**（`restore` 退化成恒等）：宁可少一层保护，
+ * 也不能让还原器把正文换成别人。这类字符在输入体检阶段本就会被清掉。
+ */
+export function maskSpans(
+  text: string,
+  spans: TextSpan[],
+): { text: string; restore: (s: string) => string } {
+  if (spans.length === 0 || text.includes(MASK_OPEN) || text.includes(MASK_CLOSE)) {
+    return { text, restore: (s: string) => s };
+  }
+  let out = "";
+  let cursor = 0;
+  const kept: string[] = [];
+  for (const s of spans) {
+    if (s.start < cursor) continue;
+    out += text.slice(cursor, s.start) + MASK_OPEN + kept.length + MASK_CLOSE;
+    kept.push(text.slice(s.start, s.end));
+    cursor = s.end;
+  }
+  out += text.slice(cursor);
+  return {
+    text: out,
+    restore: (s: string) => s.replace(MASK_RE, (_m, i: string) => kept[Number(i)] ?? ""),
+  };
+}
+
+/** 一步到位：挖走围栏块与行内代码（整篇清理前用） */
+export function maskCodeSpans(text: string): { text: string; restore: (s: string) => string } {
+  return maskSpans(text, codeSpans(text));
+}

@@ -6,6 +6,18 @@ import type { RewriteStyle } from "../engine/humanize-primitives";
 
 export type { RewriteStyle };
 
+/* ----------------------------- 深度去味闭环常量 ----------------------------- */
+//
+// ⚠️ 位置有讲究：这两个常量**必须定义在 DEFAULT_API 之前**——
+// v0.9.62 起 DEFAULT_API.deepTargetScore 要引用 DEEP_TARGET_SCORE 作默认值，
+// 而 `const` 存在暂时性死区（TDZ）：若常量留在文件末尾，DEFAULT_API 在模块
+// 顶层求值时就会抛 ReferenceError（Cannot access before initialization）。
+
+/** 达标分：LLM 评判 ≤ 此分即视为"压到了目标以下"，提前收手（可被 cfg.deepTargetScore 覆盖） */
+export const DEEP_TARGET_SCORE = 10;
+/** 深度去味最大轮数：UI 提示、分块收敛与主循环统一引用，避免文案与逻辑脱节 */
+export const DEEP_MAX_ROUNDS = 4;
+
 export interface ApiConfig {
   enabled: boolean;
   baseUrl: string;
@@ -44,6 +56,18 @@ export interface ApiConfig {
    *  计费类网关按调用计费，一篇深度闭环约消耗 4~6 次（改写+质检+评判），竞争模式首轮翻倍。
    *  粒度说明：轮间检查，轮内不中断，超预算后带当前最优结果收场。 */
   maxApiCalls?: number;
+  /**
+   * v0.9.62 深度模式达标线：LLM 评判 ≤ 此分即视为"压到目标以下"、提前收手。
+   *
+   * 此前这是**硬编码常量** `DEEP_TARGET_SCORE`（UI 只显示它、CLI 无开关），
+   * 用户想要"降到 20 分就停"或"压到 5 分为止"都做不到——竞品（文必过）的
+   * 「设定降至 30%」正是这个能力。
+   *
+   * 不填 = 沿用默认（`DEEP_TARGET_SCORE`）。合法范围 1~100，由 store.loadApi 钳制。
+   * ⚠️ 加这个字段必须同时改 store.loadApi 的白名单解析，否则刷新即丢失
+   * （同类漏读已复发四次：apiKeys / contestSamples / strictFidelity / backTranslation）。
+   */
+  deepTargetScore?: number;
   /** v0.9.4 P1 严格保真模式：财经/新闻/学术等事实敏感场景开启。
    *  背景：实测深度闭环超时/未达标收场时，最后一轮未修复的编造类质检项
    *  （如现编「我见过不少例子」）会随最优稿交付。开启后：收稿前做一轮预算外
@@ -254,6 +278,10 @@ export const DEFAULT_API: ApiConfig = {
   // v0.9.55 竞品吸收（四）：回译洗稿默认关（多花 2 次调用，且引入新的改写面；
   // 不做默认行为变更——默认用户的产出与升级前逐字一致）
   backTranslation: false,
+  // v0.9.62：深度模式达标线默认值 = DEEP_TARGET_SCORE（此前是硬编码，用户改不了）。
+  // 必须给默认值而不是留空：store.loadApi 的反向守卫会检查
+  // 「DEFAULT_API 的每个键都要被读回」，留空等于这个字段永远不在检查范围里。
+  deepTargetScore: DEEP_TARGET_SCORE,
 };
 
 /**
@@ -276,12 +304,7 @@ export function effectiveKeys(cfg: ApiConfig): string[] {
   return splitKeys([cfg.apiKey || "", cfg.apiKeys || ""].join("\n"));
 }
 
-/* ----------------------------- 深度去味闭环常量 ----------------------------- */
-
-/** 达标分：LLM 评判 ≤ 此分即视为"压到了目标以下"，提前收手 */
-export const DEEP_TARGET_SCORE = 10;
-/** 深度去味最大轮数：UI 提示、分块收敛与主循环统一引用，避免文案与逻辑脱节 */
-export const DEEP_MAX_ROUNDS = 4;
+// （深度去味闭环常量已移至文件顶部：DEFAULT_API 需要引用它们作默认值，见那里的注释）
 
 /**
  * v0.9.5 竞争段自适应阈值：可见字符数超过此值的文本，竞争段自动降级为

@@ -1,4 +1,4 @@
-import { ApiConfig, DEFAULT_API } from "./api/llm";
+import { ApiConfig, DEFAULT_API, DEEP_TARGET_SCORE } from "./api/llm";
 import { DetectorConfig, DEFAULT_DETECTOR } from "./api/detector";
 import { DEFAULT_SEMANTIC_WEIGHT } from "./engine/zhuque";
 
@@ -108,6 +108,17 @@ export function loadApi(): ApiConfig {
     // v0.9.55 竞品吸收（四）：回译洗稿开关透传（漏读会让用户"勾了、刷新就丢"，
     // 该漏读模式已让 apiKeys / contestSamples / strictFidelity 三次静默失配）
     backTranslation: bool(o, "backTranslation", DEFAULT_API.backTranslation ?? false),
+    // v0.9.62 深度模式达标线（不填 = 沿用 DEEP_TARGET_SCORE 默认 10）。
+    // ⚠️ loadApi 是**白名单逐字段解析**，漏一个就是"面板里设了、刷新回默认"。
+    // 这个坑已复发四次（apiKeys / contestSamples / strictFidelity / backTranslation），
+    // 新增 ApiConfig 字段时第一件事就是来这里补一行。范围钳制 1~100：
+    // 0 或负数会让「≤ target」永远不成立（闭环跑满轮数），超过 100 等于永不达标之外的反效果。
+    deepTargetScore:
+      typeof o.deepTargetScore === "number" &&
+      Number.isFinite(o.deepTargetScore) &&
+      o.deepTargetScore >= 1
+        ? Math.min(100, Math.floor(o.deepTargetScore))
+        : (DEFAULT_API.deepTargetScore ?? DEEP_TARGET_SCORE),
     // Key 池透传（v0.8.7 修复：此前 loadApi 漏读该字段，刷新页面后 Key 池丢失）
     ...(typeof o.apiKeys === "string" && o.apiKeys ? { apiKeys: o.apiKeys } : {}),
   };

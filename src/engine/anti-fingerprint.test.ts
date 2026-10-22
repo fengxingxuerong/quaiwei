@@ -489,3 +489,30 @@ describe("fixBrokenCollocations（与体裁无关的坏替身修复）", () => {
  * （行 287、288×2、291、292）没有任何测试入口，任何用例都到不了。
  * 要覆盖必须改生产源码（导出或注入），本任务禁止改源码，故如实记在此处。
  */
+
+describe("capLongTemplateRepetition：代码护栏（v0.9.62）", () => {
+  it("围栏代码块里的 `??` / `!!` 不被 `[。！？!?]{2,}` 收敛成「。」", () => {
+    const out = capLongTemplateRepetition(
+      "```ts\nconst ok = !!value;\nconst x = a ?? b;\n```\n\n正文照旧收敛！！",
+    );
+    expect(out).toContain("const ok = !!value;");
+    expect(out).toContain("const x = a ?? b;");
+    // 正文那条规则不许被顺手关掉
+    expect(out).toContain("正文照旧收敛。");
+  });
+
+  it("行内代码同样保护", () => {
+    const out = capLongTemplateRepetition("写法是 `a ?? b`，注意语气！！");
+    expect(out).toContain("`a ?? b`");
+    expect(out).toContain("注意语气。");
+  });
+
+  it("围栏块内的三连空行不被 \\n{3,} 清成两连", () => {
+    const out = capLongTemplateRepetition("```py\na = 1\n\n\n\nb = 2\n```");
+    expect(out).toContain("a = 1\n\n\n\nb = 2");
+  });
+
+  it("没有代码的纯正文行为不变（护栏不是无差别开关）", () => {
+    expect(capLongTemplateRepetition("真的吗？？好吧！！")).toBe("真的吗。好吧。");
+  });
+});

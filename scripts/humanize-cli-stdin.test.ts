@@ -32,6 +32,30 @@ interface RunResult {
 }
 
 /**
+ * 找 bash。Windows 上「装了 Git 但 PATH 里没有 bash」是常态（本机 2026-10-22 实测：
+ * `Get-Command bash` 为空，Git 却装在 C:\Program Files\Git），此时 `execFile("bash")`
+ * 直接 ENOENT，11 条用例全红——而它们红的原因是环境，不是引擎，等于把
+ * `check:release` 变成"看你装没装 Git 的 PATH"。
+ * 兜底顺序：显式环境变量 → PATH 里的 bash → Windows 常见安装位置。
+ */
+function resolveBash(): string {
+  const explicit = process.env.QUAIWEI_BASH?.trim();
+  if (explicit) return explicit;
+  if (process.platform !== "win32") return "bash";
+  const candidates = [
+    "C:\\Program Files\\Git\\bin\\bash.exe",
+    "C:\\Program Files\\Git\\usr\\bin\\bash.exe",
+    "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+    process.env.LOCALAPPDATA
+      ? path.join(process.env.LOCALAPPDATA, "Programs", "Git", "bin", "bash.exe")
+      : "",
+  ];
+  return candidates.find((p) => p && fs.existsSync(p)) ?? "bash";
+}
+
+const BASH = resolveBash();
+
+/**
  * 跑 CLI：argv 为 humanize-cli 的参数；input 经环境变量 + bash printf 管道喂 stdin。
  * 不 rejects——退出码/输出一并返回，方便断言错误路径的 stderr 文案。
  */
@@ -41,7 +65,7 @@ async function runCli(argv: string[], input: string): Promise<RunResult> {
   const script = 'printf %s "$CLI_STDIN" | "$NODE_BIN" "$TSX_BIN" "$CLI_BIN" "$@"';
   try {
     const { stdout, stderr } = await execFileAsync(
-      "bash",
+      BASH,
       ["-c", script, "ai-humanizer", ...argv],
       {
         env: {

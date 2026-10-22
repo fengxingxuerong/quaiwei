@@ -63,6 +63,8 @@ export function SettingsModal({
   const [draftTerms, setDraftTerms] = useState<string>(protectedTerms);
   // 温度输入中间态：允许清空/逐字编辑，失焦时才归一化进草稿（避免受控回弹跳值）
   const [tempText, setTempText] = useState(String(api.temperature));
+  // v0.9.62 达标线输入中间态：同上，允许清空（清空 = 回默认 DEEP_TARGET_SCORE）
+  const [targetText, setTargetText] = useState(String(api.deepTargetScore ?? DEEP_TARGET_SCORE));
 
   // Esc 关闭模态（桌面应用标配交互）
   useEffect(() => {
@@ -361,9 +363,47 @@ export function SettingsModal({
         </label>
         <p className="modal-tip" style={{ marginTop: -6 }}>
           深度模式：改写 → LLM 评分 → 未达标带分数反馈自动再改写，最多 {DEEP_MAX_ROUNDS}{" "}
-          轮。达标线默认 {DEEP_TARGET_SCORE} 分，评判员首轮打分偏高（严评）时自动按首轮分锚定放宽。
-          单次更慢但去味更彻底。
+          轮。评判员首轮打分偏高（严评）时自动按首轮分锚定放宽达标线。单次更慢但去味更彻底。
         </p>
+        {draftApi.deepMode && (
+          <>
+            <label className="row">
+              <span>达标线</span>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                step={1}
+                value={targetText}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setTargetText(raw);
+                  const v = parseInt(raw, 10);
+                  // 空 = 回默认（undefined 让下游沿用 DEEP_TARGET_SCORE）；越界先不动，
+                  // 失焦时再钳制——否则输到"1"之前那一帧会被弹成 10，用户根本打不出个位数。
+                  updateApi({
+                    deepTargetScore: raw.trim() === "" || !Number.isFinite(v) ? undefined : v,
+                  });
+                }}
+                onBlur={() => {
+                  const v = parseInt(targetText, 10);
+                  if (!Number.isFinite(v)) {
+                    setTargetText(String(DEEP_TARGET_SCORE));
+                    updateApi({ deepTargetScore: undefined });
+                    return;
+                  }
+                  const clamped = Math.max(1, Math.min(100, v));
+                  setTargetText(String(clamped));
+                  updateApi({ deepTargetScore: clamped });
+                }}
+              />
+            </label>
+            <p className="modal-tip" style={{ marginTop: -6 }}>
+              LLM 评判 ≤ 此分即收手（默认 {DEEP_TARGET_SCORE}，范围 1~100）。调低 = 多压几轮、
+              更彻底也更慢；调高 = 更快收手。留空即回到默认。
+            </p>
+          </>
+        )}
         <label className="row">
           <span>最长等待</span>
           <select
