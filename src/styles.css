@@ -1180,3 +1180,83 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- 手机竖屏：首屏要能看见「去味」----
+   2026-10-22 在 390×844 真实视口走用户路径：两个 280px 文本域 + 顶栏把
+   「去味」挤到首屏之外，用户粘完稿子还要向下滚才能找到主操作。
+   这里只收窄移动端自己的高度/间距，桌面断点与结构不动。 */
+@media (max-width: 560px) {
+  .app {
+    padding: 12px 10px 32px;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .brand {
+    gap: 8px;
+    min-width: 0;
+  }
+  .title {
+    font-size: 14px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .subtitle {
+    font-size: 9px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .viewswitch button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .gear {
+    padding: 7px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .guide {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .guide-step,
+  .guide-arrow {
+    font-size: 12px;
+  }
+  textarea {
+    min-height: 180px;
+    font-size: 14px;
+  }
+  .controls {
+    gap: 8px;
+  }
+  .slider {
+    flex: 1 0 100%;
+    min-width: 0;
+  }
+  .controls > button.primary {
+    flex: 1 0 100%;
+    width: 100%;
+  }
+  .resultbar {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .result-score {
+    min-height: 0;
+  }
+  .scores {
+    gap: 8px;
+  }
+  .score-badge,
+  .delta {
+    min-width: 0;
+    flex: 1;
+  }
+}

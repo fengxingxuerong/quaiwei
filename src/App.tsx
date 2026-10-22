@@ -721,7 +721,7 @@ export default function App({
         <button
           className="ghost"
           onClick={() => fileInputRef.current?.click()}
-          title="从 .txt / .md 导入原文（≤2MB）"
+          title="从 .txt / .md / .docx 导入原文（≤2MB）"
         >
           导入
         </button>
@@ -848,10 +848,10 @@ export default function App({
 
       {!simple && before && after && (
         <div className="scores">
-          <ScoreBadge label="去味前 · AI味" s={before} tone="before" />
-          <ScoreBadge label="去味后 · AI味" s={after} tone="after" />
+          <ScoreBadge label="去味前 · 套话指数" s={before} tone="before" />
+          <ScoreBadge label="去味后 · 套话指数" s={after} tone="after" />
           <div className="delta">
-            <div className="delta-label">降幅</div>
+            <div className="delta-label">风险分差</div>
             <div
               className="delta-value"
               style={{ color: after.score <= before.score ? "#3ddc97" : "#ff5d6c" }}

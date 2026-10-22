@@ -61,19 +61,19 @@
       "note": "seed=20260826, intensity=0.9, zhuque=true, genre=对话体"
     },
     "H1": {
-      "score": 0,
+      "score": 8,
       "note": "seed=20260826, intensity=0.6, zhuque=false, genre=纯人写稿"
     },
     "H2": {
-      "score": 0,
+      "score": 8,
       "note": "seed=20260826, intensity=0.9, zhuque=true, genre=纯人写稿"
     },
     "O2": {
-      "score": 3,
+      "score": 5,
       "note": "seed=20260826, intensity=0.7, zhuque=false, genre=论说文"
     },
     "O3": {
-      "score": 3,
+      "score": 4,
       "note": "seed=20260826, intensity=0.9, zhuque=true, genre=论说文"
     }
   },
@@ -129,6 +129,16 @@
       "changes": [
         "E/O2:2→3",
         "E/O3:2→3"
+      ]
+    },
+    {
+      "at": "2026-10-21",
+      "reason": "【接受恶化 H1/H2/O2/O3】2026-10-22 断句守卫修复：不再把承前谓语/条件从句切成残句（C1/C5/C12/C15/C16/C17/C20 实测；新增 19 条多种子用户路径回归），代价是 aiScore 代理分 H1/H2/O2/O3 上升 <=8；产出人工读稿明显更连贯，接受该代理分代价。",
+      "changes": [
+        "E/H1:0→8",
+        "E/H2:0→8",
+        "E/O2:3→5",
+        "E/O3:3→4"
       ]
     }
   ]

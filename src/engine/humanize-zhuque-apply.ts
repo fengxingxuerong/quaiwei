@@ -347,13 +347,17 @@ export function humanizeSingle(text: string, opts: HumanizeOptions = {}): string
     // v0.9.50：正式语体下不补。
     () => relaxLe(working, rng, 0.6 * intensity), // 补"了"概率从 0.4 提到 0.6，人味更强
   );
+  // 正式语体 = main / academic（与 guardFormalRegister 完全同口径）。
+  // 被动改主动也要吃这道门控：C12 学术摘要实测「受到广泛关注」→「被不少人盯着看」，
+  // 正式体里的口语替身是语体崩，改用「广受关注」这类正式变体。
+  const formalRegister = opts.genre === "main" || style === "academic";
   // 必须排在 replaceVocab 之前：否则"受到广泛关注"的"关注"先被换成"留意"，
   // 这里再也匹配不到，实测会留下"受到广泛留意"这种搭配病句。
   working = step(
     "passive",
     "被动改主动",
     "「受到广泛关注」这类被动句是书面腔的显著特征，改回主动。必须排在词汇替换之前——顺序颠倒会留下「受到广泛留意」这类搭配病句。",
-    () => softenPassive(working, rng, Math.min(1, 0.85 * intensity)),
+    () => softenPassive(working, rng, Math.min(1, 0.85 * intensity), formalRegister),
   );
   working = step(
     "template",
@@ -363,7 +367,7 @@ export function humanizeSingle(text: string, opts: HumanizeOptions = {}): string
   );
   // v0.9.46：正式语体 = main / academic（与 guardFormalRegister 完全同口径）。
   // 传给 replaceVocab 后，口语替身就地否掉，不再走"先改成病句、再靠下游还原"的老路。
-  const formalRegister = opts.genre === "main" || style === "academic";
+  // （formalRegister 已在被动改主动之前计算，供两处共用。）
   // 词汇替换要给出真实命中数：本步单独手写 emit（step 的 emit 不带动态 metric，这里需要前后计数差）
   {
     const b = working;

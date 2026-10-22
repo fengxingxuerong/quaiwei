@@ -469,7 +469,7 @@ export function SettingsModal({
 
         <div className="modal-divider">本地引擎（离线，零成本）</div>
         <p className="modal-tip">
-          多候选择优：本地引擎一次跑多个随机种子各出一稿，按「高危指纹 &lt; 本地 AI 味分」挑最优，
+          多候选择优：本地引擎一次跑多个随机种子各出一稿，按「高危指纹 &lt; 本地套话指数」挑最优，
           候选先过硬门槛（忠实度不过 / 长度比跑偏 0.6~1.4 之外直接淘汰）。只作用于本地引擎路径（含
           API 失败回退）。
         </p>

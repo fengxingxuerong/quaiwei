@@ -1,7 +1,8 @@
 {
   "name": "ai-humanizer",
-  "version": "0.9.59",
+  "version": "0.9.60",
   "type": "module",
+  "main": "index.js",
   "description": "趣AI味 · 本地离线可用、可选接 LLM 的中文 AI 文本拟人化工具，对标朱雀",
   "license": "MIT",
   "author": "飞行雪绒",
@@ -27,8 +28,16 @@
   "bin": {
     "ai-humanizer": "dist-cli/humanize-cli.mjs"
   },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "files": [
     "dist-cli",
+    "index.js",
+    "cordis.patch.yml",
+    ".dsh",
     "README.md",
     "README_EN.md",
     "LICENSE"

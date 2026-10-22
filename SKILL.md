@@ -1,9 +1,14 @@
 ---
 name: qu-ai-wei
+display_name: 去 AI 味 · QuAiWei
+display_name_zh: 去 AI 味 · QuAiWei
+display_name_en: QuAiWei Humanizer
 description: 去 AI 味（简体中文）——调用本仓库自带的本地离线引擎（零成本、不联网）或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后 AI 味评分与逐条痕迹报告。当用户要求「降 AI 率 / 去 AI 味 / 去 AIGC 痕迹 / 让这段更像人写的 / 自检朱雀类检测」时使用。
+description_zh: 去 AI 味（简体中文）——本地离线引擎或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后评分与痕迹报告。
+description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
 metadata:
-  version: 0.9.59
+  version: 0.9.60
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 

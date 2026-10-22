@@ -329,3 +329,27 @@ export function frontmatterSpans(text: string): TextSpan[] {
   }
   return [];
 }
+
+/**
+ * 事实密集段：数字/金额/百分比/日期/中文数量词达到 3 个不同项。
+ *
+ * 2026-10-22 真实案例 C16（招股书风险因素）实测：structure 层把
+ * 「营收 32.68 亿元，同比 21.4%；净利 4.27 亿元，同比 15.8%」
+ * 重排成「同比 21.4%；净利 4.27 亿元。2025 年度，营收 32.68 亿元。同比 15.8%」
+ * ——数字一个没丢，但**每个数字修饰的对象全错了**。这是事实层面的损坏，
+ * 比语体问题严重一档。数字密集的段落本来就不该做结构重排：它的结构就是
+ * 「指标 + 数值 + 同比」的绑定关系。
+ *
+ * 代价：这类段落少一层结构去味；保真优先于去味。
+ */
+export function isFactDenseParagraph(para: string): boolean {
+  const arabic =
+    para.match(
+      /\d+(?:\.\d+)?\s*(?:%|％|亿|万|千|百|元|年|月|日|个|项|条|款|倍|GB|TB|Tbps|pp|个百分点)?/g,
+    ) ?? [];
+  const chinese =
+    para.match(/[一二三四五六七八九十百千万亿]+(?:场|人次|份|项|条|款|个|年|月|日|倍|个百分点)/g) ??
+    [];
+  const unique = new Set([...arabic, ...chinese].map((s) => s.replace(/\s+/g, "")));
+  return unique.size >= 3;
+}

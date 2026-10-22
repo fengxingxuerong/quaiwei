@@ -98,6 +98,7 @@ import {
   isIndentedBlock,
   isMarkdownStructLine,
   isProtectedBlock,
+  isFactDenseParagraph,
   spanGuard,
   splitParagraphChunks,
 } from "./text-shield.ts";
@@ -488,7 +489,9 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
       .split(/\n\n+/)
       // v0.9.54：围栏块整段跳过——结构重排会把它内部的换行吃掉（splitSentences + join("")）
       .map((p) =>
-        isProtectedBlock(p) ? p : structuralShuffleParagraph(p, structRng, intensity, structOpts),
+        isProtectedBlock(p) || isFactDenseParagraph(p)
+          ? p
+          : structuralShuffleParagraph(p, structRng, intensity, structOpts),
       )
       .join("\n\n");
     // v0.9.8 P0 收敛（六·续）：段落重排只对论说/公文生效。

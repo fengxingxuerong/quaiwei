@@ -158,6 +158,11 @@ export function replaceVocab(
             ? candidates.filter((c) => !FORMAL_FORBIDDEN_SUBSTITUTES.has(c))
             : candidates;
         let rep = pick(rng, formalPool);
+        // v0.9.60：「推动→拉动」只对经济/需求类宾语成立。接「可持续发展/技术进步」
+        // 会产出搭配病句（默认档实测 12/40），回退到同样正式的「推进」。
+        if (from === "推动" && rep === "拉动" && !PULL_OBJECT_RE.test(base.slice(end, end + 12))) {
+          rep = "推进";
+        }
         // v0.9.41 替身降级（MEDIUM_DOWNGRADE）：「通过」后紧邻媒介/渠道名词时，
         // 「靠/借」崩坏（"靠短信通知"×）——但与 VERB_PHRASE_AFTER 的处置不同：
         // 那条是「跳过替换」（宁保留原词），本条**降级到「用」**（"用短信通知"√），
@@ -263,15 +268,40 @@ export function replaceVocab(
   return base;
 }
 
+/**
+ * 「拉动」只接经济/需求类宾语（拉动经济、拉动消费、拉动内需）。
+ * 「推动可持续发展」「推动技术进步」换成「拉动」是搭配病句
+ * （2026-10-22 默认档实测「拉动可持续发展」12/40）。不在名单里的宾语回退到「推进」。
+ */
+const PULL_OBJECT_RE =
+  /^(?:经济|消费|内需|需求|增长|就业|GDP|投资|出口|进口|市场|销售|营收|业绩|旅游|客流|销量)/;
+
 /** 处理 "随着……的发展" 套话 */
 export function replaceWithDevelopment(text: string, rng: () => number, intensity: number): string {
-  const re = /随着[\s\S]{0,18}?(的)?发展[，,]?/g;
+  const re = /随着([\s\S]{0,18}?)(?:的)?发展[，,]?/g;
   const timeTail = /(?:如今|现在|眼下|后来)[，,]?$/;
+  /**
+   * 2026-10-22 行为修正：原实现把整个「随着X的发展，」删成「如今/现在/空」，
+   * 默认档 40 种子实测 **28 次**丢掉「随着人工智能技术的快速发展」这段实义内容，
+   * 留下「AI 写作工具应运而生。」或「现在AI…」（还制造了中英间空格）。
+   * 现在只剥「随着」和「的」、保留 X + 发展，改写成「X快速发展，」——
+   * 套话外壳没了，内容与因果还在。
+   */
+  const rewrite = (m: string, offset: number, str: string): string => {
+    const subject = m
+      .replace(/^随着/, "")
+      .replace(/[，,]\s*$/, "")
+      .replace(/的(?=(?:快速|迅速|高速|持续|不断)?发展$)/, "");
+    const next = str.charAt(offset + m.length);
+    if (/[。！？!?]/.test(next)) return subject;
+    if (next === "" || next === "\n" || next === "\r") return subject;
+    return subject + "，";
+  };
   return text.replace(re, (m: string, _g: string, offset: number, str: string) => {
     // v0.9.31：这条套话的删除会**连坐后句的主语**——「随着人工智能技术的不断发展，其在…」
     // 里「其」的先行词正是"人工智能技术"，状语一删，「其」就无所指（实测 6/30 命中
     // 「现在其在各个领域的应用越来越广泛。」，scan-bugs v8.0「代词主语悬空」）。
-    // 故后接代词主语时整条保留，宁可留一处套话也不造病句。
+    // 现在 X 会保留下来，代词仍有先行词；守卫保留是为了不改动已验证安全的旧路径。
     // rng() 照常消耗一次：守卫若少抽一次，后续所有随机步骤整体错位，
     // 等于用"改不改病句"顺手改了一遍全局随机序列——那是另一类不可控。
     if (/^(?:其|它|它们|该|此|这|那)/.test(str.slice(offset + m.length))) {
@@ -279,9 +309,12 @@ export function replaceWithDevelopment(text: string, rng: () => number, intensit
       return m;
     }
     if (timeTail.test(str.slice(0, offset))) {
-      return rng() < Math.max(intensity, 0.85) ? "" : m;
+      rng(); // 原实现在这一分支抽一次；保持既有种子序列
+      return rewrite(m, offset, str);
     }
-    return rng() >= intensity ? m : pick(rng, ["如今", "现在", "", "", "后来"]);
+    if (rng() >= intensity) return m;
+    rng(); // 原实现在 pick 时抽一次；保持既有种子序列
+    return rewrite(m, offset, str);
   });
 }
 
@@ -315,28 +348,46 @@ export function relaxRedundantVerb(text: string, rng: () => number, p: number): 
  * 只做**固定搭配整块替换**，不做切词式泛化：非白名单的"得到提高""受到启发"一律不碰，
  * 按"被+V于X"通用捕获重排会把主语边界切错（历史版本实测切出"人工智能技在…中，术…"）。
  */
-const PASSIVE_REWRITES: { re: RegExp; variants: string[] }[] = [
+const PASSIVE_REWRITES: { re: RegExp; variants: string[]; formal: string[] }[] = [
   {
     re: new RegExp("被广泛使用于([^\\n，。！？；]{2,20})", "g"),
     variants: ["在$1用得很广", "在$1到处都在用"],
+    formal: ["广泛应用于$1"],
   },
-  { re: /受到广泛关注/g, variants: ["大家都很关注", "被不少人盯着看", "挺受看重"] },
-  { re: /得到广泛认可/g, variants: ["大家都很认可", "口碑不错", "普遍叫好"] },
+  {
+    re: /受到广泛关注/g,
+    variants: ["大家都很关注", "被不少人盯着看", "挺受看重"],
+    formal: ["广受关注", "备受关注"],
+  },
+  {
+    re: /得到广泛认可/g,
+    variants: ["大家都很认可", "口碑不错", "普遍叫好"],
+    formal: ["广受认可", "获得普遍认可"],
+  },
   // 必须保留系词"是"；且替身要能直接接在原主语后面——"大家普遍觉得是"会留下
   // "这大家普遍觉得是行业趋势"这种悬空话题，"公认是/大家都说是"才读得通。
-  { re: /被认为是/g, variants: ["公认是", "大家都说是"] },
+  {
+    re: /被认为是/g,
+    variants: ["公认是", "大家都说是"],
+    formal: ["公认是", "通常被认为是"],
+  },
   // "大家管它叫"要不得：原句式是「主语 + 被称之为 + 宾」，换完变"它大家管它叫里程碑"，
   // 主语与"管它"重复。只有能直接跟在主语后的谓语性说法才安全。
-  { re: /被称之为/g, variants: ["人称", "俗称"] },
+  {
+    re: /被称之为/g,
+    variants: ["人称", "俗称"],
+    formal: ["被称为", "人称"],
+  },
 ];
 
-export function softenPassive(text: string, rng: () => number, p: number): string {
-  for (const { re, variants } of PASSIVE_REWRITES) {
+export function softenPassive(text: string, rng: () => number, p: number, formal = false): string {
+  for (const { re, variants, formal: formalVariants } of PASSIVE_REWRITES) {
+    const pool = formal ? formalVariants : variants;
     text = text.replace(re, (...args: unknown[]) => {
       const matched = args[0] as string;
       if (rng() >= p) return matched;
       const g1 = args[1];
-      return pick(rng, variants).replace(/\$1/g, typeof g1 === "string" ? g1 : "");
+      return pick(rng, pool).replace(/\$1/g, typeof g1 === "string" ? g1 : "");
     });
   }
   return text;

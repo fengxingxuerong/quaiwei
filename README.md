@@ -1,4 +1,4 @@
-# 趣AI味 · QuAiWei v0.9.59
+# 趣AI味 · QuAiWei v0.9.60
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
@@ -125,6 +125,15 @@ cp -r skills/humanizer-rules/* ~/.claude/skills/humanizer-rules/
 规则文档由 `scripts/gen-skill-rules.ts` **从引擎源码自动生成**（词表/旋钮/守卫正则单一事实源），
 与引擎同源、随引擎更新；手改文档会被 `scripts/skill-rules.test.ts` 逐字比对拦下。
 引擎本体的完整能力（朱雀对标标定、AI 分自评、批量/LLM 通道）见上方各章节。
+
+### DeepSeek Harness（DSH）/ WorkBuddy 一键安装（v0.9.60+）
+
+仓库根已声明 `dsh.bundle`，DSH 插件安装页填本仓库地址即可：
+安装后技能文件落到 `~/.dsh/skills/quaiwei.md`，重启会话输入 `/quaiwei`。
+技能会优先调用本仓库的确定性 CLI；没有仓库时按自带的编辑约束人工改写。
+
+WorkBuddy 用户可在技能上传页选择仓库根目录导入：`SKILL.md` frontmatter 已包含
+`display_name_zh` / `display_name_en` / `description_zh` / `description_en`。
 
 ## 批量处理（CLI，v0.8.6；v0.9.15 起可选 LLM 通道）
 
@@ -705,5 +714,5 @@ MIT（见 LICENSE）。
 
 ## 更新日志
 
-完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.59**（以 `package.json` 的 `version` 为准）。
+完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.60**（以 `package.json` 的 `version` 为准）。
 
