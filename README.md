@@ -7,7 +7,7 @@
 定位：中文 AI 文本**去味预处理工具 + 送检前自检清单**——可接入朱雀（网页版半自动 / EdgeOne API 全自动）等真实检测器做闭环验证。
 
 **在线试玩**（无需安装，浏览器直接跑，✅ 已上线）：<https://fengxingxuerong.github.io/quaiwei/> ｜
-**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（约 199MB zip / 解压 517MB；已发布桌面包可能落后于仓库版本，以 release 页为准）——解压双击 `QuAiWei.exe` 即用 ｜
+**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（约 212MB zip / 解压 517MB；已发布桌面包可能落后于仓库版本，以 release 页为准）——解压双击 `QuAiWei.exe` 即用 ｜
 [English](README_EN.md) ｜ [贡献指南](CONTRIBUTING.md) ｜ [Discussions](https://github.com/fengxingxuerong/quaiwei/discussions)
 
 > ⚠️ 诚实声明：本项目**不承诺"通过朱雀检测"**——aiScore → 朱雀官方分的换算**不可靠**：
@@ -553,6 +553,19 @@ npx tsx scripts/regression-12samples.ts --rebaseline "<为什么这批数字是�
 - **对话体裁的存档点偏低**：对话线斜率仅 0.88，但只有 3 个点，不能据此承诺任何一篇对话稿都能低于 40%；
 - **论说线已过时（2026-09-08 漂移体检）**：v0.8.x 词表改动导致论说 3 个归档点 aiScore 全部漂移（原文 33→92），论说线刻度不再可信，v4 送检（论说中段 x≈16 / 原文 x≈92）待回传后重拟合；
 - **本地引擎的边界**：本地引擎"换词不换骨"，不打散段落结构与句序；结构级去味需走 LLM 深度模式。
+
+### v4 送检脚手架（`scripts/zhuque-v4-pipeline.ts`）
+
+上面「论说线已过时」那条要靠 v4 送检回传才能重拟合，这个脚本把那条路铺完了：
+
+| 子命令 | 做什么 |
+|---|---|
+| `scan` | 按体裁扫多档强度，打印 (intensity, aiScore, chars) 表，用来挑命中目标区间的档位（论说≈15/22、叙事≈15/30、对话≈15/35） |
+| `prepare` | 按 manifest 指定的 (id, genre, intensity, zhuqueMode, srcText) 生成 >350 字送检文本（不够自动补轮次），同时产出待填官分的 TSV |
+| `report` | 从 `calibration-data-v4-genres.json` 读回填的官分，打拟合报告 |
+
+目标是给每条体裁线补 1~2 个**非饱和中段 x 值**，把自由度从 1 扩到 3+——
+只有这样才能给出带 S.E. 的置信区间。当前 18 个点只有一个人工抄进去的百分比，给不出区间。
 
 ### 官方送检凭证账本（`scripts/zhuque-evidence.ts`）
 
