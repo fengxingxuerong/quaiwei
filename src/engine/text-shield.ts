@@ -442,3 +442,40 @@ export function maskSpans(
 export function maskCodeSpans(text: string): { text: string; restore: (s: string) => string } {
   return maskSpans(text, codeSpans(text));
 }
+
+/* ------------------------------------------------------------------ *
+ * v0.9.62：围栏感知的段落切分（等价 `text.split(/\n\n+/)`，但围栏内部的空行不切）
+ *
+ * 起因（2026-10-22 实测，0.6 默认档）：围栏代码块**内部有空行**时，
+ * `split(/\n\n+/)` 会把一个代码块切成两段——
+ *   ["```py\na = 1", "b = 2\n```"]
+ * 第二段的段首是 `b = 2`，于是 `isProtectedBlock()` 判否，它被当正文送进
+ * splitSentences + join("")；那一层按 `[。！？!?；;\n]+` 切句、拼回时不还原换行，
+ * 结果闭合围栏被粘到代码末行：
+ *   b = 2```        ← Markdown 不再认为围栏闭合，**后面整篇文档被渲染成代码**
+ * 同时 3 个空行被压成 1 个（join 恒用 "\n\n"）。
+ *
+ * 判据与 `fencedCodeSpans` 同源：空行分隔符的**两端都落在围栏内部**才算代码内空行。
+ * 非围栏文本逐字等价于 `split(/\n\n+/)`（含首尾空段行为），保证零回归。
+ * ------------------------------------------------------------------ */
+export function splitParasOutsideFences(text: string): string[] {
+  if (!text) return [text];
+  const guard = spanGuard(fencedCodeSpans(text));
+  const parts: string[] = [];
+  let last = 0;
+  const re = /\n{2,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m[0].length === 0) {
+      re.lastIndex++;
+      continue;
+    }
+    const sepStart = m.index;
+    const sepEnd = m.index + m[0].length;
+    if (guard(sepStart) && guard(sepEnd - 1)) continue;
+    parts.push(text.slice(last, sepStart));
+    last = sepEnd;
+  }
+  parts.push(text.slice(last));
+  return parts;
+}

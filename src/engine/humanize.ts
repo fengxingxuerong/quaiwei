@@ -101,6 +101,7 @@ import {
   isFactDenseParagraph,
   spanGuard,
   maskCodeSpans,
+  splitParasOutsideFences,
   splitParagraphChunks,
 } from "./text-shield.ts";
 export { wouldCascade, DIR_MODIFIER_VERB_CLASH_RE, FORMAL_FORBIDDEN_SUBSTITUTES };
@@ -486,9 +487,10 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
       // v0.9.8 P0 收敛（七）：兜底风格对齐 DEFAULT_API（casual → plain）
       style: opts.style ?? "plain",
     };
-    result = result
-      .split(/\n\n+/)
+    result = splitParasOutsideFences(result)
       // v0.9.54：围栏块整段跳过——结构重排会把它内部的换行吃掉（splitSentences + join("")）
+      // v0.9.62：切段本身改成围栏感知——否则围栏内空行会把一个代码块劈成两段，
+      // 第二段（`b = 2` 开头）不满足 isProtectedBlock，照样被结构层吃掉换行。
       .map((p) =>
         isProtectedBlock(p) || isFactDenseParagraph(p)
           ? p
@@ -596,8 +598,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     //   实测 16 个用例回归）。必须逐段分发——这是原 PAD_INJECT_CAP 分支早已埋下的隐患，
     //   只因该分支罕有命中而未暴露，现在成为主路径必须修掉。
     result = result.includes("\n\n")
-      ? result
-          .split(/\n\n+/)
+      ? splitParasOutsideFences(result)
           // v0.9.54：围栏块整段跳过。
           // ⚠️ 变异检验实测：与 boost2（下方）一并拆掉，本文件用例仍绿——
           // 结构层与上一处 burst 的保护先一步生效。保留作纵深防御：
@@ -737,8 +738,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     //   它只切句不引新痕迹，且原代码在 cap2 之后本来就走这条路（下方 649 行），
     //   现在只是把「先灌锚再删锚」的冗余往来彻底去掉，两个目标不再互相拉锯。
     result = result.includes("\n\n")
-      ? result
-          .split(/\n\n+/)
+      ? splitParasOutsideFences(result)
           // v0.9.54：围栏块整段跳过（同上）——这一处是 intensity 高档的最后一刀，
           // 漏掉它时代码块内部换行仍会被 boostBurstinessByCutting 吃掉（实测 8 → 4）
           // v0.9.54：围栏块整段跳过。
@@ -767,8 +767,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     // aiScore（含 4 组词表全表扫描）。改用 burstinessOf（同口径、结果逐位相同，实测快约 10×）。
     if (burstinessOf(result) < FP_LINE) {
       result = result.includes("\n\n")
-        ? result
-            .split(/\n\n+/)
+        ? splitParasOutsideFences(result)
             // v0.9.54：同上（CV 红线触发的最后一刀切句兜底），同属纵深防御
             .map((p) => (isProtectedBlock(p) ? p : burstCut(p, 0.55, 8)))
             .join("\n\n")

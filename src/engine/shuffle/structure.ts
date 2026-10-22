@@ -13,7 +13,7 @@ import { fragmentCanStand } from "../humanize-vocab.ts";
 import { keepOnlyIfDetectDrops } from "../detector.ts";
 import { classifyExpositionScore } from "./fingerprint.ts";
 import { isSpecTableParagraph } from "../anti-fingerprint.ts";
-import { isProtectedBlock } from "../text-shield.ts";
+import { isProtectedBlock, splitParasOutsideFences } from "../text-shield.ts";
 
 /** 承接词黑名单：以这些词开头的句子「必须」等在前句之后，不能参与重排（否则出病句） */
 const SEQUENCE_HEAD_RE =
@@ -240,7 +240,9 @@ export function resegmentParagraphsAggressive(
   origSentCounts?: number[],
 ): string {
   if (intensity < 0.55) return text;
-  const raw = text.split(/\n{2,}/).filter((s) => s.trim());
+  // v0.9.62：切段围栏感知——围栏内空行会把一个代码块劈成两段，第二段段首是代码行，
+  // `isProtectedBlock` 判否 ⇒ 被当正文合并/拆分，块内空行与闭合围栏都会丢。
+  const raw = splitParasOutsideFences(text).filter((s) => s.trim());
   if (raw.length < 2) return text;
   // 对齐才启用门控：长度对不上时索引映射不可信，整段退回旧行为（宁可少一道闸，不要错位闸）
   const origGate =
@@ -817,9 +819,11 @@ export function clampAvgSentenceLenUnder25(text: string, targetAvg = 25, maxCuts
   // P7-F 段落感知：splitSentences 的 trim 会剥掉句尾 \n\n，
   // 全文级 splitSentences→join 会悄悄合并段落（与 boostBurstiness 相同的分段模式）
   if (!text.includes("\n\n")) return clampAvgSentencesInBlock(text, targetAvg, maxCuts);
-  return text
-    .split(/\n\n+/)
-    .map((p) => clampAvgSentencesInBlock(p, targetAvg, maxCuts))
+  // v0.9.62：切段必须围栏感知——围栏块内部有空行时，`split(/\n\n+/)` 会把一个代码块
+  // 切成两段，第二段段首是代码行（不满足 isProtectedBlock），被当正文切句后
+  // **闭合围栏会被粘到上一行**，Markdown 从此认为围栏未闭合。
+  return splitParasOutsideFences(text)
+    .map((p) => (isProtectedBlock(p) ? p : clampAvgSentencesInBlock(p, targetAvg, maxCuts)))
     .join("\n\n");
 }
 
@@ -933,8 +937,7 @@ export function capParticleSentenceDensity(
   // 堆积密度远超真人（真人每段至多 1 条口头语，且不是每段都有）。
   // stripSuffix=false：只收独立语气句、保留句尾挂词（最终收口用，防止把
   // burstiness 兜底刚拉起的句长方差又拍平）。
-  return text
-    .split(/\n\n+/)
+  return splitParasOutsideFences(text)
     .map((para) => {
       // v0.9.54：围栏代码块整段跳过。
       // `splitSentences` 会把代码里的换行当句间空白剥掉、`out.join("")` 再拼回去 ⇒

@@ -23,6 +23,7 @@ import {
   isFrontmatterBlock,
   frontmatterSpans,
   splitParagraphChunks,
+  splitParasOutsideFences,
   type TextSpan,
 } from "./text-shield";
 import { splitSentences } from "./humanize-text";
@@ -337,5 +338,37 @@ describe("frontmatterSpans / isIndentedBlock / isFrontmatterBlock（v0.9.54 第�
     expect(isFrontmatterBlock("---")).toBe(true);
     expect(isFrontmatterBlock("title: 周报\n---")).toBe(false);
     expect(isFrontmatterBlock("普通段落。")).toBe(false);
+  });
+});
+
+describe("splitParasOutsideFences（v0.9.62）", () => {
+  it("无围栏文本：与 text.split(/\\n\\n+/) 逐元素等价（含首尾空段）", () => {
+    const cases = [
+      "甲。\n\n乙。",
+      "甲。\n\n\n\n乙。",
+      "甲。",
+      "\n\n甲。",
+      "甲。\n\n",
+      "",
+      "甲。\n乙。", // 单换行不算段边界
+    ];
+    for (const t of cases) {
+      expect(splitParasOutsideFences(t), JSON.stringify(t)).toEqual(t.split(/\n\n+/));
+    }
+  });
+
+  it("围栏块内部的空行不算段边界：整块留在同一个元素里", () => {
+    const text = "前言。\n\n```py\na = 1\n\n\n\nb = 2\n```\n\n后记。";
+    const parts = splitParasOutsideFences(text);
+    expect(parts).toHaveLength(3);
+    expect(parts[1]).toBe("```py\na = 1\n\n\n\nb = 2\n```");
+    // 拼回去与原文逐字一致 ⇒ 下游 join("\n\n") 不会动块内空行
+    expect(parts.join("\n\n")).toBe(text);
+  });
+
+  it("围栏外的空行照常切（护栏不是把切段关掉）", () => {
+    const parts = splitParasOutsideFences("甲。\n\n```js\nx\n```\n\n乙。\n\n丙。");
+    expect(parts).toHaveLength(4);
+    expect(parts[3]).toBe("丙。");
   });
 });
