@@ -402,7 +402,7 @@ npm run repack           # = rebuild-app → prune-dist → verify-pruned
 ```bash
 npm test          # vitest 断言套件（含引擎行为/边界/跨块清理用例 + 性能预算门禁）
 npm run test:regress   # 病句签名回归扫描（120+ 种子组合）
-npm run test:realcase  # 20 篇真实语料 × 5 种子 × 2 强度矩阵（有硬缺陷即非 0 退出）
+npm run test:realcase  # 23 篇真实语料 × 5 种子 × 2 强度矩阵（有硬缺陷即非 0 退出）
 npm run test:regress12 # 12 样本回归：评分器漂移棘轮 + 引擎退化棘轮（见下节）
 npm run test:quality   # 词典泄漏质量门禁
 npm run test:calib     # 标定数据源自检（参数一致/拟合误差/x 轴漂移棘轮，退出码可拦）

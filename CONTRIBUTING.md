@@ -33,12 +33,12 @@ npx tsx scripts/gen-skill-rules.ts --check  # 只比对
 主力用例在 intensity 1.0 绿、产品默认 0.9 档漏，是常态。**验收只看实际产出，不看表**：
 
 ```bash
-npx tsx scripts/realcase/run.ts      # 20 篇真实语料，约 3 秒
+npx tsx scripts/realcase/run.ts      # 23 篇真实语料，约 3 秒
 ```
 
 ### 4. 全绿 ≠ 覆盖
 
-「20 篇全绿」只等于「已覆盖的形态全绿」。新形态稿件一轮就能挖出旧用例没盖住的缺陷。
+「23 篇全绿」只等于「已覆盖的形态全绿」。新形态稿件一轮就能挖出旧用例没盖住的缺陷。
 
 ### 5. 断言纪律
 
@@ -81,10 +81,27 @@ env -u NODE_OPTIONS node D:/projects/quaiwei/node_modules/vitest/vitest.mjs run 
 3. `npm run build`
 4. `cd electron-app && npm run repack`
 5. `npm run check:release`（必须在 repack **之后**）
-6. `node artifacts/_make-zip.cjs`
+6. `npm run make:zip`（= `scripts/make-zip.mjs`，产出 `electron-dist/QuAiWei-win32-x64-v<版本>.zip` + `.sha256`；
+   打公开包前必须先删 `electron-app/preset-keys.txt` 再 repack——脚本会硬拦带 Key 的产物）
 7. `node scripts/_publish.cjs`
 
 版本号自动同步 6 处，**第 7 处手工**：根 `SKILL.md` frontmatter 的 `metadata.version`。
+
+> 第 6 步此前写的是 `artifacts/_make-zip.cjs`，而 `artifacts/` 是 gitignore 的——
+> 换台机器按本流程走，最后一步必然找不到文件。现已移到 `scripts/make-zip.mjs`（进仓库）。
+
+### 提交钩子（新克隆必看）
+
+`.githooks/pre-commit` 里有四道防线：密钥形态拦截 → 凭证账本 append-only → `tsc` → `eslint` + `prettier`。
+git 默认**不会**跑它，必须设 `core.hooksPath`：
+
+```bash
+npm install          # prepare 钩子会自动设好（scripts/install-hooks.mjs）
+npm run setup:hooks  # 或者手动跑这一条
+```
+
+没设的话，上面四道一条都不会执行——2026-10-22 实测过一次：钩子文件在仓库里躺着，
+`core.hooksPath` 却是空的。
 
 ## 六、话术红线
 
