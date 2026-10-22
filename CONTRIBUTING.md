@@ -80,6 +80,8 @@ env -u NODE_OPTIONS node D:/projects/quaiwei/node_modules/vitest/vitest.mjs run 
 2. **先 git commit（工作区必须干净）**
 3. `npm run build`
 4. `cd electron-app && npm run repack`
+   （可选）`npm run smoke:desktop` —— 验主进程能起来；**必须在有交互桌面的终端里跑**，
+   Agent/CI 会话起不了 GUI，判据见 `docs/桌面端冒烟-2026-10-23.md`
 5. `npm run check:release`（必须在 repack **之后**）
 6. `npm run make:zip`（= `scripts/make-zip.mjs`，产出 `electron-dist/QuAiWei-win32-x64-v<版本>.zip` + `.sha256`；
    打公开包前必须先删 `electron-app/preset-keys.txt` 再 repack——脚本会硬拦带 Key 的产物）

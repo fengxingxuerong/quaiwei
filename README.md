@@ -316,6 +316,12 @@ npm run repack           # = rebuild-app → prune-dist → verify-pruned
 ⚠️ 必须按「包名 + 产物目录」解析 —— 若按脚本自身位置解析，
 会落到源 `node_modules`，等于没验证。
 
+**启动冒烟**：`npm run smoke:desktop` 验「主进程起来后能存活」——`verify` 不跑这一步，
+而「双击没反应」恰恰是用户最常见的失败形态。⚠️ 它必须在**有交互桌面的终端**里跑：
+Agent 宿主 / CI 服务 / Session 0 这类会话起不了任何 GUI（实测连 notepad 都起不来），
+报错长得像产物坏了，其实换台机器就好。两次踩坑的判据与排查顺序见
+[docs/桌面端冒烟-2026-10-23.md](docs/桌面端冒烟-2026-10-23.md)。
+
 > `build:electron` 里的同步脚本（`scripts/sync-dist.mjs`）会把最新 Web 构建复制进
 > `electron-app/` 并在 `index.html` 注入 CSP，避免改完 Web 代码忘了同步桌面版。
 
