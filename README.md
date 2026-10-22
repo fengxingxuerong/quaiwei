@@ -7,7 +7,7 @@
 定位：中文 AI 文本**去味预处理工具 + 送检前自检清单**——可接入朱雀（网页版半自动 / EdgeOne API 全自动）等真实检测器做闭环验证。
 
 **在线试玩**（无需安装，浏览器直接跑，✅ 已上线）：<https://fengxingxuerong.github.io/quaiwei/> ｜
-**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（约 212MB zip / 解压 517MB；已发布桌面包可能落后于仓库版本，以 release 页为准）——解压双击 `QuAiWei.exe` 即用 ｜
+**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（约 203MB zip / 解压 513MB；已发布桌面包可能落后于仓库版本，以 release 页为准）——解压双击 `QuAiWei.exe` 即用 ｜
 [English](README_EN.md) ｜ [贡献指南](CONTRIBUTING.md) ｜ [Discussions](https://github.com/fengxingxuerong/quaiwei/discussions)
 
 > ⚠️ 诚实声明：本项目**不承诺"通过朱雀检测"**——aiScore → 朱雀官方分的换算**不可靠**：
