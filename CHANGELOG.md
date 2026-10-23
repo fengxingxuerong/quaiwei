@@ -2,6 +2,49 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.66 更新（外部检测器：CLI 与批量面板都接，不绑定任何厂商，2026-10-23）
+
+这一版的主题是**把验证权和任何一家检测器解绑**。本地分是代理分，要外部真值就得接检测器；
+此前那条通道只在设置面板里能用，而且和朱雀绑在一起。现在任意「POST `{text}` → JSON」的接口
+都能当外部真值，CLI 和 GUI 批量面板都能用。
+
+### 一、CLI：接任意外部检测器
+
+```bash
+QUAIWEI_DETECTOR_KEY=xxx npx tsx scripts/humanize-cli.ts ./in --out ./out \
+  --detector-url https://your-detector.example/score \
+  --detector-path data.prob \      # 响应里分数的点路径（默认 score）
+  --detector-scale 0-1 \           # 默认 0-100
+  --report out.json                # 每篇多出 detectorBefore / detectorAfter
+```
+
+- 原文与产出**各送检一次**，前后分与降幅写进 `--report`；两条都锁进了端到端用例。
+- 凭证优先读环境变量 `QUAIWEI_DETECTOR_KEY`（`--detector-key` 会进 shell 历史）。
+- **检测器失败不中断出稿**：原因记进 `detectorError`，产物照常落盘、退出码不受影响。
+- 复用既有 `classifyViaDetector` 的全部守卫（非 2xx 报状态码+响应体、失败信号识别、凭证打码），
+  没有另写第二条出网路径。
+
+### 二、批量面板：每篇给出去味前后的外部分
+
+设置里启用检测器后，批量面板出现「用外部检测器打前后分」开关；勾上后每篇送检 2 次，
+行内显示「本地 10 → 2 · 外部 42 → 31」。开关文案直接写明「2 次 / 会消耗外部额度」——
+批量 × 外部接口是真金白银。某篇送检失败只标该行，不影响出稿与其它行。
+
+### 三、顺手修掉一天踩两次的坑
+
+`repack` 改名失败（EPERM）时，脚本原来只提示「关掉资源管理器/编辑器窗口」，但两次实测真凶
+都是**本项目的 dev server**（vite watch 整个仓库、持有目录句柄）。现在这条分支会主动查进程表
+并打印要停的 PID，端到端验过：起 dev server → 改名失败 → 精确列出 `vite` 进程 → 停掉后恢复。
+
+### 四、测试与门禁
+
+- 新增 `humanize-cli-detector.test.ts`（3 条，起本地 http server 端到端）与批量面板 3 条
+  （配了才显示开关 / 每篇 2 次且显示前后分 / 失败只标该行）。
+- `SKILL.md` 参数表补 4 行（双向契约）。⚠️ 排版时误对 `SKILL.md` 跑了 `prettier --write`，
+  表格被整段重排，已还原重做——CONTRIBUTING 那条「不要对 README/SKILL/CHANGELOG 跑 prettier」踩中了。
+- `check:release` EXIT=0；全量 113 文件 2250 用例全绿；scan-bugs 0 违规；realcase 0 硬缺陷；
+  12 样本 D10/10、E8/8 零漂移。
+
 ## v0.9.65 更新（五处结构/事实修复 + 两套新门禁，2026-10-23）
 
 没有新功能。这一版只做一件事：把「产出被改坏」这一类缺陷收口，并把它变成可执行的门禁。
