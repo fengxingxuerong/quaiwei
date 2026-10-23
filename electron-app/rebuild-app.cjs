@@ -22,7 +22,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, spawnSync } = require("child_process");
 
 const args = process.argv.slice(2);
 const di = args.indexOf("--dist");
@@ -118,7 +118,35 @@ if (fs.existsSync(APP)) {
     console.log(`    旧 app 目录已改名让位：${path.basename(stale)}`);
   } catch (e) {
     console.error(`✗ 改名失败（可能有进程占用该目录）：${e.message}`);
-    console.error("  提示：关掉可能打开该目录的资源管理器/编辑器窗口后重试。");
+    console.error("  提示：先关掉可能打开该目录的资源管理器/编辑器窗口。");
+    // v0.9.66：最常见的占用方其实是**本项目的 dev server**——vite 会 watch 整个仓库，
+    // 这个目录被它持有句柄，rename 直接 EPERM。2026-10-23 一天内为这个坑手停了两次。
+    // 这里主动查一次进程表，把要停的 PID 直接打出来，别再让人去猜。
+    try {
+      const ps = spawnSync(
+        "powershell",
+        [
+          "-NoProfile",
+          "-Command",
+          "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -match 'vite' } | ForEach-Object { \"$($_.ProcessId) $($_.CommandLine)\" }",
+        ],
+        { encoding: "utf-8", timeout: 15000 },
+      );
+      const lines = (ps.stdout || "")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (lines.length) {
+        console.error(`  查到 ${lines.length} 个 vite 进程（dev server）占着仓库：`);
+        for (const l of lines.slice(0, 5)) console.error(`    ${l.slice(0, 120)}`);
+        console.error("  先停掉再重跑：Stop-Process -Id <pid> -Force");
+        console.error("  （停之前保存页面上的草稿；之后用 npm run dev 重启）");
+      } else {
+        console.error("  没查到 vite 进程；可能是资源管理器 / 杀毒软件 / 编辑器索引占用。");
+      }
+    } catch {
+      // 查进程只是附加提示，查不到不影响主判据
+    }
     process.exit(1);
   }
   try {

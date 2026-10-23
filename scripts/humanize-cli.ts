@@ -19,6 +19,8 @@
  *       [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]
  *       [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]
  *       [--out-format follow|txt|docx] [--explain] [--detect-only]
+ *       [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>]
+ *        [--detector-scale 0-100|0-1]]
  *       [--recursive] [--jobs <n>] [--dry-run]
  *
  * 示例：
@@ -62,6 +64,7 @@ import { explainChanges, formatExplain, type ExplainItem } from "../src/engine/e
 import { formatReview, reviewText, type ReviewReport } from "../src/engine/review";
 import { runHumanize } from "../src/api/llm";
 import { DEFAULT_API, loadPresetKeys, type ApiConfig } from "../src/api/llm-config";
+import { scoreViaDetector, type DetectorConfig } from "../src/api/detector";
 import { readDocxText, writeDocxText } from "../src/docx-io";
 
 /** Buffer → 独立 ArrayBuffer（Buffer 可能是共享内存池上的视图，直接给 .buffer 会串） */
@@ -174,6 +177,15 @@ interface Args {
    * 这里列的是本文的问题清单。
    */
   detectOnly: boolean;
+  /* ---- v0.9.66：外部检测器（任意 OpenAI 无关的 HTTP 接口，不绑定任何厂商） ---- */
+  /** 检测器 URL；给了就启用（把 {text} POST 过去，按 --detector-path 取分） */
+  detectorUrl: string;
+  /** 检测器凭证（也可用环境变量 QUAIWEI_DETECTOR_KEY，避免写进 shell 历史） */
+  detectorKey: string;
+  /** 响应里分数的 JSON 点路径，默认 score */
+  detectorPath: string;
+  /** 分数刻度，默认 0-100（朱雀那类是 0-1） */
+  detectorScale: "0-100" | "0-1";
 }
 
 const USAGE =
@@ -183,10 +195,14 @@ const USAGE =
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only]" +
+  " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]" +
   " [--recursive] [--jobs <n>] [--dry-run]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
   "  --base-url 填网关绝对地址（如 https://token.sensenova.cn/v1）。UI 设置里的 /sensenova/v1" +
   " 是同源代理专用写法（代理会剥掉 /sensenova 前缀再转发），CLI 直连勿带这段前缀。\n" +
+  "  --detector-url：接**任意**外部检测器（把 {text} POST 过去，按 --detector-path 取分，" +
+  "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段。" +
+  " 凭证建议走环境变量 QUAIWEI_DETECTOR_KEY，别写进命令行历史。\n" +
   "  --recursive 目录扫描进子目录（默认不进）；--jobs 仅 --api 模式生效（并发路数）；" +
   "  --dry-run 只列出将处理的文件不落盘。目录批量默认跳过已带输出后缀的产物（重跑幂等）。" +
   "\n  --detect-only 审题模式：只给「AI 味痕迹地图」（哪句、为什么命中、怎么改），" +
@@ -224,6 +240,10 @@ function parseArgs(argv: string[]): Args {
     stdin: false,
     help: false,
     detectOnly: false,
+    detectorUrl: "",
+    detectorKey: "",
+    detectorPath: "score",
+    detectorScale: "0-100",
   };
   const a = argv.slice(2);
   // v0.9.40：--help / -h 在最前面拦截。此前它落进 default 分支 →「未知参数」+ 退出码 1，
@@ -374,6 +394,25 @@ function parseArgs(argv: string[]): Args {
       case "--detect-only":
         args.detectOnly = true;
         break;
+      /* ---- v0.9.66 外部检测器 ---- */
+      case "--detector-url":
+        args.detectorUrl = a[++i] ?? "";
+        break;
+      case "--detector-key":
+        args.detectorKey = a[++i] ?? "";
+        break;
+      case "--detector-path":
+        args.detectorPath = a[++i] || "score";
+        break;
+      case "--detector-scale": {
+        const s = (a[++i] ?? "").trim();
+        if (s !== "0-100" && s !== "0-1") {
+          console.error(`--detector-scale 只认 0-100 或 0-1，收到：${s}\n${USAGE}`);
+          process.exit(2);
+        }
+        args.detectorScale = s;
+        break;
+      }
       default:
         console.error(`未知参数: ${a[i]}\n${USAGE}`);
         process.exit(1);
@@ -511,6 +550,10 @@ interface FileReport {
   degrade?: string[];
   /* 仅 --explain 模式有 */
   explain?: ExplainItem[];
+  /* v0.9.66：外部检测器（--detector-url）前后分。失败只记原因，不让整篇失败 */
+  detectorBefore?: number | null;
+  detectorAfter?: number | null;
+  detectorError?: string;
 }
 
 /** v0.9.32：report totals 的求和（对全部条目求和，含失败篇目——失败也是花了时间的） */
@@ -605,6 +648,20 @@ async function main() {
     process.stdout.write(`${USAGE}\n`);
     return;
   }
+
+  /**
+   * v0.9.66：外部检测器配置。给了 --detector-url 才启用；凭证优先取 flag，其次环境变量
+   * （命令行会进 shell 历史，凭证更适合走 QUAIWEI_DETECTOR_KEY）。
+   */
+  const detectorCfg: DetectorConfig | null = args.detectorUrl
+    ? {
+        enabled: true,
+        url: args.detectorUrl,
+        apiKey: args.detectorKey || process.env.QUAIWEI_DETECTOR_KEY || "",
+        scorePath: args.detectorPath,
+        scale: args.detectorScale,
+      }
+    : null;
 
   // v0.9.38：stdin 管道模式（输入参数 - 或省略）。省略参数时在这里补判 TTY：
   // 交互终端下不给管道，维持原行为（用法 + 退出），别把用户晾在读取阻塞里。
@@ -792,6 +849,23 @@ async function main() {
       console.log(
         `${step}✅ ${name}：${rep.detectBefore}→${rep.detectAfter}（${rep.ms}ms，${raw.length}→${out.length} 字）→ ${path.basename(dest)}`,
       );
+      // v0.9.66：外部检测器（任意厂商）——原文与产出各送一次，记前后分。
+      // 失败只记原因、不中断：检测器额度/网络问题不该让整批去味白跑。
+      if (detectorCfg) {
+        try {
+          const before = await scoreViaDetector(raw, detectorCfg);
+          const after = await scoreViaDetector(out, detectorCfg);
+          rep.detectorBefore = before;
+          rep.detectorAfter = after;
+          const delta = after - before;
+          console.log(
+            `   🔎 外部检测器：${before} → ${after}（${delta > 0 ? "+" : ""}${delta}，负数=更像人写）`,
+          );
+        } catch (e) {
+          rep.detectorError = e instanceof Error ? e.message : String(e);
+          console.log(`   ⚠ 外部检测器失败（不影响出稿）：${rep.detectorError}`);
+        }
+      }
       // v0.9.22：低风险输入照常出稿，但把"其实不用去味"说出来。
       // 不自动跳过——批量场景里静默不产出比多产出一版更难排查。
       const advice = adviceFor(raw, aiScore(raw).score);

@@ -170,6 +170,23 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --api \
 --report out.json    # 每篇的耗时/字数/引擎/轮次分/降级原因落 JSON
 ```
 
+### 接自己的外部检测器（v0.9.66，不绑定任何厂商）
+
+本地分是**代理分**。想拿外部真值，又不想被某一家绑死，就把任意「POST `{text}` → JSON」
+的检测接口接进来；原文与产出各送一次，前后分与降幅写进 `--report`：
+
+```bash
+QUAIWEI_DETECTOR_KEY=xxx npx tsx scripts/humanize-cli.ts ./in --out ./out \
+  --detector-url https://your-detector.example/score \
+  --detector-path data.prob \      # 响应里分数的点路径（默认 score）
+  --detector-scale 0-1 \           # 默认 0-100；0~1 刻度的接口填这个
+  --report out.json                # 每篇多出 detectorBefore / detectorAfter
+```
+
+- **凭证建议走环境变量**（`QUAIWEI_DETECTOR_KEY`），`--detector-key` 只是兜底——它会进 shell 历史。
+- 检测器**挂了不中断出稿**：失败原因记进 report 的 `detectorError`，产物照常落盘。
+- 刻度、点路径都按接口自报的 JSON 走，不假设任何一家厂商的字段名。
+
 Key 优先级：`--api-key` > `QUAIWEI_API_KEY` > `OPENAI_API_KEY` > `SENSENOVA_KEYS` / `scripts/.sensenova-keys`。
 注意 baseUrl 必须填完整地址——以 `/` 开头的同源路径只在 dev（vite 代理）和 Electron 桌面版下有效。
 

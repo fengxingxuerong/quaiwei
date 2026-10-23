@@ -65,6 +65,10 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--target <1~100>` | 默认 10 | 深度模式达标线：LLM 评判 ≤ 此分即收手。调低=多压几轮更彻底也更慢，调高=更快收手；不给则沿用默认 |
 | `--strict` | 开关 | 严格保真：发现编造事实即拒绝交付并回退 |
 | `--persona` | `default` \| `netgen` \| `classic` | 人味人格分档 |
+| `--detector-url <url>` | 任意 HTTP 接口 | 接**外部检测器**（不绑定厂商）：把 `{text}` POST 过去，按 `--detector-path` 取分；原文与产出各送一次，前后分写进 `--report` 的 `detectorBefore` / `detectorAfter` |
+| `--detector-key <key>` | — | 检测器凭证；更建议走环境变量 `QUAIWEI_DETECTOR_KEY`（命令行会进 shell 历史） |
+| `--detector-path <json.path>` | 默认 `score` | 响应里分数的点路径（如 `data.prob`） |
+| `--detector-scale` | `0-100`（默认）\| `0-1` | 分数刻度；0~1 那类接口填 `0-1` |
 | `--recursive` | 开关 | 目录扫描进子目录（默认不进；隐藏目录一律跳过） |
 | `--jobs <n>` | ≥1 | `--api` 模式并发路数（本地引擎单线程，给了也只提示忽略） |
 | `--dry-run` | 开关 | 只列出将处理哪些文件（含跳过原因），不建目录不落盘 |
