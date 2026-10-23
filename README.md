@@ -1,4 +1,4 @@
-# 趣AI味 · QuAiWei v0.9.63
+# 趣AI味 · QuAiWei v0.9.64
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
@@ -77,10 +77,11 @@
     详见 `docs/external-judge-findings.md`。判据与阈值来源见 `src/engine/score-conflict.ts`。
 - **文件导入 / 导出（v0.9.15）**：界面上「导入」直接读 `.txt`/`.md`（≤2MB），「导出」把结果下载为 `.txt`。
   Word 富文本格式保留不做（去味引擎只吃纯文本），但 .docx 纯文本导入/导出已支持（v0.9.16，零依赖实现）。
-- **多选批量（当前开发版）**：「导入」可一次选多个 `.txt`/`.md`/`.docx`，自动进入批量面板；
+- **多选批量（v0.9.64）**：「导入」可一次选多个 `.txt`/`.md`/`.docx`，自动进入批量面板；
   逐个跑本地引擎、显示前后分，可逐篇载入主界面或打包下载 `.txt` ZIP。
   默认只走本地引擎（离线零成本）；有 Key 时可勾选「使用当前 LLM 设置」，每篇受 `maxApiCalls` 限制。
-  失败行可单独重试，也支持全部重跑；ZIP 条目带序号，同名文件不会互相覆盖。
+  失败行可单独重试，也支持全部重跑；运行中可「停止」（每篇之间生效，已完成的结果保留、可续跑）；
+  ZIP 条目带序号，同名文件不会互相覆盖。
 - **跨端**：Web 版任意设备浏览器打开即用（含手机，已做响应式布局）；桌面版走 Electron（Windows 免安装包，解压双击 `QuAiWei.exe` 即用），macOS 包可在对应环境构建。
 
 ---
@@ -739,5 +740,5 @@ MIT（见 LICENSE）。
 
 ## 更新日志
 
-完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.63**（以 `package.json` 的 `version` 为准）。
+完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.64**（以 `package.json` 的 `version` 为准）。
 
