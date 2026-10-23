@@ -9,6 +9,12 @@ import {
 } from "../api/llm";
 import { DetectorConfig, DEFAULT_DETECTOR, ZHUQUE_OFFICIAL_DETECTOR } from "../api/detector";
 import { hasSecureStore } from "../store";
+import {
+  loadDetectorPresets,
+  saveDetectorPresets,
+  upsertDetectorPreset,
+  type DetectorPreset,
+} from "../store";
 import type { LocalSettings } from "../store";
 import { extractVoiceProfile, VOICE_SAMPLE_MIN } from "../engine/voice-profile";
 
@@ -65,6 +71,11 @@ export function SettingsModal({
   const [tempText, setTempText] = useState(String(api.temperature));
   // v0.9.62 达标线输入中间态：同上，允许清空（清空 = 回默认 DEEP_TARGET_SCORE）
   const [targetText, setTargetText] = useState(String(api.deepTargetScore ?? DEEP_TARGET_SCORE));
+  // v0.9.67：检测器预设（多档切换）。名字即主键；应用时只覆盖 URL / 点路径 / 刻度三样，
+  // 不碰 apiKey（它走 secureStore，明文预设里也不存）
+  const [presets, setPresets] = useState<DetectorPreset[]>(() => loadDetectorPresets());
+  const [presetName, setPresetName] = useState("");
+  const [activePreset, setActivePreset] = useState("");
 
   // Esc 关闭模态（桌面应用标配交互）
   useEffect(() => {
@@ -576,6 +587,73 @@ export function SettingsModal({
             填入朱雀默认值
           </button>
         </label>
+        {/* v0.9.67：多档预设——换检测器不用整段重填 URL/点路径/刻度 */}
+        <label className="row">
+          <span>我的预设</span>
+          <select
+            value={activePreset}
+            onChange={(e) => {
+              const name = e.target.value;
+              setActivePreset(name);
+              const p = presets.find((x) => x.name === name);
+              if (p) {
+                updateDetector({
+                  url: p.config.url,
+                  scorePath: p.config.scorePath,
+                  scale: p.config.scale,
+                });
+              }
+            }}
+          >
+            <option value="">（选一个应用）</option>
+            {presets.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="row">
+          <span>存为预设</span>
+          <input
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value.slice(0, 24))}
+            placeholder="名字，如「自建 mock」"
+          />
+          <button
+            className="ghost sm"
+            disabled={!presetName.trim() || !draftDetector.url.trim()}
+            onClick={() => {
+              const next = upsertDetectorPreset(presets, {
+                name: presetName.trim(),
+                config: draftDetector,
+              });
+              setPresets(next);
+              saveDetectorPresets(next);
+              setActivePreset(presetName.trim());
+              setPresetName("");
+            }}
+          >
+            保存为预设
+          </button>
+        </label>
+        {presets.length > 0 && (
+          <label className="row">
+            <span>删除预设</span>
+            <button
+              className="ghost sm"
+              disabled={!activePreset}
+              onClick={() => {
+                const next = presets.filter((p) => p.name !== activePreset);
+                setPresets(next);
+                saveDetectorPresets(next);
+                setActivePreset("");
+              }}
+            >
+              删除「{activePreset || "未选"}」
+            </button>
+          </label>
+        )}
         <label className="row">
           <span>启用检测器</span>
           <input

@@ -34,6 +34,9 @@ import {
   DEFAULT_LOCAL,
   loadDraft,
   saveDraft,
+  loadDetectorPresets,
+  saveDetectorPresets,
+  upsertDetectorPreset,
 } from "./store";
 import { DEFAULT_API, effectiveKeys } from "./api/llm-config";
 import { DEFAULT_DETECTOR } from "./api/detector";
@@ -238,6 +241,68 @@ describe("loadDetector / saveDetector", () => {
   it("scale 越界回退 0-100", () => {
     localStorage.setItem("aihumanizer.detector", JSON.stringify({ scale: "0-5" }));
     expect(loadDetector().scale).toBe("0-100");
+  });
+});
+
+/** v0.9.67：检测器预设（多档切换） */
+describe("detector presets", () => {
+  const mk = (name: string, url = "https://x/api") => ({
+    name,
+    config: {
+      ...DEFAULT_DETECTOR,
+      enabled: true,
+      url,
+      scorePath: "data.prob",
+      scale: "0-1" as const,
+    },
+  });
+
+  it("空库返回空表；往返一致", () => {
+    expect(loadDetectorPresets()).toEqual([]);
+    const list = [mk("自建 mock"), mk("某家 API", "https://y/score")];
+    saveDetectorPresets(list);
+    expect(loadDetectorPresets()).toEqual(list);
+  });
+
+  it("Key 不落进明文预设（它走 secureStore）", () => {
+    saveDetectorPresets([{ name: "带 Key", config: { ...DEFAULT_DETECTOR, apiKey: "sk-secret" } }]);
+    expect(localStorage.getItem("aihumanizer.detector.presets")).not.toContain("sk-secret");
+    expect(loadDetectorPresets()[0].config.apiKey).toBe("");
+  });
+
+  it("坏数据逐条清洗：非数组/无名字/坏 config 一律丢，不带走整张表", () => {
+    localStorage.setItem("aihumanizer.detector.presets", '"not-an-array"');
+    expect(loadDetectorPresets()).toEqual([]);
+    localStorage.setItem(
+      "aihumanizer.detector.presets",
+      JSON.stringify([
+        { name: "好档", config: { url: "https://ok", scorePath: "score", scale: "0-100" } },
+        { config: { url: "https://no-name" } }, // 缺名字
+        null,
+        { name: "坏 config", config: 42 },
+      ]),
+    );
+    const got = loadDetectorPresets();
+    expect(got).toHaveLength(1);
+    expect(got[0].name).toBe("好档");
+  });
+
+  it("upsert：同名覆盖并置顶，不同名追加，上限 20 条", () => {
+    let list = upsertDetectorPreset([], mk("A"));
+    list = upsertDetectorPreset(list, mk("B"));
+    expect(list.map((p) => p.name)).toEqual(["B", "A"]);
+    list = upsertDetectorPreset(list, mk("A", "https://new"));
+    expect(list.map((p) => p.name)).toEqual(["A", "B"]);
+    expect(list[0].config.url).toBe("https://new");
+    for (let i = 0; i < 30; i++) list = upsertDetectorPreset(list, mk(`P${i}`));
+    expect(list.length).toBe(20);
+  });
+
+  it("名字超长截断、空白名字不生成", () => {
+    const long = upsertDetectorPreset([], mk("名".repeat(50)));
+    expect(long[0].name.length).toBe(24);
+    expect(upsertDetectorPreset([], mk("   "))).toEqual([]);
+    expect(upsertDetectorPreset([], mk(""))).toEqual([]);
   });
 });
 

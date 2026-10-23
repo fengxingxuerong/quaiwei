@@ -531,4 +531,38 @@ describe("SettingsModal 补盲（逐行覆盖 · 配置行编辑与环境分支�
     fireEvent.click(getByText("保存"));
     expect((onSave.mock.calls[1][0] as ApiConfig).deepTargetScore).toBe(100);
   });
+
+  /**
+   * v0.9.67：检测器多档预设——换检测器不必整段重填 URL / 点路径 / 刻度。
+   * 存下来、选回来能还原、删得掉，三件事都锁住。
+   */
+  it("检测器预设：存为预设 → 改配置 → 选回预设能还原 URL / 路径 / 刻度", () => {
+    const { container, getByText } = render(<SettingsModal {...base()} />);
+    const url = rowControl(container, "接口 URL") as HTMLInputElement;
+    const path = rowControl(container, "分数路径") as HTMLInputElement;
+    const scale = rowControl(container, "刻度") as HTMLSelectElement;
+
+    fireEvent.change(url, { target: { value: "https://detector.example/score" } });
+    fireEvent.change(path, { target: { value: "data.prob" } });
+    fireEvent.change(scale, { target: { value: "0-1" } });
+
+    const nameInput = rowControl(container, "存为预设") as HTMLInputElement;
+    fireEvent.change(nameInput, { target: { value: "自建 mock" } });
+    fireEvent.click(getByText("保存为预设"));
+
+    // 改成别的配置，再选回预设
+    fireEvent.change(url, { target: { value: "https://other/score" } });
+    const picker = rowControl(container, "我的预设") as HTMLSelectElement;
+    expect(Array.from(picker.options).map((o) => o.value)).toContain("自建 mock");
+    fireEvent.change(picker, { target: { value: "自建 mock" } });
+
+    expect(url.value).toBe("https://detector.example/score");
+    expect(path.value).toBe("data.prob");
+    expect(scale.value).toBe("0-1");
+
+    // 删掉后下拉里不再有它
+    fireEvent.click(getByText(/删除「自建 mock」/));
+    const after = rowControl(container, "我的预设") as HTMLSelectElement;
+    expect(Array.from(after.options).map((o) => o.value)).not.toContain("自建 mock");
+  });
 });

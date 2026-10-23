@@ -284,6 +284,83 @@ export function saveDetector(c: DetectorConfig): void {
   localStorage.setItem(K_DET, JSON.stringify(c));
 }
 
+/* --------------------- v0.9.67：检测器预设（多档切换） --------------------- */
+//
+// 为什么要有：设置里只能填一套 URL，换一次检测器就得整段重填（URL / 点路径 / 刻度 / Key）。
+// 预设把这四样打包成命名档，一键切换；库里只存**非敏感**字段——Key 与本配置一样走
+// secureStorage（桌面版），不落进这个明文 JSON。
+
+const K_DET_PRESETS = "aihumanizer.detector.presets";
+/** 预设上限：再多就失去「一键切换」的意义，也防止 localStorage 被塞爆 */
+const DET_PRESETS_MAX = 20;
+/** 名字长度上限（下拉框里要放得下） */
+const DET_PRESET_NAME_MAX = 24;
+
+export interface DetectorPreset {
+  name: string;
+  config: DetectorConfig;
+}
+
+/** 逐字段清洗一个预设；非法条目返回 null（坏一条不该带走整张表） */
+function cleanPreset(raw: unknown): DetectorPreset | null {
+  const o = parseObject(raw === null || typeof raw !== "object" ? null : JSON.stringify(raw));
+  if (!o) return null;
+  const name = str(o, "name", "").trim().slice(0, DET_PRESET_NAME_MAX);
+  if (!name) return null;
+  const c = o.config;
+  if (c === null || typeof c !== "object") return null;
+  const cfg = c as Record<string, unknown>;
+  return {
+    name,
+    config: {
+      enabled: cfg.enabled === true,
+      url: typeof cfg.url === "string" ? cfg.url : "",
+      // Key 不从预设里读：它走 secureStore，明文表里即使有也当没有
+      apiKey: "",
+      scorePath: typeof cfg.scorePath === "string" && cfg.scorePath ? cfg.scorePath : "score",
+      scale: cfg.scale === "0-1" ? "0-1" : "0-100",
+    },
+  };
+}
+
+export function loadDetectorPresets(): DetectorPreset[] {
+  const raw = localStorage.getItem(K_DET_PRESETS);
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    const out: DetectorPreset[] = [];
+    for (const item of arr) {
+      const p = cleanPreset(item);
+      if (p && !out.some((x) => x.name === p.name)) out.push(p);
+      if (out.length >= DET_PRESETS_MAX) break;
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+export function saveDetectorPresets(list: DetectorPreset[]): void {
+  const clean = list
+    .map((p) => cleanPreset({ name: p.name, config: p.config }))
+    .filter((p): p is DetectorPreset => p !== null)
+    .slice(0, DET_PRESETS_MAX);
+  localStorage.setItem(K_DET_PRESETS, JSON.stringify(clean));
+}
+
+/** 新增或覆盖同名预设（名字即主键），返回新表 */
+export function upsertDetectorPreset(
+  list: DetectorPreset[],
+  preset: DetectorPreset,
+): DetectorPreset[] {
+  const p = cleanPreset({ name: preset.name, config: preset.config });
+  if (!p) return list;
+  const next = list.filter((x) => x.name !== p.name);
+  next.unshift(p);
+  return next.slice(0, DET_PRESETS_MAX);
+}
+
 export function loadIntensity(): number {
   const v = parseFloat(localStorage.getItem(K_IT) || "");
   return isNaN(v) ? 0.6 : Math.max(0, Math.min(1, v));
