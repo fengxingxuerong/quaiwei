@@ -15,7 +15,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { humanize } from "./humanize";
-import { frontmatterSpans, fencedCodeSpans } from "./text-shield";
+import { frontmatterSpans, fencedCodeSpans, isCodeLikeLine } from "./text-shield";
 
 const PROSE =
   "值得注意的是，随着人工智能技术的不断发展，数字化办公已成为大势所趋。综上所述，这一变革极大地提升了工作效率。";
@@ -171,5 +171,54 @@ describe("格式损坏定点回归（v0.9.65）", () => {
     const out = humanize(src, opts);
     expect(out).toContain(fm);
     expect(out).toContain(fence);
+  });
+
+  /**
+   * v0.9.65：**没有围栏的代码片段**（中文技术文档里最常见的那种：从 Word / 公众号
+   * 复制过来，「调用示例：」下面直接跟两行代码）必须同样冻结。
+   * 修前实测：`const ok = !!value;` → `const ok = ，value;`（强度 0.6 默认档就中招），
+   * `const x = a ?? b;` → `const x = a 。b;`（0.9），且行间被插空行（段落数 5 → 6）。
+   */
+  describe("裸代码行（无围栏）", () => {
+    const snippets: [string, string][] = [
+      [
+        "js",
+        'const ok = !!value;\nconst x = a ?? b;\nif (!resp.ok) throw new Error("gateway 5xx");',
+      ],
+      ["shell", "cd /opt/app\nnpm ci --omit=dev\nsystemctl restart app"],
+      ["python", "def run(x):\n    return x > 0 && x < 10"],
+      ["sql", "SELECT id, name FROM users\nWHERE id > 100 AND status = 'active'"],
+    ];
+    for (const [lang, code] of snippets) {
+      it(`${lang} 片段：强度 0.6 / 0.9 下逐字保留，且行间不插空行`, () => {
+        const src = [PROSE, "", "调用示例：", "", code, "", PROSE].join("\n");
+        for (const intensity of [0.6, 0.9]) {
+          const out = humanize(src, { intensity, seed: 7 });
+          expect(out, `@${intensity} 代码被改写`).toContain(code);
+        }
+      });
+    }
+
+    it("URL 密集的说明句不被误判成代码（否则整行损失去味）", () => {
+      const line =
+        "接口地址变更为 https://api.example.com/v2/gateway，旧地址将于 2026-12-31 停止服务。技术对接请联系 dev-support@example.com。";
+      const src = [PROSE, "", line, "", PROSE].join("\n");
+      const out = humanize(src, opts);
+      expect(isCodeLikeLine(line), "URL 说明句被判成代码（假阳性）").toBe(false);
+      // 该行仍参与去味：逗号被切成分句（只要有变化即可，不锁具体改法）
+      expect(out).not.toBe(src);
+      expect(out).toContain("api.example.com/v2/gateway");
+    });
+
+    it("代码行判定不误伤正文（行首恰好是英文关键字的句子）", () => {
+      for (const line of [
+        "本次升级把平均响应时间压到 42ms，命中率提升到 94.7%。",
+        "SELECT 语句的执行计划需要重点优化，否则查询会全表扫描。",
+        "值得注意的是，if 条件分支过多会让代码难以维护。",
+        "该方案在 2026 年第三季度落地，覆盖 37 个接口。",
+      ]) {
+        expect(isCodeLikeLine(line), `正文被误判成代码：${line}`).toBe(false);
+      }
+    });
   });
 });

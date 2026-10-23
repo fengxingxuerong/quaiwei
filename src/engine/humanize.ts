@@ -101,6 +101,7 @@ import {
   isFactDenseParagraph,
   spanGuard,
   maskCodeSpans,
+  bareCodeSpans,
   splitParasOutsideFences,
   splitParagraphChunks,
 } from "./text-shield.ts";
@@ -359,8 +360,14 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   // 冻结 = 该段不进 humanizeSingle，且相邻两个冻结段之间沿用**原文分隔符**。
   // 无围栏输入：frozen 全 false ⇒ 分隔符恒为 "\n\n"，与改动前逐字一致（零回归）。
   const chunks = splitParagraphChunks(text);
-  // 三类整块冻结：围栏代码块 / YAML frontmatter（都是事实性内容 + 结构一散就失效）
-  const codeGuard = spanGuard(fencedCodeSpans(text).concat(frontmatterSpans(text)));
+  // 四类整块冻结：围栏代码块 / YAML frontmatter / **裸代码行**（无围栏的代码片段）
+  // 都是事实性内容 + 结构一散就失效。
+  // v0.9.65 补第三类：中文技术文档里「调用示例：」下面直接跟两行代码、从不带 ``` 的情况极其常见，
+  // 实测这类行会被去味改坏（const ok = !!value; → const ok = ，value; 默认档就中招），
+  // 而且行间被插空行（段落数 5 → 6，C9 至今复现）。
+  const codeGuard = spanGuard(
+    fencedCodeSpans(text).concat(frontmatterSpans(text)).concat(bareCodeSpans(text)),
+  );
   // 缩进块（缩进代码块 / 列表项续行）只能看段首形状——它没有成对标记可用
   const frozen = chunks.map((c) => codeGuard(c.start) || isIndentedBlock(c.text));
   // v0.9.54（续）：紧凑 Markdown 结构行（表格 / 列表项 / 引用行）——内容照改，

@@ -414,10 +414,88 @@ export function inlineCodeSpans(text: string): TextSpan[] {
   return out;
 }
 
-/** 围栏块 + 行内代码，合并嵌套后的区间（按起点升序、互不重叠） */
+/**
+ * v0.9.65：**裸代码行**（没有围栏的代码片段）——中文技术文档里极其常见：
+ * 从 Word / 公众号 / 聊天记录复制过来的「调用示例：」下面直接跟两行代码，
+ * 从来不带 ``` 标记。v0.9.54 的围栏冻结管不到它们，实测后果比围栏更严重：
+ *
+ *   const ok = !!value;    →  const ok = ，value;     （强度 0.6，默认档就中招）
+ *   const x = a ?? b;      →  const x = a 。b;        （强度 0.9）
+ *   每一行之间还被插了空行（段落数 5 → 6，C9 至今仍复现）
+ *
+ * 判据刻意保守：**ASCII 占比 ≥ 50%** 才认为是代码（中文句子一票否决），
+ * 再要求行首是编程/命令关键字，或行内含代码运算符。宁可漏判（那行照常去味），
+ * 不可误判（把正文冻住就不去味了）。
+ */
+const CODE_LINE_KEYWORD_RE =
+  /^\s*(?:const|let|var|function|class|import|export|return|if|else|for|while|switch|try|catch|throw|await|async|def|lambda|package|public|private|protected|static|void|int|string|bool|SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN|GROUP|ORDER|cd|ls|cp|mv|rm|mkdir|npm|npx|yarn|pnpm|git|docker|kubectl|systemctl|curl|wget|sudo|apt|pip|python|node|java|go|cargo|mvn|gradle)\b/;
+const CODE_LINE_OPERATOR_RE =
+  /(?:=>|&&|\|\||\?\?|::|\+\+|--|==|!=|<=|>=|\/\/|<\/?\w+>)|^\s*[})\][;]/;
+
+function asciiRatio(line: string): number {
+  const dense = line.replace(/\s/g, "");
+  if (!dense) return 0;
+  let ascii = 0;
+  for (const ch of dense) if (ch.charCodeAt(0) < 128) ascii++;
+  return ascii / dense.length;
+}
+
+/** 这一行像不像代码/命令（不看上下文，只看行本身） */
+export function isCodeLikeLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.length > 200) return false;
+  if (asciiRatio(line) < 0.5) return false;
+  // 行首是编程/命令关键字：即使行尾带中文注释也算代码（"const x = 1; // 注释"）
+  if (CODE_LINE_KEYWORD_RE.test(line)) return true;
+  // 只靠"运算符"命中的、又含中文的行 —— 判为正文。
+  // 实测反例：C9 的「接口地址变更为 https://…，旧地址将于 2026-12-31 停止服务。技术对接请联系 …」
+  // 是 URL 密集的说明句，靠 `//` 命中运算符表，若判成代码就会**整行不去味**（假阳性）。
+  if (/[\u4e00-\u9fa5]/.test(line)) return false;
+  return CODE_LINE_OPERATOR_RE.test(line);
+}
+
+/**
+ * 连续裸代码行的区间：相邻的代码行连成一块（中间的空行也并入，避免把一块代码拆成两段）。
+ * 整块冻结后，块内换行与 `!!` / `??` 这些符号都不会被改写。
+ */
+export function bareCodeSpans(text: string): TextSpan[] {
+  if (!text) return [];
+  const out: TextSpan[] = [];
+  let off = 0;
+  let start = -1;
+  let end = -1;
+  let pendingGap = false;
+  for (const line of text.split("\n")) {
+    const lineStart = off;
+    const lineEnd = off + line.length;
+    off += line.length + 1;
+    if (isCodeLikeLine(line)) {
+      if (start < 0) start = lineStart;
+      end = lineEnd;
+      pendingGap = false;
+      continue;
+    }
+    // 空行：先记为"可能是代码块内部的空行"，真遇到后续代码行再并进来
+    if (line.trim() === "" && start >= 0) {
+      pendingGap = true;
+      continue;
+    }
+    if (start >= 0) {
+      out.push({ start, end: pendingGap ? end : end });
+      start = -1;
+      end = -1;
+      pendingGap = false;
+    }
+  }
+  if (start >= 0) out.push({ start, end });
+  return out;
+}
+
+/** 围栏块 + 行内代码 + 裸代码行，合并嵌套后的区间（按起点升序、互不重叠） */
 export function codeSpans(text: string): TextSpan[] {
   const all = fencedCodeSpans(text)
     .concat(inlineCodeSpans(text))
+    .concat(bareCodeSpans(text))
     .sort((a, b) => a.start - b.start || a.end - b.end);
   const out: TextSpan[] = [];
   for (const s of all) {
