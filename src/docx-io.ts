@@ -269,6 +269,15 @@ async function buildZip(files: { name: string; data: Uint8Array }[]): Promise<Ui
   return new Uint8Array(out);
 }
 
+/**
+ * 通用文本 ZIP（批量导出用）：每个文件按 UTF-8 文本写入，deflate 压缩。
+ * 复用 docx 的同一套 zip 写入器，不新增依赖。
+ */
+export async function makeZipBlob(files: { name: string; text: string }[]): Promise<Blob> {
+  const zip = await buildZip(files.map((f) => ({ name: f.name, data: ENC.encode(f.text) })));
+  return new Blob([zip as BlobPart], { type: "application/zip" });
+}
+
 /** 纯文本 → 最小合法 .docx（Blob；Web 直接 a.download，CLI 侧 fs.writeFile(buffer)） */
 export async function writeDocxText(text: string): Promise<Blob> {
   const documentXml = textToDocxXml(text);

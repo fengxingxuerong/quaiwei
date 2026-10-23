@@ -1430,3 +1430,52 @@ describe("App 接线边角（进度 / 非 Error / 热键 / 剪贴板 / 目标回
     }
   });
 });
+
+/**
+ * v0.9.64：批量面板「载入」的是**另一篇**稿子——逐篇运行期的界面状态必须一起清掉。
+ * 修前：先跑一次带轮次分的深度模式，再从批量里点「载入」，对标面板仍显示上一篇的
+ * 「第 N 轮」（roundScores 没清），裁决/检测面板同理挂着旧数字。
+ */
+describe("批量载入后的界面状态（v0.9.64）", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    saveViewMode("pro");
+  });
+
+  it("载入批量结果后不残留上一篇的轮次分", async () => {
+    // ① 先跑一篇带轮次分的（模拟深度模式）
+    runHumanizeMock.mockResolvedValueOnce(makeRunResult(OUTPUT_TEXT, "llm", true, [9, 4]));
+    const utils = render(<App />);
+    fireEvent.change(utils.getByPlaceholderText(/把 AI 写的文章粘进来/), {
+      target: { value: INPUT_TEXT },
+    });
+    fireEvent.click(utils.getByText("去味"));
+    // BenchmarkPanel 把轮次分渲染成「9 → 4」
+    await waitFor(() => expect(utils.queryByText("9 → 4")).not.toBeNull());
+
+    // ② 多选两个文件 → 批量面板跑完 → 载入第一行
+    runHumanizeMock.mockResolvedValue(makeRunResult("批量改后的一稿", "local", false, []));
+    const input = utils.container.querySelector('input[type="file"]') as HTMLInputElement;
+    Object.defineProperty(input, "files", {
+      value: [
+        new File(["甲篇内容。"], "a.txt", { type: "text/plain" }),
+        new File(["乙篇内容。"], "b.txt", { type: "text/plain" }),
+      ],
+      configurable: true,
+    });
+    fireEvent.change(input);
+    expect(utils.getByText(/批量处理 · 2 个文件/)).toBeTruthy();
+
+    fireEvent.click(utils.getByText("开始处理"));
+    const loads = await waitFor(() => {
+      const got = utils.getAllByText("载入");
+      expect(got.length).toBeGreaterThan(0);
+      return got;
+    });
+    fireEvent.click(loads[0]);
+
+    // 关键：上一篇的轮次分不再挂在面板上，且载入提示出现
+    await waitFor(() => expect(utils.queryByText("9 → 4")).toBeNull());
+    expect(utils.getByText(/已载入批量结果/)).toBeTruthy();
+  });
+});

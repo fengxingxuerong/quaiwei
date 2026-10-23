@@ -7,7 +7,7 @@ import {
   DEEP_MAX_ROUNDS,
   DEEP_TARGET_SCORE,
 } from "./api/llm";
-import { fingerprintCheck, checkFidelityLocal } from "./engine/humanize";
+import { fingerprintCheck, checkFidelityLocal, aiScore } from "./engine/humanize";
 import type { FingerprintReport, ScoreBreakdown } from "./engine/humanize";
 import { detectAI, type DetectReport } from "./engine/detector";
 import { detectZhuque } from "./engine/zhuque";
@@ -50,6 +50,7 @@ import { FingerprintPanel } from "./components/FingerprintPanel";
 import { BenchmarkPanel } from "./components/BenchmarkPanel";
 import { ZhuquePanel } from "./components/ZhuquePanel";
 import { CalibLabModal } from "./components/CalibLabModal";
+import { BatchModal } from "./components/BatchModal";
 import { LocalDetectPanel } from "./components/LocalDetectPanel";
 import { ExplainPanel } from "./components/ExplainPanel";
 import { ReviewPanel } from "./components/ReviewPanel";
@@ -152,6 +153,7 @@ export default function App({
   const [fidelity, setFidelity] = useState<{ pass: boolean; problems: string[] } | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [batchFiles, setBatchFiles] = useState<File[] | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   // ---- 本地 AI 检测（14 特征离线启发式） ----
   const [detectIn, setDetectIn] = useState<DetectReport | null>(null);
@@ -547,9 +549,15 @@ export default function App({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = ""; // 清空 value，否则连选两次同一文件不会触发 change
-    if (!f) return;
+    if (!files.length) return;
+    // 多选 = 批量面板；单选保持原来的「导入到左侧编辑区」路径。
+    if (files.length > 1) {
+      setBatchFiles(files);
+      return;
+    }
+    const f = files[0];
     void importFileToText(f).then((res) => {
       if (res.text) {
         cancelPendingRun(); // 导入生效即换稿：在途任务作废，防止旧产出覆盖新导入
@@ -714,6 +722,7 @@ export default function App({
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept=".txt,.md,.markdown,.docx,text/plain"
           onChange={handleImportFile}
           style={{ display: "none" }}
@@ -721,7 +730,7 @@ export default function App({
         <button
           className="ghost"
           onClick={() => fileInputRef.current?.click()}
-          title="从 .txt / .md / .docx 导入原文（≤2MB）"
+          title="从 .txt / .md / .docx 导入原文（可多选批量，单文件 ≤2MB）"
         >
           导入
         </button>
@@ -973,6 +982,42 @@ export default function App({
       )}
 
       {note && <div className="note">{note}</div>}
+
+      {batchFiles && (
+        <BatchModal
+          files={batchFiles}
+          api={api}
+          intensity={intensity}
+          zhuqueMode={zhuqueMode}
+          genre={genreOverride ?? undefined}
+          local={local}
+          onClose={() => setBatchFiles(null)}
+          onOpen={(text, outputText, name) => {
+            cancelPendingRun();
+            setInput(text);
+            setOutput(outputText);
+            setBefore(aiScore(text));
+            setAfter(aiScore(outputText));
+            // v0.9.64：批量载入的是**另一篇**稿子，逐篇运行期的状态必须一起清掉——
+            // 否则对标/判定/本地检测三个面板会把上一篇的数字挂在新稿上
+            // （正常跑那条路径在 handleHumanize 开头做的是同一件事，这里对齐）。
+            setRoundScores([]);
+            setFingerprint(null);
+            setFidelity(null);
+            setTrace(null);
+            setLastRun(null);
+            setExplainItems(null);
+            setReview(null);
+            setJudgeScore(null);
+            setJudgeCritique([]);
+            setDetectorScore(null);
+            setDetectIn(detectAI(text));
+            setDetectOut(detectAI(outputText));
+            setNote(`已载入批量结果：${name}`);
+            setBatchFiles(null);
+          }}
+        />
+      )}
 
       {showSettings && (
         <SettingsModal

@@ -78,6 +78,18 @@ describe("简洁模式：默认形态", () => {
     expect(getByText("③ 复制右边的结果")).toBeTruthy();
   });
 
+  it("导入多选文件时打开批量面板（单选用原导入路径）", () => {
+    const { container, getByText } = render(<App />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const files = [
+      new File(["甲"], "a.txt", { type: "text/plain" }),
+      new File(["乙"], "b.md", { type: "text/plain" }),
+    ];
+    Object.defineProperty(input, "files", { value: files, configurable: true });
+    fireEvent.change(input);
+    expect(getByText(/批量处理 · 2 个文件/)).toBeTruthy();
+  });
+
   it("主流程按钮齐备", () => {
     const { getByText } = render(<App />);
     for (const t of CORE_BUTTONS) {

@@ -6,7 +6,7 @@
  * （手工构造 stored 条目 + 非文本部件）验证 reader 的通用性，不只是自产自销。
  */
 import { describe, expect, it } from "vitest";
-import { readDocxText, writeDocxText, docxXmlToText, textToDocxXml } from "./docx-io";
+import { readDocxText, writeDocxText, docxXmlToText, textToDocxXml, makeZipBlob } from "./docx-io";
 
 describe("textToDocxXml（OOXML 生成）", () => {
   it("段落转 <w:p>，\\n\\n 分段", () => {
@@ -260,6 +260,20 @@ describe("readDocxText 手工 zip 正/异常分支（local header / 压缩方法
     const text = "ArrayBuffer 输入分支。\n\n第二段带\t制表。";
     const blob = await writeDocxText(text);
     expect(await readDocxText(await blob.arrayBuffer())).toBe(text);
+  });
+});
+
+describe("makeZipBlob（批量导出）", () => {
+  it("产出合法 zip 头，文件名与内容进入归档", async () => {
+    const blob = await makeZipBlob([
+      { name: "a.humanized.txt", text: "甲文" },
+      { name: "b.humanized.txt", text: "乙文" },
+    ]);
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    expect([...bytes.slice(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04]); // PK\x03\x04
+    const raw = new TextDecoder().decode(bytes);
+    expect(raw).toContain("a.humanized.txt");
+    expect(raw).toContain("b.humanized.txt");
   });
 });
 

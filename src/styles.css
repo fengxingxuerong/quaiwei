@@ -1260,3 +1260,97 @@ select:focus-visible {
     flex: 1;
   }
 }
+
+/* ---- 批量处理面板（多选导入） ---- */
+.batch-modal {
+  max-width: 760px;
+}
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.batch-llm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.batch-llm input {
+  accent-color: var(--cyan);
+}
+.batch-fail {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--danger);
+}
+.batch-list {
+  border: 1px solid var(--border);
+  background: rgba(3, 8, 18, 0.55);
+  max-height: 48vh;
+  overflow-y: auto;
+}
+.batch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px dashed rgba(0, 240, 255, 0.14);
+}
+.batch-row:last-child {
+  border-bottom: none;
+}
+.batch-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.batch-done .batch-status {
+  color: var(--lime);
+}
+.batch-error .batch-status {
+  color: var(--danger);
+  white-space: normal;
+  max-width: 46%;
+  text-align: right;
+}
+.batch-row-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.batch-row-actions .ghost.sm {
+  padding: 5px 9px;
+  font-size: 11px;
+}
+@media (max-width: 560px) {
+  .batch-row {
+    flex-wrap: wrap;
+  }
+  .batch-name {
+    flex: 1 0 100%;
+  }
+  .batch-status {
+    flex: 1;
+  }
+  .batch-error .batch-status {
+    max-width: none;
+    text-align: left;
+    flex: 1 0 100%;
+  }
+}

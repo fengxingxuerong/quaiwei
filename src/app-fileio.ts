@@ -18,10 +18,18 @@ export interface ImportOutcome {
 }
 
 /** 导出文件名：去味-YYYYMMDD-HHMM.ext（分钟粒度，与原实现逐字一致） */
-export function makeDatedName(ext: string): string {
+/**
+ * 导出文件名：去味-YYYYMMDD-HHMM.ext（分钟粒度，与原实现逐字一致）。
+ *
+ * v0.9.64：加可选 `label`——批量导出原先是 `makeDatedName("zip").replace("去味-", "去味-批量-")`，
+ * 靠字符串手术拼名字：这个函数的前缀格式一改，批量包就**静默**退回普通名字（不报错）。
+ * 现在把「去味-<label>-日期」写进函数本身。
+ */
+export function makeDatedName(ext: string, label = ""): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
-  return `去味-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.${ext}`;
+  const mid = label ? `${label}-` : "";
+  return `去味-${mid}${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.${ext}`;
 }
 
 /** 浏览器下载：createObjectURL → 隐形 <a> 点击 → 立即 revoke（原实现顺序） */
