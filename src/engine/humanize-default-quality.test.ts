@@ -3,6 +3,7 @@ import { humanize } from "./humanize.ts";
 import { replaceWithDevelopment, replaceVocab, softenPassive } from "./humanize-replace.ts";
 import { fragmentCanStand } from "./humanize-vocab.ts";
 import { fragmentFrontCanStand } from "./humanize-primitives.ts";
+import { classifyGenre } from "./classify-genre.ts";
 import { aiScore } from "./humanize-metrics.ts";
 import { fixOrphanConnectiveLeads } from "./anti-fingerprint.ts";
 
@@ -144,6 +145,22 @@ describe("默认档 0.6 / plain 的用户可见质量（2026-10-22）", () => {
       expect(speech, `seed=${seed}\n${speech}`).not.toMatch(/过去五年。\s*大会/);
       expect(speech, `seed=${seed}\n${speech}`).not.toMatch(/理念。\s*与各位/);
     }
+  });
+
+  it("操作说明的条件从句、业绩快报的比较/比率半句不被切开（C13/C14）", () => {
+    const MANUAL = `按照以下步骤完成设备的首次配置：第一步，长按机身右侧的电源键 3 秒，直至指示灯呈蓝色常亮状态。第二步，打开手机端的「智联」App，点击首页右下角的【添加设备】按钮，允许应用获取蓝牙权限。第四步，等待约 20 秒，界面提示绑定成功即可开始使用。需要注意的是，若指示灯转为红色闪烁，请同时按住音量键与电源键 8 秒以恢复出厂设置，该操作不会清除云端数据。`;
+    const FINANCE = `报告期内，公司实现营业收入 48.62 亿元，较上年同期增长 12.7%；归属于上市公司股东的净利润 5.34 亿元，同比增长 8.9%。报告期末，公司总资产达到 126.75 亿元，较上年末上升 6.3%。分业务板块来看，智能制造业务营收占比为 58.4%，同比提高 3.2 个百分点；工业软件业务首次突破 10 亿元关口。`;
+    for (const seed of SEEDS) {
+      const manual = humanize(MANUAL, { intensity: 0.6, seed, style: "plain" });
+      expect(manual, `seed=${seed}\n${manual}`).not.toMatch(/闪烁。\s*请/);
+      expect(manual, `seed=${seed}\n${manual}`).not.toMatch(/呢[。！？]/);
+      expect(manual, `seed=${seed}\n${manual}`).not.toMatch(/秒。\s*直至/);
+      const finance = humanize(FINANCE, { intensity: 0.6, seed, style: "plain" });
+      expect(finance, `seed=${seed}\n${finance}`).not.toMatch(/亿元。\s*较上年末/);
+      expect(finance, `seed=${seed}\n${finance}`).not.toMatch(/58\.4%。\s*同比提高/);
+      expect(finance, `seed=${seed}\n${finance}`).not.toMatch(/来看。\s*智能/);
+    }
+    expect(classifyGenre(MANUAL).genre).not.toBe("dialogue");
   });
 });
 

@@ -61,6 +61,11 @@ function bestMs(fn: () => void, n = 3): number {
  * 进入慢时段（90+ 文件并行 + v8 插桩），慢时段会整体落在某一档上（本例是大的那档），
  * min-of-3 救不回来。交替后并发噪声对两档近似同分布，比值恢复稳定；
  * 阈值与判据不变——真 O(n²)（注入实测 7.8x）照样打穿 6x。
+ *
+ * 2026-10-22：覆盖率门禁里仍偶发过一次墙钟假红（单跑 396ms 绿、带插桩 1053ms 红）。
+ * 试过 process.cpuUsage 口径，但小样本只有 0.5~2ms，计时粒度反而让比值更抖，已回退。
+ * 最终保留 min-of-5 墙钟，并给这条用例加一次 retry：调度噪声是偶发的，
+ * 真 O(n²) 是确定性的——重试能消掉前者，消不掉后者（阈值没有放松）。
  */
 function bestMsPair(smallFn: () => void, largeFn: () => void, n = 5): [number, number] {
   let small = Number.POSITIVE_INFINITY;
@@ -77,7 +82,7 @@ function bestMsPair(smallFn: () => void, largeFn: () => void, n = 5): [number, n
 }
 
 describe("性能预算门禁", () => {
-  it("标度近线性：4 倍字数不得吃掉 6 倍耗时（O(n²) 会到 ~16 倍）", () => {
+  it("标度近线性：4 倍字数不得吃掉 6 倍耗时（O(n²) 会到 ~16 倍）", { retry: 1 }, () => {
     const small = build(20); // ≈ 4.5k 字
     const large = build(80); // ≈ 18k 字
     const opts = { intensity: 0.9, seed: 20261017 } as const;
