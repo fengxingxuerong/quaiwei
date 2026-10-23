@@ -818,10 +818,13 @@ export function replaceGuardedFormulaicDerivs(text: string): string {
 export function clampAvgSentenceLenUnder25(text: string, targetAvg = 25, maxCuts = 6): string {
   // P7-F 段落感知：splitSentences 的 trim 会剥掉句尾 \n\n，
   // 全文级 splitSentences→join 会悄悄合并段落（与 boostBurstiness 相同的分段模式）
-  if (!text.includes("\n\n")) return clampAvgSentencesInBlock(text, targetAvg, maxCuts);
-  // v0.9.62：切段必须围栏感知——围栏块内部有空行时，`split(/\n\n+/)` 会把一个代码块
-  // 切成两段，第二段段首是代码行（不满足 isProtectedBlock），被当正文切句后
-  // **闭合围栏会被粘到上一行**，Markdown 从此认为围栏未闭合。
+  //
+  // v0.9.64：去掉「没有空行 → 直接整篇 clamp」那条捷径。
+  //   捷径绕过了下面的围栏保护：一整段就是围栏块时（`\n\n` 不存在），代码会直接进
+  //   clampAvgSentencesInBlock，切句层把块内换行当句边界，最长句落在注释行上就按逗号切开——
+  //   实测「// 此外，需要说明的是…」→「// 此外。需要说明的是…」，注释被改了字形。
+  //   现在统一走「围栏感知切段 + 保护段跳过」：单段输入时 splitParas 返回 [text]，
+  //   join("\n\n") 仍是原文，与非围栏单段输入逐字等价。
   return splitParasOutsideFences(text)
     .map((p) => (isProtectedBlock(p) ? p : clampAvgSentencesInBlock(p, targetAvg, maxCuts)))
     .join("\n\n");

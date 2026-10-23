@@ -3,7 +3,7 @@
  * 垫词/句式开头/机械套话名单与评分排除集。
  */
 /* ----------------------------- 工具函数 ----------------------------- */
-import { guardFor } from "./text-shield";
+import { codeSpans, spanGuard, structuredSpans } from "./text-shield";
 
 /** 切句分隔符（与原 `[。！？!?；;\n]+` 逐字等价，抽成常量避免逐字符跑正则） */
 const DELIM_CHARS = "。！？!?；;\n";
@@ -50,8 +50,14 @@ export function splitSentences(text: string): string[] {
   // （实测 `artifacts/_probe-shield-cap.ts`：40 个 URL 只剩 16 个）。区间表不改动原文本，无上限。
   //
   // 语义与占位符版**逐字一致**：切点仍是 `[。！？!?；;\n]+`，连续分隔符整体拼到上一句，
-  // 末尾统一 trim + 去空。区别只有「落在 URL/邮箱内部的切点被跳过」。
-  const guard = guardFor(text);
+  // 末尾统一 trim + 去空。区别只有「落在 URL/邮箱/代码内部的切点被跳过」。
+  //
+  // v0.9.64：代码区间也进保护面（v0.9.24 只护 URL/邮箱）。起因是实测
+  //   「代码里 `a ?? b` 表示空值合并。」→「代码里 `a ??b` 表示空值合并。」
+  // —— `??` 被当成两个问号切开，后半句 ` b` 的**前导空格被 trim 掉**，
+  // 再拼回去就少了一个空格。行内代码与围栏块都是"照抄"的内容：
+  // 切句不该在它中间下刀，否则任何含 `?`/`;`/换行的代码都会被改字形。
+  const guard = spanGuard(structuredSpans(text).concat(codeSpans(text)));
   const out: string[] = [];
   let buf = "";
   let i = 0;

@@ -660,10 +660,16 @@ describe("代码区间不被整篇标点清理破坏（v0.9.62）", () => {
       intensity: 1,
       seed: 7,
     });
-    // 只锁「代码语义被改坏」这一层：中英空格是否被收（`a ??b`）属另一条已知问题，
-    // 单独跟踪，别让这条用例替它背锅变成假红。
     expect(out).not.toContain("a 。");
     expect(out).toContain("a ??");
+  });
+
+  it("行内代码：中英空格与字形逐字保留（v0.9.64 切句保护）", () => {
+    // 修前：`a ?? b` → `a ??b`（`??` 被当两个问号切开，后半段前导空格被 trim）
+    for (const intensity of [0.3, 0.6, 0.9]) {
+      const out = humanize(wrap("代码里 `a ?? b` 表示空值合并。"), { intensity, seed: 7 });
+      expect(out, `intensity=${intensity}`).toContain("`a ?? b`");
+    }
   });
 
   it("正文里的 !!/?? 照旧收敛（护栏只挡代码，不是把整条规则关掉）", () => {
