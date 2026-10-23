@@ -15,7 +15,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { humanize } from "./humanize";
-import { frontmatterSpans, fencedCodeSpans, isCodeLikeLine } from "./text-shield";
+import { frontmatterSpans, fencedCodeSpans, isCodeLikeLine, isIndentedBlock } from "./text-shield";
 
 const PROSE =
   "值得注意的是，随着人工智能技术的不断发展，数字化办公已成为大势所趋。综上所述，这一变革极大地提升了工作效率。";
@@ -76,6 +76,35 @@ const FIXTURES: { name: string; text: string }[] = [
     name: "CRLF 输入",
     text: ["第一段文字，正常结束。", "", "第二段文字，正常结束。"].join("\r\n"),
   },
+  {
+    // v0.9.65：缩进代码块（4 空格）——`isIndentedBlock` 走的冻结路径，
+    // 与围栏/裸代码是三条不同分支，实测都保住了，这里锁住防回归。
+    name: "4 空格缩进代码块",
+    text: [
+      PROSE,
+      "",
+      "调用示例：",
+      "",
+      "    const ok = !!value;",
+      "    const x = a ?? b;",
+      "    if (!resp.ok) throw new Error('5xx');",
+      "",
+      PROSE,
+    ].join("\n"),
+  },
+  {
+    name: "tab 缩进代码块",
+    text: [
+      PROSE,
+      "",
+      "配置如下：",
+      "",
+      "\tconst ok = !!value;",
+      "\tconst y = c ?? d;",
+      "",
+      PROSE,
+    ].join("\n"),
+  },
 ];
 
 const LEVELS = [0.4, 0.6, 0.9];
@@ -97,6 +126,8 @@ const listMarkers = (s: string): string[] =>
 const tableShapes = (s: string): string[] =>
   (s.match(/^\|.*\|$/gm) ?? []).map((l) => String((l.match(/\|/g) ?? []).length));
 const quoteLines = (s: string): number => (s.match(/^>[ \t]?/gm) ?? []).length;
+/** 缩进块（4 空格 / tab 开头）——缩进代码块走的是 isIndentedBlock 这条冻结分支 */
+const indentedLines = (s: string): string[] => s.split("\n").filter((l) => isIndentedBlock(l));
 
 /** 一组「结构资产逐字保真」判据；返回被违反的判据名 */
 function violations(input: string, output: string): string[] {
@@ -110,6 +141,7 @@ function violations(input: string, output: string): string[] {
   if (!eq(listMarkers(input), listMarkers(output))) bad.push("列表标记或缩进被改动");
   if (!eq(tableShapes(input), tableShapes(output))) bad.push("表格行竖线数被改动");
   if (quoteLines(input) !== quoteLines(output)) bad.push("引用行数被改动");
+  if (!eq(indentedLines(input), indentedLines(output))) bad.push("缩进块被改动");
   if (output.includes("\r")) bad.push("输出出现裸 CR");
   return bad;
 }
