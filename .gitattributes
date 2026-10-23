@@ -1,0 +1,29 @@
+# 行尾与二进制归属（v0.9.65）
+#
+# 为什么需要：prettier --check 的判据包含行尾，而 `git checkout -- <file>` 会把工作区
+# 文件按 core.autocrlf 转成 CRLF——撤销一处改动就会让整篇文件在格式检查里判红。
+# 2026-10-23 实测：撤销 humanize.ts 的变异注入后，880 行全变 CRLF，pre-commit 直接拦下提交。
+# 这里显式钉住行尾，不再依赖每个开发者本机的 core.autocrlf。
+* text=auto eol=lf
+
+# cmd.exe 对 LF-only 的 goto/label 有已知问题，两个启动脚本保持 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制：别让 git 尝试行尾转换（体积大且必须逐字节一致）
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.wasm binary
+*.exe binary
+*.dll binary
+*.pak binary
+*.bin binary
+*.onnx binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
