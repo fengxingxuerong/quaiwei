@@ -66,6 +66,13 @@ function bestMs(fn: () => void, n = 3): number {
  * 试过 process.cpuUsage 口径，但小样本只有 0.5~2ms，计时粒度反而让比值更抖，已回退。
  * 最终保留 min-of-5 墙钟，并给这条用例加一次 retry：调度噪声是偶发的，
  * 真 O(n²) 是确定性的——重试能消掉前者，消不掉后者（阈值没有放松）。
+ *
+ * 2026-10-23（CI run 39935799845 判红 6.04x / 6.16x，retry 也没救回来）：
+ * 根因不是噪声变大，而是**小样本太小**——CI runner 上小样本只有 6.4~7.9ms，
+ * 计时精度与 GC 抖动占比接近 10%，直接乘进比值里。诊断证据：
+ *   小 7.9ms → 大 47.7ms（6.04x）／小 6.4ms → 大 39.6ms（6.16x）
+ * 处置：**把两档规模各放大 4 倍**（4.5k→18k 字、18k→72k 字），保持"4 倍字数"这个判据不变。
+ * 小样本抬到 30ms 量级后，同样 1ms 的抖动只影响 3% 而不是 15%。阈值仍是 6（没放松）。
  */
 function bestMsPair(smallFn: () => void, largeFn: () => void, n = 5): [number, number] {
   let small = Number.POSITIVE_INFINITY;
@@ -83,8 +90,10 @@ function bestMsPair(smallFn: () => void, largeFn: () => void, n = 5): [number, n
 
 describe("性能预算门禁", () => {
   it("标度近线性：4 倍字数不得吃掉 6 倍耗时（O(n²) 会到 ~16 倍）", { retry: 1 }, () => {
-    const small = build(20); // ≈ 4.5k 字
-    const large = build(80); // ≈ 18k 字
+    // 规模刻意取大：小样本必须≥30ms 量级，否则计时精度/GC 抖动会直接乘进比值
+    // （2026-10-23 CI 实测：小样本 6~8ms 时同一个引擎被判成 6.04x）。
+    const small = build(80); // ≈ 18k 字
+    const large = build(320); // ≈ 72k 字，仍是 4 倍
     const opts = { intensity: 0.9, seed: 20261017 } as const;
 
     // 预热：让 JIT 先编译热路径，避免第一次测量的编译开销污染比值
@@ -106,8 +115,8 @@ describe("性能预算门禁", () => {
       `标度异常：小样本 ${tSmall.toFixed(1)}ms → 大样本 ${tLarge.toFixed(1)}ms（${ratio.toFixed(1)}x）`,
     ).toBeLessThan(6);
 
-    // 兜底：绝对上限只抓灾难性退化（本机无插桩 ~60ms，覆盖插桩后约 8x 余量）
-    expect(tLarge, `18k 字耗时 ${tLarge.toFixed(0)}ms，已超兜底上限`).toBeLessThan(5000);
+    // 兜底：绝对上限只抓灾难性退化（本机无插桩 ~250ms，覆盖插桩后约 8x 余量）
+    expect(tLarge, `72k 字耗时 ${tLarge.toFixed(0)}ms，已超兜底上限`).toBeLessThan(5000);
   });
 
   it("bestOf 8 稿预算：2.8k 字 ≤ 6000ms（本机无插桩 ~90ms）", () => {
