@@ -212,3 +212,38 @@ describe("clearHistory", () => {
     expect(loadHistory()).toEqual([]);
   });
 });
+
+/** v0.9.68：外部分进历史（本地分是代理分，外部分才是真值） */
+describe("history · 外部检测器分数", () => {
+  it("传入 detector 时落库并读回", () => {
+    const e = makeHistoryEntry(
+      "原文甲",
+      "产出甲",
+      aiScore("原文甲"),
+      aiScore("产出甲"),
+      0.6,
+      false,
+      "llm",
+      { url: "https://detector.example/score", score: 42 },
+    );
+    expect(e.detector).toEqual({ url: "https://detector.example/score", score: 42 });
+    saveHistory(e);
+    const back = loadHistory()[0];
+    expect(back.detector?.score).toBe(42);
+    expect(back.detector?.url).toContain("detector.example");
+  });
+
+  it("不传 detector 时字段整个不出现（旧记录形态向后兼容）", () => {
+    const e = makeHistoryEntry(
+      "原文乙",
+      "产出乙",
+      aiScore("原文乙"),
+      aiScore("产出乙"),
+      0.6,
+      false,
+    );
+    expect("detector" in e).toBe(false);
+    saveHistory(e);
+    expect(loadHistory()[0].detector).toBeUndefined();
+  });
+});

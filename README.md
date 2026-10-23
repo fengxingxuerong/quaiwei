@@ -188,6 +188,9 @@ QUAIWEI_DETECTOR_KEY=xxx npx tsx scripts/humanize-cli.ts ./in --out ./out \
 - 刻度、点路径都按接口自报的 JSON 走，不假设任何一家厂商的字段名。
 - **界面里可以存多档预设**（v0.9.67）：设置 → 对标检测器 → 「存为预设」，之后在「我的预设」里一键切换
   URL / 点路径 / 刻度。预设只存非敏感字段（Key 仍走安全存储），最多 20 档、同名覆盖。
+- **外部分会进历史**（v0.9.68）：去味时若启用了检测器，当次自动送检的分数会跟这条历史一起存下来，
+  历史面板显示「· 外部 42」。本地分是代理分，这个数字才是可比的真值——回头能看同一篇稿子
+  在不同检测器、不同强度下的变化。
 
 Key 优先级：`--api-key` > `QUAIWEI_API_KEY` > `OPENAI_API_KEY` > `SENSENOVA_KEYS` / `scripts/.sensenova-keys`。
 注意 baseUrl 必须填完整地址——以 `/` 开头的同源路径只在 dev（vite 代理）和 Electron 桌面版下有效。

@@ -324,6 +324,8 @@ export default function App({
       // 结果文案组装已抽纯函数（src/app-messages.ts）：按真实产出引擎如实标注，
       // 回归防护见 src/app-messages.test.ts
       let detectorNote: string | undefined;
+      // v0.9.68：把当次外部分也带进历史（本地分是代理分，外部分是唯一真值）
+      let detectorHit: { url: string; score: number } | undefined;
       // 检测器自动闭环：已配置外部检测器时，去味后自动送检一次（真实分回显，
       // 形成"改写→检测"闭环的一部分），不再需要手动点「用外部检测器」
       if (detector.enabled && detector.url.trim() && r.text.trim()) {
@@ -331,6 +333,7 @@ export default function App({
           const s = await scoreViaDetector(r.text, detector);
           setDetectorScore(s);
           detectorNote = ` · 检测器自动送检：${s} 分`;
+          detectorHit = { url: detector.url, score: s };
         } catch (de: unknown) {
           detectorNote = " · 检测器送检失败：" + (de instanceof Error ? de.message : String(de));
         }
@@ -346,6 +349,7 @@ export default function App({
         intensity,
         r.usedApi,
         r.engine,
+        detectorHit,
       );
       saveHistory(entry);
       setHistory(loadHistory());

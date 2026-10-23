@@ -91,6 +91,12 @@ export function HistoryPanel({ entries, onLoad, onClear, onClose }: HistoryPanel
                     <span style={{ color: "var(--muted)", marginLeft: 8 }}>
                       降 {e.beforeScore - e.afterScore} 分
                     </span>
+                    {/* v0.9.68：外部检测器的真实分（当次自动送检留下的），与本地代理分分开显示 */}
+                    {e.detector && (
+                      <span style={{ color: "var(--muted)", marginLeft: 8 }}>
+                        · 外部 {e.detector.score}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span style={{ fontSize: 18, color: "var(--accent)", marginLeft: 8 }}>→</span>

@@ -16,6 +16,12 @@ export interface HistoryEntry {
   /** 该稿的真实产出引擎。旧记录没有这个字段（可选），缺省时按 usedApi 推断。
    *  只存 usedApi 是不够的：分块混拼时它是 true，看不出本地补位。 */
   engine?: HumanizeEngine;
+  /**
+   * v0.9.68：当次自动送检拿到的**外部检测器**分数（可选）。
+   * 本地分是代理分，外部分是唯一真值——留在历史里才能回头比较「同一篇在不同检测器下的变化」。
+   * 只记分数与接口地址，不记凭证。
+   */
+  detector?: { url: string; score: number };
   timestamp: number;
 }
 
@@ -71,6 +77,8 @@ export function makeHistoryEntry(
   intensity: number,
   usedApi: boolean,
   engine?: HumanizeEngine,
+  /** v0.9.68：当次外部检测器送检结果（可选；没配检测器 / 送检失败时不传） */
+  detector?: { url: string; score: number },
 ): HistoryEntry {
   return {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -81,6 +89,7 @@ export function makeHistoryEntry(
     intensity,
     usedApi,
     engine,
+    ...(detector ? { detector } : {}),
     timestamp: Date.now(),
   };
 }
