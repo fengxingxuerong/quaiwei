@@ -59,14 +59,41 @@ export function structuredSpans(text: string): TextSpan[] {
  * 造一个「下标是否落在结构化串内部」的判定器（二分，O(log n)）。
  *
  * 传 `null`/空数组时返回恒 false —— 让调用方不需要写分支。
+ *
+ * v0.9.65：**入参不再要求有序**——这里自行排序 + 合并重叠。
+ *
+ * 起因（2026-10-23 实测）：调用方惯用「A 类区间 concat B 类区间」拼数组，而
+ * `frontmatterSpans` 恒从 0 开始、被拼在 `fencedCodeSpans` 之后 ⇒ 数组无序，
+ * 二分找「最后一个 start ≤ idx」时直接给出错误答案。后果是文档**同时**有
+ * frontmatter 与围栏块时，两者都失去冻结、被当正文处理，块内被插入空行：
+ *   `---\ntitle: X\n---\n\n正文\n\n```js\nconst a = 1;\n````
+ * → frontmatter 每行之间被插空行、围栏块同样被炸开（v0.9.54 声称的整块冻结失效）。
+ * 同一模式在 `humanize-text.ts` 的 URL/邮箱 + 代码区间里也存在（无序 → 保护漏判）。
+ *
+ * 与其要求每个调用点自觉排序（已经漏了两处），不如在这里归一：排序 + 合并重叠。
+ * 区间数量级都是个位/十位，排序开销可忽略。
  */
 export function spanGuard(spans: TextSpan[] | null | undefined): (idx: number) => boolean {
   if (!spans || spans.length === 0) return () => false;
-  const starts = spans.map((s) => s.start);
+  const sorted = spans
+    .filter((s) => s.end > s.start)
+    .slice()
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+  /** 归并后的区间（新对象，不改调用方的数组） */
+  const merged: TextSpan[] = [];
+  for (const s of sorted) {
+    const last = merged[merged.length - 1];
+    if (last && s.start <= last.end) {
+      last.end = Math.max(last.end, s.end);
+      continue;
+    }
+    merged.push({ start: s.start, end: s.end });
+  }
+  const starts = merged.map((s) => s.start);
   return (idx: number): boolean => {
     // 找最后一个 start <= idx 的区间
     let lo = 0;
-    let hi = spans.length - 1;
+    let hi = merged.length - 1;
     let found = -1;
     while (lo <= hi) {
       const mid = (lo + hi) >> 1;
@@ -78,7 +105,7 @@ export function spanGuard(spans: TextSpan[] | null | undefined): (idx: number) =
       }
     }
     if (found < 0) return false;
-    return idx < spans[found].end;
+    return idx < merged[found].end;
   };
 }
 

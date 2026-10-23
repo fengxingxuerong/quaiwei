@@ -119,6 +119,38 @@ describe("spanGuard（二分判定器）", () => {
       expect(g(i)).toBe(naiveInside(spans, i));
     }
   });
+
+  /**
+   * v0.9.65：**入参乱序**也必须与朴素实现一致。
+   *
+   * 起因：调用方惯用「A 类区间 concat B 类区间」拼数组，而 frontmatterSpans 恒从 0 开始、
+   * 被拼在 fencedCodeSpans 之后 ⇒ 数组无序；原来的二分直接给出错误答案，后果是
+   * 「同时有 frontmatter 与围栏块」的文档里两者都失去冻结。这条用例锁的是根因，
+   * 不依赖任何调用点自觉排序。
+   */
+  it("乱序 / 重叠区间与朴素实现一致（不再要求调用方排序）", () => {
+    const spans: TextSpan[] = [
+      { start: 20, end: 26 },
+      { start: 0, end: 6 },
+      { start: 40, end: 44 },
+      { start: 5, end: 9 }, // 与 [0,6) 重叠
+      { start: 26, end: 30 }, // 紧邻 [20,26)
+    ];
+    // 乱序输入 + 重叠，二分若假设有序就会给出错误答案
+    const shuffled = [spans[3], spans[0], spans[4], spans[1], spans[2]];
+    const g = spanGuard(shuffled);
+    for (let i = 0; i <= 50; i++) {
+      expect(g(i), `idx=${i}`).toBe(naiveInside(spans, i));
+    }
+    // 调用方数组不被就地改写
+    expect(shuffled.map((s) => `${s.start}-${s.end}`)).toEqual([
+      "5-9",
+      "20-26",
+      "26-30",
+      "0-6",
+      "40-44",
+    ]);
+  });
 });
 
 describe("切句联动（humanize-text.splitSentences）", () => {

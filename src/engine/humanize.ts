@@ -376,18 +376,24 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
       : humanizeSingle(text, { ...opts, intensity, genre: effectiveGenre, officialDoc });
   } else {
     const baseSeed = opts.seed;
-    const parts = paragraphs.map((p, i) =>
-      frozen[i]
-        ? p
-        : humanizeSingle(p, {
-            ...opts,
-            intensity,
-            genre: effectiveGenre,
-            para: i,
-            officialDoc,
-            seed: baseSeed === undefined ? undefined : (baseSeed + i * 2654435761) >>> 0,
-          }),
-    );
+    const parts = paragraphs.map((p, i) => {
+      if (frozen[i]) return p;
+      const out = humanizeSingle(p, {
+        ...opts,
+        intensity,
+        genre: effectiveGenre,
+        para: i,
+        officialDoc,
+        seed: baseSeed === undefined ? undefined : (baseSeed + i * 2654435761) >>> 0,
+      });
+      // v0.9.65：紧凑结构行（列表/表格/引用）的**行首缩进是语义**——嵌套层级就写在缩进里。
+      // humanizeSingle 会 trim 掉它，实测 `  - Redis 7.2 集群` → `- Redis 7.2 集群`，
+      // 二级列表被压平成一级。这里把原始缩进摘下来、处理完再原样贴回；
+      // 非结构行（缩进为空）行为不变。产出为空时退回原文，避免留下一条光杆 `- `。
+      const lead = mdStruct[i] ? (/^[ \t]*/.exec(p)?.[0] ?? "") : "";
+      if (!lead) return out;
+      return out.trim() ? lead + out : p;
+    });
     let joined = "";
     for (let i = 0; i < parts.length; i++) {
       if (i === 0) {

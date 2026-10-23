@@ -178,9 +178,15 @@ export function stripCJKEdgeSpaces(text: string, aggressive = false): string {
   const typed = (text.match(/[\u4e00-\u9fa5]\s[A-Za-z0-9]|[A-Za-z0-9]\s[\u4e00-\u9fa5]/g) || [])
     .length;
   if (!aggressive && typed >= TYPED_SPACING_MIN) return text;
-  return text
-    .replace(/([\u4e00-\u9fa5，。；：、])[ \t]+(?=[A-Za-z0-9])/g, "$1")
-    .replace(/([A-Za-z0-9%）)\]])[ \t]+(?=[\u4e00-\u9fa5])/g, "$1");
+  return (
+    text
+      .replace(/([\u4e00-\u9fa5，。；：、])[ \t]+(?=[A-Za-z0-9])/g, "$1")
+      // v0.9.65：`]` 从这一类推里摘出去。它出现的地方几乎都是**结构性标记**：
+      //   `- [x] 改造缓存层`（GFM 任务项：`[x]` 后没空格就不再是任务项，勾选框丢掉）
+      //   `见附录 [1] 的说明`（引注：吃掉空格把序号粘进正文）
+      // 而 `)`/`）`/`%`/字母数字后的中英空格确实属于排版噪声，处置不变。
+      .replace(/([A-Za-z0-9%）)])[ \t]+(?=[\u4e00-\u9fa5])/g, "$1")
+  );
 }
 
 /**
