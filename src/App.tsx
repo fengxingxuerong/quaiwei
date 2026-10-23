@@ -991,6 +991,7 @@ export default function App({
           zhuqueMode={zhuqueMode}
           genre={genreOverride ?? undefined}
           local={local}
+          detector={detector}
           onClose={() => setBatchFiles(null)}
           onOpen={(text, outputText, name) => {
             cancelPendingRun();

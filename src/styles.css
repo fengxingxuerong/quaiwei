@@ -1323,6 +1323,10 @@ select:focus-visible {
 .batch-done .batch-status {
   color: var(--lime);
 }
+/* v0.9.66：外部检测器的前后分——与本地代理分并排，用弱一档的颜色区分开 */
+.batch-ext {
+  color: var(--text-dim);
+}
 .batch-error .batch-status {
   color: var(--danger);
   white-space: normal;

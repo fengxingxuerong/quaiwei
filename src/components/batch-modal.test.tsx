@@ -3,6 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { BatchModal } from "./BatchModal";
 import type { ApiConfig } from "../api/llm";
+import type { DetectorConfig } from "../api/detector";
+
+const { scoreViaDetectorMock } = vi.hoisted(() => ({
+  // 假外部检测器：按字数给分（原文长、产出短 → 天然有降幅）
+  scoreViaDetectorMock: vi.fn(async (text: string) => Math.min(100, text.length)),
+}));
 
 const DEFAULT_RUN = async (text: string, _intensity?: number, _cfg?: ApiConfig) => ({
   text: `改后-${text}`,
@@ -22,6 +28,10 @@ vi.mock("../api/llm", () => ({
   effectiveKeys: (cfg: { apiKey?: string; apiKeys?: string }) =>
     [cfg.apiKey, cfg.apiKeys].filter(Boolean).join("\n").split(/\s+/).filter(Boolean),
 }));
+vi.mock("../api/detector", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/detector")>()),
+  scoreViaDetector: (text: string) => scoreViaDetectorMock(text),
+}));
 vi.mock("../app-fileio", () => ({
   importFileToText: vi.fn(async (f: File) => ({ text: `原文-${f.name}`, name: f.name, note: "" })),
   downloadBlob: vi.fn(),
@@ -36,10 +46,21 @@ const API = {
   style: "plain",
 } as ApiConfig;
 
+/** 默认关闭：不干扰既有用例；要看检测器的那条用例自己开 `enabled: true` */
+const DETECTOR_OFF = {
+  enabled: false,
+  url: "",
+  apiKey: "",
+  scorePath: "score",
+  scale: "0-100",
+} as DetectorConfig;
+const DETECTOR_ON = { ...DETECTOR_OFF, enabled: true, url: "https://detector.example/score" };
+
 describe("BatchModal", () => {
   beforeEach(() => {
     runHumanize.mockClear();
     runHumanize.mockImplementation(DEFAULT_RUN as never);
+    scoreViaDetectorMock.mockClear();
     cleanup();
   });
 
@@ -56,6 +77,7 @@ describe("BatchModal", () => {
         intensity={0.6}
         zhuqueMode={false}
         local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
         onClose={() => {}}
         onOpen={onOpen}
       />,
@@ -80,6 +102,7 @@ describe("BatchModal", () => {
         intensity={0.6}
         zhuqueMode={false}
         local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
         onClose={() => {}}
         onOpen={() => {}}
       />,
@@ -108,6 +131,7 @@ describe("BatchModal", () => {
         intensity={0.6}
         zhuqueMode={false}
         local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
         onClose={() => {}}
         onOpen={() => {}}
       />,
@@ -131,6 +155,7 @@ describe("BatchModal", () => {
         intensity={0.6}
         zhuqueMode={false}
         local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
         onClose={() => {}}
         onOpen={() => {}}
       />,
@@ -150,6 +175,7 @@ describe("BatchModal", () => {
         intensity={0.6}
         zhuqueMode={false}
         local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
         onClose={() => {}}
         onOpen={() => {}}
       />,
@@ -197,6 +223,7 @@ describe("BatchModal", () => {
         intensity={0.6}
         zhuqueMode={false}
         local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
         onClose={() => {}}
         onOpen={() => {}}
       />,
@@ -220,5 +247,72 @@ describe("BatchModal", () => {
     await waitFor(() => expect(gates.length).toBe(3));
     gates[2]();
     await waitFor(() => expect(getAllByText("10 → 2")).toHaveLength(3));
+  });
+
+  /**
+   * v0.9.66：外部检测器接入批量面板。三条都锁住：
+   *  · 没配检测器时不渲染开关（不给一个点了没用的选项）；
+   *  · 勾选后**每篇送检 2 次**（原文 + 产出），不是只送产出；
+   *  · 送检失败只标该行，不影响出稿。
+   */
+  it("外部检测器：勾选后每篇送检两次并显示前后分", async () => {
+    const files = [
+      new File(["甲"], "a.txt", { type: "text/plain" }),
+      new File(["乙"], "b.txt", { type: "text/plain" }),
+    ];
+    const { getByLabelText, getByText, queryAllByText } = render(
+      <BatchModal
+        files={files}
+        api={API}
+        intensity={0.6}
+        zhuqueMode={false}
+        local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_ON}
+        onClose={() => {}}
+        onOpen={() => {}}
+      />,
+    );
+
+    fireEvent.click(getByLabelText(/用外部检测器打前后分/));
+    fireEvent.click(getByText("开始处理"));
+
+    await waitFor(() => expect(scoreViaDetectorMock).toHaveBeenCalledTimes(4)); // 2 篇 ×2
+    expect(queryAllByText(/外部 \d+ → \d+/)).toHaveLength(2);
+  });
+
+  it("外部检测器失败只标该行，不中断出稿", async () => {
+    scoreViaDetectorMock.mockRejectedValueOnce(new Error("配额耗尽"));
+    const { getByLabelText, getByText, getAllByText, queryByText } = render(
+      <BatchModal
+        files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
+        api={API}
+        intensity={0.6}
+        zhuqueMode={false}
+        local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_ON}
+        onClose={() => {}}
+        onOpen={() => {}}
+      />,
+    );
+    fireEvent.click(getByLabelText(/用外部检测器打前后分/));
+    fireEvent.click(getByText("开始处理"));
+    await waitFor(() => expect(getAllByText("10 → 2")).toHaveLength(1)); // 本地分照常出
+    expect(queryByText(/外部检测失败/)).toBeTruthy();
+  });
+
+  it("没配检测器时不渲染外部开关", () => {
+    const { queryByLabelText } = render(
+      <BatchModal
+        files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
+        api={API}
+        intensity={0.6}
+        zhuqueMode={false}
+        local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
+        onClose={() => {}}
+        onOpen={() => {}}
+      />,
+    );
+    expect(queryByLabelText(/用外部检测器打前后分/)).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { runHumanize, effectiveKeys, type ApiConfig } from "../api/llm";
+import { scoreViaDetector, type DetectorConfig } from "../api/detector";
 import { downloadBlob, importFileToText, makeDatedName } from "../app-fileio";
 import { makeZipBlob } from "../docx-io";
 import type { LocalSettings } from "../store";
@@ -17,6 +18,10 @@ interface Item {
   after: number;
   status: Status;
   error?: string;
+  /** v0.9.66：外部检测器的前后分（没接检测器 / 失败时为 null） */
+  extBefore?: number | null;
+  extAfter?: number | null;
+  extError?: string;
 }
 
 interface BatchModalProps {
@@ -26,6 +31,8 @@ interface BatchModalProps {
   zhuqueMode: boolean;
   genre?: Genre;
   local: LocalSettings;
+  /** v0.9.66：外部检测器配置（用户在设置里填的那个，可能与朱雀无关） */
+  detector: DetectorConfig;
   onClose: () => void;
   onOpen: (input: string, output: string, name: string) => void;
 }
@@ -47,6 +54,7 @@ export function BatchModal({
   zhuqueMode,
   genre,
   local,
+  detector,
   onClose,
   onOpen,
 }: BatchModalProps) {
@@ -76,6 +84,9 @@ export function BatchModal({
   const stopRef = useRef(false);
   const [stopping, setStopping] = useState(false);
   const canUseLlm = api.enabled && effectiveKeys(api).length > 0;
+  /** v0.9.66：外部检测器可用 = 用户开开关且填了 URL。每篇要送 2 次（原文+产出），必须显式勾选 */
+  const canUseDetector = detector.enabled && detector.url.trim() !== "";
+  const [useDetector, setUseDetector] = useState(false);
 
   const update = (id: number, patch: Partial<Item>) =>
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -131,6 +142,19 @@ export function BatchModal({
           before: r.before.score,
           after: r.after.score,
         });
+        // v0.9.66：外部检测器（可选）——原文与产出各送一次，拿到真实的降幅。
+        // 每篇 2 次调用会烧外部额度，所以默认不勾；失败只标这一行，不影响出稿。
+        if (useDetector && canUseDetector) {
+          try {
+            const extBefore = await scoreViaDetector(res.text, detector);
+            const extAfter = await scoreViaDetector(r.text, detector);
+            update(it.id, { extBefore, extAfter, extError: undefined });
+          } catch (e) {
+            update(it.id, {
+              extError: e instanceof Error ? e.message : String(e),
+            });
+          }
+        }
       } catch (err: unknown) {
         update(it.id, {
           status: "error",
@@ -219,6 +243,17 @@ export function BatchModal({
             使用当前 LLM 设置（慢、可能计费；每篇受 maxApiCalls 限制，失败自动回退本地）
           </label>
         )}
+        {canUseDetector && (
+          <label className="batch-llm">
+            <input
+              type="checkbox"
+              checked={useDetector}
+              onChange={(e) => setUseDetector(e.target.checked)}
+              disabled={running}
+            />
+            用外部检测器打前后分（每篇送检 <b>2 次</b>：原文 + 产出；会消耗外部额度）
+          </label>
+        )}
 
         <div className="batch-actions">
           <button className="primary" onClick={() => void runAll()} disabled={running}>
@@ -259,7 +294,19 @@ export function BatchModal({
                 {it.status === "pending" && "等待"}
                 {it.status === "reading" && "读取中"}
                 {it.status === "running" && "去味中"}
-                {it.status === "done" && `${it.before} → ${it.after}`}
+                {it.status === "done" && (
+                  <>
+                    {`${it.before} → ${it.after}`}
+                    {/* v0.9.66：外部检测器分数单独一行，与本地代理分并排但不混为一谈 */}
+                    {typeof it.extBefore === "number" && typeof it.extAfter === "number" && (
+                      <span className="batch-ext">
+                        {" "}
+                        · 外部 {it.extBefore} → {it.extAfter}
+                      </span>
+                    )}
+                    {it.extError && <span className="batch-fail"> · 外部检测失败</span>}
+                  </>
+                )}
                 {it.status === "error" && (it.error || "失败")}
               </div>
               <div className="batch-row-actions">
