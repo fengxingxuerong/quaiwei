@@ -2,6 +2,27 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.71 更新（CLI 多档检测器：跨厂商横向对比，2026-10-24）
+
+同一篇稿子想同时看两三家的检测分，此前只能跑三遍（还得每遍改一遍设置）。
+现在 `--detector-url` **可重复**，每出现一次开一档；紧跟其后的
+`--detector-key` / `--detector-path` / `--detector-scale` 只作用在**最近一档**上：
+
+```bash
+ai-humanizer ./in --out ./out \
+  --detector-url https://a.example/score --detector-path data.prob \
+  --detector-url https://b.example/v1/classify --detector-path softmax_confidence --detector-scale 0-1 \
+  --report out.json
+```
+
+- 逐档送检（每档仍是原文 + 产出各一次），stdout 用 `#1` / `#2` 标号打印前后分与降幅；
+  `--report` 里多一个 `detectorScores` 数组给逐档读数，顶层 `detectorBefore/After`
+  仍取第一档——旧报告消费方不用改。
+- 某档失败只记该档的 `error`（分数为 null），不拖累其它档与出稿。
+- 测试新增一条「多档：逐档送检、各自按本档点路径与刻度取分」——同一台本地服务器按路径
+  返回 0-100 与 0-1 两种刻度，验证不会串味。
+- 门禁：`check:release` EXIT=0；全量 114 文件 2292 用例全绿。
+
 ## v0.9.70 更新（棘轮度量修正 + 「一直」按原意禁掉，2026-10-24）
 
 ### 一、E 组棘轮：单点抽样 → 20 seed 均值（今天的假红不是词表的锅）
