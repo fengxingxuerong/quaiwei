@@ -26,7 +26,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { main } from "./regression-12samples";
+import { main, describeSingles } from "./regression-12samples";
 
 const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REAL_LOCK = path.join(SCRIPTS_DIR, "regression-12samples.lock.json");
@@ -387,5 +387,35 @@ describe("regression-12samples：入口 process.exit(main())", () => {
       exit.mockRestore();
       c.stop();
     }
+  });
+});
+
+/**
+ * v0.9.74：单点 vs 均值的提示文案。
+ * 这条不是判据（判红只看均值），但它是**下次有人看到某个分突然变大时的第一句话**，
+ * 所以文案本身也要被测住——不能改坏了却没人发现。
+ */
+describe("describeSingles（单点 vs 均值提示）", () => {
+  it("差值小于阈值时不输出", () => {
+    expect(describeSingles([{ id: "O2", single: 7, mean: 6.5 }])).toEqual([]);
+    expect(describeSingles([])).toEqual([]);
+  });
+
+  it("差值达到阈值时逐条列出（正负都算）", () => {
+    const lines = describeSingles([
+      { id: "A", single: 11, mean: 7.6 },
+      { id: "B", single: 0, mean: 4.4 },
+      { id: "C", single: 5, mean: 5 },
+    ]);
+    expect(lines[0]).toContain("单点抽样与均值相差");
+    expect(lines.join("\n")).toContain("A 单点 11 / 均值 7.6");
+    expect(lines.join("\n")).toContain("B 单点 0 / 均值 4.4");
+    expect(lines.join("\n")).not.toContain("C ");
+    expect(lines).toHaveLength(3); // 标题 + 2 条
+  });
+
+  it("阈值可调", () => {
+    expect(describeSingles([{ id: "A", single: 6, mean: 5 }], 2)).toHaveLength(0);
+    expect(describeSingles([{ id: "A", single: 6, mean: 5 }], 1)).toHaveLength(2);
   });
 });

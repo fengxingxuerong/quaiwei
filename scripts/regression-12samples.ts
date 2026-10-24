@@ -87,6 +87,25 @@ const E2E_SEEDS = [
 function meanOf(nums: number[]): number {
   return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
 }
+
+/**
+ * 单点与均值的差超过阈值时给一行提示（**只提示、不判红**）。
+ * 导出是为了能单测：这条文案是给下一次"分数突然变了"的人看的，不能靠读输出碰运气。
+ */
+export function describeSingles(
+  rows: { id: string; single: number; mean: number }[],
+  threshold = 3,
+): string[] {
+  const noisy = rows.filter((r) => Math.abs(r.single - r.mean) >= threshold);
+  if (noisy.length === 0) return [];
+  const lines = [
+    "  ⚠ 单点抽样与均值相差 ≥" + threshold + "（分布较宽，属正常波动；判红只看均值）：",
+  ];
+  for (const r of noisy) {
+    lines.push(`    ${r.id} 单点 ${r.single} / 均值 ${r.mean}（差 ${(r.single - r.mean).toFixed(1)}）`);
+  }
+  return lines;
+}
 /** 冻结文本里「AI 原文」与「人写原文」的最小间隔。
  *  低于它说明评分器把两类糊到了一起——比任何单条绝对分漂移都严重。
  *  HEAD 实测：min(N0,D0,O1)=33，H0=7 → 26 分。 */
@@ -548,8 +567,10 @@ export function main(argv: string[] = process.argv.slice(2)): number {
   const failD = report("D. 评分器漂移（输入冻在仓库里，引擎不参与）", driftRows, band.lines);
 
   // ── E 组：当前引擎产物的 **20 seed 均值** → 只降不升棘轮
-  //    （单 seed 抽样噪声太大，见 E2E_SEEDS 注释：同一样本跨种子 2~10 分）
+  //    （单 seed 抽样噪声太大，见 E2E_SEEDS 注释：同一样本跨种子 4~13 分）
   const e2eNow: Record<string, number> = {};
+  /** v0.9.74：同一次测量里的**单点**读数（CI_SEED 那一抽），只用于"这锅不是词表的"提示，不参与判红 */
+  const e2eSingle: Record<string, number> = {};
   const e2eRows: Row[] = [];
   for (const s of samples) {
     if (s.intensity === 0) continue;
@@ -565,9 +586,23 @@ export function main(argv: string[] = process.argv.slice(2)): number {
     );
     const now = meanOf(scores);
     e2eNow[s.id] = now;
+    e2eSingle[s.id] = scores[0]; // E2E_SEEDS[0] === CI_SEED
     e2eRows.push(ratchet(s, lock.e2e[s.id]?.score, now));
   }
   const failE = report("E. 引擎退化（sourceText → 当前引擎 → aiScore）", e2eRows);
+
+  /**
+   * v0.9.74：**单点 vs 均值**——把"这锅不是词表的"直接打在屏幕上。
+   *
+   * 今天（2026-10-24）实测：只改一个词表候选，单点抽样就从 5 跳到 11，而 20 seed 均值
+   * 一动没动（7.3 / 7.3）。门禁已经按均值判红，但**单点差得远本身就说明该样本在双峰之间摆动**；
+   * 把它列出来，下次有人看到"某个分突然变大"就知道先看均值，而不是去改词表。
+   * 只提示、不判红：判据仍然只有均值那一条。
+   */
+  const singles = samples
+    .filter((s) => s.intensity > 0 && s.id in e2eSingle && s.id in e2eNow)
+    .map((s) => ({ id: s.id, single: e2eSingle[s.id], mean: e2eNow[s.id] }));
+  for (const line of describeSingles(singles)) console.log(line);
 
   // ── 汇总表
   console.log("\n━━━━━━━━━━━━━ 汇总表（D=存档文本 / E=当前引擎产物） ━━━━━━━━━━━━━");
