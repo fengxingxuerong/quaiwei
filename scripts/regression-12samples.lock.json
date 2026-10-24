@@ -45,19 +45,19 @@
   },
   "e2e": {
     "N1": {
-      "score": 8,
+      "score": 4.8,
       "note": "seed=20260826, intensity=0.6, zhuque=false, genre=叙事文"
     },
     "N2": {
-      "score": 0,
+      "score": 4.4,
       "note": "seed=20260826, intensity=0.9, zhuque=true, genre=叙事文"
     },
     "D1": {
-      "score": 0,
+      "score": 2.1,
       "note": "seed=20260826, intensity=0.6, zhuque=false, genre=对话体"
     },
     "D2": {
-      "score": 0,
+      "score": 0.4,
       "note": "seed=20260826, intensity=0.9, zhuque=true, genre=对话体"
     },
     "H1": {
@@ -69,11 +69,11 @@
       "note": "seed=20260826, intensity=0.9, zhuque=true, genre=纯人写稿"
     },
     "O2": {
-      "score": 5,
+      "score": 7.6,
       "note": "seed=20260826, intensity=0.7, zhuque=false, genre=论说文"
     },
     "O3": {
-      "score": 4,
+      "score": 6.5,
       "note": "seed=20260826, intensity=0.9, zhuque=true, genre=论说文"
     }
   },
@@ -139,6 +139,18 @@
         "E/H2:0→8",
         "E/O2:3→5",
         "E/O3:3→4"
+      ]
+    },
+    {
+      "at": "2026-10-24",
+      "reason": "【接受恶化 N2/D1/D2/O2/O3】E 组从「单 seed 抽样」改为「20 seed 均值」：这套样本的分布是双峰的（O2 在 20 个种子上 4~5 与 10~12 两个峰），锁单点等于锁一次抽样，任何词表改动都会假红；均值稳定（同一引擎两次测量 7.3 / 7.3）。本次同时把「一直」恢复为正式体禁用项（语体正确），并给 持续/不断 补了正式替身（一贯/频频）。",
+      "changes": [
+        "E/N1:8→4.8",
+        "E/N2:0→4.4",
+        "E/D1:0→2.1",
+        "E/D2:0→0.4",
+        "E/O2:5→7.6",
+        "E/O3:4→6.5"
       ]
     }
   ]

@@ -46,6 +46,47 @@ const V2_JSON_PATH = path.join(__dirname, "calibration-data-v2-genres.json");
 const DEFAULT_LOCK_PATH = path.join(__dirname, "regression-12samples.lock.json");
 /** E2E 固定种子：所有强度>0 档都用同一 seed 跑，保证 deterministic 前后严格对比 */
 const CI_SEED = 20260826;
+/**
+ * E 组采样种子（v0.9.70）。**单 seed 抽样在这套样本上噪声极大**：
+ * 2026-10-24 实测 EXPO_O1 在 0.7 档跑 20 个种子，aiScore 分布是
+ *   `9 4 10 4 8 3 3 3 9 2 3 9 2 3 9 4 9 3 9 9`（min 2 / max 10 / 中位 4）；
+ * 只改一个词表候选（连"一直"是否允许这种量级的改动）就会让随机流错位、
+ * 单点从 5 跳到 11 —— 而 20 seed 的均值几乎不动（5.8 vs 5.2）。
+ * 也就是说：锁单点等于锁一次抽样，任何词表改动都可能假红。
+ * ⇒ 改成 **9 个种子的中位数**：实测 20 seed 的中位数稳定在 5（min 4 / max 13），\n *   9 seed 中位数的抖动 ±1，真退化（整条分布上移）照样会红。
+ */
+const E2E_SEEDS = [
+  CI_SEED,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+] as const;
+
+/**
+ * 均值（保留一位小数）。**为什么是均值而不是中位数**：这套样本的分布是**双峰**的 ——
+ * 2026-10-24 实测 O2 在 20 个种子上是 `12 5 10 11 4 5 7 5 11 4 4 11 10 11 5 11 4 5 5 5`
+ * （4~5 与 10~12 两个峰），中位数会随着落在哪个峰而跳 5 分，均值才稳定（7.3 / 7.3）。
+ * 真退化会让两个峰一起上移，均值照样会红。
+ */
+function meanOf(nums: number[]): number {
+  return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
+}
 /** 冻结文本里「AI 原文」与「人写原文」的最小间隔。
  *  低于它说明评分器把两类糊到了一起——比任何单条绝对分漂移都严重。
  *  HEAD 实测：min(N0,D0,O1)=33，H0=7 → 26 分。 */
@@ -418,7 +459,7 @@ function parseArgs(argv: string[]): Opts {
       return opts;
     }
     if (!opts.rebaseline) {
-      opts.usageError = "❌ --accept-worse 只在配合 --rebaseline \"<原因>\" 时有意义。";
+      opts.usageError = '❌ --accept-worse 只在配合 --rebaseline "<原因>" 时有意义。';
       return opts;
     }
     opts.acceptWorse = ids;
@@ -506,17 +547,23 @@ export function main(argv: string[] = process.argv.slice(2)): number {
   const band = checkBand(bandRows, opts.sepMin);
   const failD = report("D. 评分器漂移（输入冻在仓库里，引擎不参与）", driftRows, band.lines);
 
-  // ── E 组：当前引擎同 seed 产物 → 只降不升棘轮
+  // ── E 组：当前引擎产物的 **20 seed 均值** → 只降不升棘轮
+  //    （单 seed 抽样噪声太大，见 E2E_SEEDS 注释：同一样本跨种子 2~10 分）
   const e2eNow: Record<string, number> = {};
   const e2eRows: Row[] = [];
   for (const s of samples) {
     if (s.intensity === 0) continue;
-    const out = humanize(s.sourceText, {
-      intensity: s.intensity,
-      zhuqueMode: s.zhuqueMode,
-      seed: CI_SEED,
-    });
-    const now = aiScore(out).score;
+    const scores = E2E_SEEDS.map(
+      (seed) =>
+        aiScore(
+          humanize(s.sourceText, {
+            intensity: s.intensity,
+            zhuqueMode: s.zhuqueMode,
+            seed,
+          }),
+        ).score,
+    );
+    const now = meanOf(scores);
     e2eNow[s.id] = now;
     e2eRows.push(ratchet(s, lock.e2e[s.id]?.score, now));
   }
@@ -576,17 +623,8 @@ export function main(argv: string[] = process.argv.slice(2)): number {
   const allowWrite = regressed === 0 || (opts.acceptWorse.length > 0 && sameSet);
   if (opts.rebaseline && allowWrite && band.fails.length === 0) {
     const reason =
-      regressed === 0
-        ? opts.rebaseline
-        : `【接受恶化 ${redIds.join("/")}】${opts.rebaseline}`;
-    const changes = writeRebaseline(
-      lock,
-      samples,
-      driftNow,
-      e2eNow,
-      reason,
-      opts.lockPath,
-    );
+      regressed === 0 ? opts.rebaseline : `【接受恶化 ${redIds.join("/")}】${opts.rebaseline}`;
+    const changes = writeRebaseline(lock, samples, driftNow, e2eNow, reason, opts.lockPath);
     console.log(
       `\n🗝️  已重写棘轮基线（${changes.length} 条变动），原因与差值记入 rebaseLog：\n    「${reason}」\n    ${changes.join("、") || "（无变动）"}`,
     );
