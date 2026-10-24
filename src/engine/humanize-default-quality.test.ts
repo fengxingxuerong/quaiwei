@@ -4,6 +4,8 @@ import { replaceWithDevelopment, replaceVocab, softenPassive } from "./humanize-
 import { fragmentCanStand } from "./humanize-vocab.ts";
 import { fragmentFrontCanStand } from "./humanize-primitives.ts";
 import { classifyGenre } from "./classify-genre.ts";
+import { replaceGuardedFormulaicDerivs } from "./shuffle/structure.ts";
+import { resegmentParagraphsAggressive } from "./shuffle/structure.ts";
 import { aiScore } from "./humanize-metrics.ts";
 import { fixOrphanConnectiveLeads } from "./anti-fingerprint.ts";
 
@@ -95,6 +97,41 @@ describe("默认档 0.6 / plain 的用户可见质量（2026-10-22）", () => {
         expect(out, `i=${intensity} seed=${seed}\n${out}`).not.toMatch(/若[^。]{0,30}。\s*将/);
       }
     }
+  });
+
+  it("科普/议论文的承前短语不被切开（充分说明/面对/以…姿态/对外/而无需）", () => {
+    const cases: [string, RegExp][] = [
+      ["这些应用充分说明，人工智能不但是工具，更是推进社会公平的重要力量。", /说明。\s*人工智能/],
+      ["面对这一历史性的变革，我们既不能盲目乐观，也不必过度悲观。", /变革。\s*我们/],
+      ["让我们以开放而审慎的姿态，迎接这个充满无限可能的智能时代。", /姿态。\s*迎接/],
+      ["分布式存储将多个存储节点组织成一个整体，对外提供统一的服务接口。", /整体。\s*对外/],
+      ["只需简单地增加新的节点即可，而无需对现有系统进行大规模改造。", /即可。\s*而/],
+      ["与传统的集中式存储不同，分布式存储靠网络连接将多个节点组织成整体。", /不同。\s*分布式/],
+      ["系统会将每一份数据复制成多个副本，分别存放在不同的节点之上。", /副本。\s*分别/],
+      ["这些算法通过精巧的设计，在保证一致性的同时，尽可能地提升系统可用性。", /设计。\s*在保证/],
+      [
+        "分布式存储技术凭借其高可靠、高扩展和低成本的特点，已经成为现代基础设施的重要基石。",
+        /特点。\s*已经成为/,
+      ],
+      ["技术在更多领域发挥关键作用，为数字经济的蓬勃发展提供坚实支撑。", /作用。\s*为/],
+    ];
+    for (const seed of SEEDS) {
+      for (const [text, bad] of cases) {
+        const out = humanize(text, { intensity: 0.6, seed, style: "plain" });
+        expect(out, `seed=${seed}\n${out}`).not.toMatch(bad);
+      }
+    }
+  });
+
+  it("正式语体的段落合并不插聊天桥接（懂吧/你别说）", () => {
+    const text =
+      "第一段第一句说明背景和现状，内容足够长以便触发结构层合并。第一段第二句补充原因和影响，长度也够。第一段第三句给出结论。\n\n" +
+      "第二段第一句承接上文，继续展开具体做法与落地路径。第二段第二句补充执行细节，长度同样满足条件。第二段第三句收束本段。";
+    const formal = resegmentParagraphsAggressive(text, () => 0, 0.9, undefined, true);
+    expect(formal).not.toMatch(/懂吧|是这个理|你别说|哈哈|嗯，对/);
+    // 对照组：非正式体仍然保留桥接（证明门控只关正式体，不是把功能删了）
+    const casual = resegmentParagraphsAggressive(text, () => 0, 0.9, undefined, false);
+    expect(casual).toMatch(/是这个理|懂吧|你别说|哈哈|嗯，对/);
   });
 
   it("真实案例的标签/从句不被切成残句（C3/C5/C15）", () => {
@@ -230,6 +267,28 @@ describe("replaceVocab：搭配守卫", () => {
     const out = replaceVocab("由生态环境主管部门责令改正", last, 1, "plain", true);
     expect(out).toContain("生态");
     expect(out).not.toContain("这块地盘");
+  });
+
+  it("系统性风险/基石/统筹推进不被改成语义错误的口语替身", () => {
+    // 结构性衍生词替换必须放过固定术语
+    for (const text of ["系统性风险不容忽视。", "要防范系统性问题和系统性隐患。"]) {
+      const out = replaceGuardedFormulaicDerivs(text);
+      expect(out, text).toContain("系统性");
+      expect(out, text).not.toContain("完整体系");
+    }
+    // 词表替换同样不能动固定术语
+    expect(replaceVocab("防范系统性风险", last, 1, "plain", true)).not.toContain("整套");
+    expect(replaceVocab("持续完善", last, 1, "plain", true)).not.toContain("一直");
+    expect(replaceVocab("创新驱动发展", last, 1, "plain", true)).not.toContain("推着");
+    expect(replaceVocab("提升系统可用性", last, 1, "plain", false)).not.toContain("拔高");
+    // 基石 → 正式体用「根基」
+    const base = replaceVocab("重要基石", last, 1, "plain", true);
+    expect(base).toContain("根基");
+    expect(base).not.toMatch(/底子|地基/);
+    expect(replaceVocab("重要基石", last, 1, "plain", false)).toContain("根基");
+    // 统筹推进 → 不能再出「一并处理推进」
+    const coord = replaceVocab("统筹推进各项任务", last, 1, "plain", true);
+    expect(coord).not.toContain("一并处理");
   });
 
   it("正式语体的被动改写使用正式变体", () => {

@@ -535,7 +535,14 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
         origSentCounts[origSentCounts.length - 1] += n;
       else origSentCounts.push(n);
     }
-    result = resegmentParagraphsAggressive(result, structRng, intensity, origSentCounts);
+    result = resegmentParagraphsAggressive(
+      result,
+      structRng,
+      intensity,
+      origSentCounts,
+      // 只有 casual 且非正式文档才允许聊天桥接；默认 plain 也不插「懂吧/你别说」
+      officialDoc || (opts.style ?? "plain") !== "casual",
+    );
     // P7-D：humanHand 跳过错别字注入
     if (!knobs.disableTyposAnchor) {
       result = injectHumanTypos(result, structRng, intensity);

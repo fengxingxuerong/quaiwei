@@ -163,6 +163,11 @@ export function replaceVocab(
         if (from === "推动" && rep === "拉动" && !PULL_OBJECT_RE.test(base.slice(end, end + 12))) {
           rep = "推进";
         }
+        // 基石 → 固定「根基」：底子/地基在技术/公文体里是口语降级，
+        // 而体裁判定可能把科普文判成 narrative（formal 门控失效），所以在这里兜底。
+        if (from === "基石") rep = "根基";
+        // 「提升→拔高」在技术/说明文里是语体崩（拔高系统可用性），全体裁兜底到「提高」。
+        if (from === "提升" && rep === "拔高") rep = "提高";
         // v0.9.41 替身降级（MEDIUM_DOWNGRADE）：「通过」后紧邻媒介/渠道名词时，
         // 「靠/借」崩坏（"靠短信通知"×）——但与 VERB_PHRASE_AFTER 的处置不同：
         // 那条是「跳过替换」（宁保留原词），本条**降级到「用」**（"用短信通知"√），

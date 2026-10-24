@@ -238,6 +238,8 @@ export function resegmentParagraphsAggressive(
    * ⇒ 只有**原文就 ≥3 句**的段才允许拆；长度对不上（层间已改过段落结构，映射不可信）时保守退回旧行为。
    */
   origSentCounts?: number[],
+  /** 正式语体：只合并短段，不插「懂吧/你别说」这类聊天桥接（v0.9.70） */
+  formal = false,
 ): string {
   if (intensity < 0.55) return text;
   // v0.9.62：切段围栏感知——围栏内空行会把一个代码块劈成两段，第二段段首是代码行，
@@ -304,7 +306,8 @@ export function resegmentParagraphsAggressive(
           "",
           "",
         ]);
-        if (bridge) merged = cur + "\n\n" + bridge + "\n\n" + next;
+        // 正式体只消费随机数、不使用聊天桥接（保持既有随机序列，避免种子整体错位）
+        if (bridge && !formal) merged = cur + "\n\n" + bridge + "\n\n" + next;
       }
       out.push(merged);
       i += 2;
@@ -803,9 +806,9 @@ export function replaceGuardedFormulaicDerivs(text: string): string {
     .replace(/针对性的(?=[\u4e00-\u9fa5，。！？；：、])/g, "专门的")
     .replace(/针对性地(?=[\u4e00-\u9fa5])/g, "专门地")
     .replace(/针对性(?!词汇|治疗|培训|训练|广告)/g, "专门方向")
-    .replace(/系统性的(?=[\u4e00-\u9fa5，。！？；：、])/g, "全盘的")
+    .replace(/系统性的(?!风险|问题|隐患|矛盾|危机)/g, "全盘的")
     .replace(/系统性地(?=[\u4e00-\u9fa5])/g, "从头到脚地")
-    .replace(/系统性(?!改革|工程)/g, "完整体系")
+    .replace(/系统性(?!改革|工程|风险|问题|隐患|矛盾|危机)/g, "完整体系")
     .replace(/有效性/g, "实际效果")
     .replace(/持续性的/g, "长期的")
     .replace(/持续性地/g, "长时间地")
