@@ -46,6 +46,38 @@ if (fs.existsSync(KEY_FILE)) {
   );
 }
 
+/**
+ * v0.9.73：**全树**再扫一遍 Key 与 repack 残留。
+ *
+ * 2026-10-24 实测踩到：repack 有一次在改名后清理失败，留下了
+ * `resources/app.stale-<ts>`（整份旧 app + 里面那份 preset-keys.txt），
+ * 上面的定点检查只认 `resources/app/preset-keys.txt`，于是**带 Key 的包差点发出去**，
+ * 体积还从 203 MiB 涨到 267 MiB。这类残留只能靠遍历整棵产物树来兜。
+ */
+function walk(dir, hits) {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) {
+      if (ent.name.includes(".stale-")) hits.push(p); // repack 的旧目录残留
+      else walk(p, hits);
+    } else if (ent.name === "preset-keys.txt" || /^\.stale-/.test(ent.name)) {
+      hits.push(p);
+    }
+  }
+  return hits;
+}
+const leftovers = walk(PAYLOAD, []).filter((p) => {
+  // 正常形态下唯一的合法位置已在上面判过；这里只看"别处"
+  return path.resolve(p) !== path.resolve(KEY_FILE);
+});
+if (leftovers.length) {
+  die(
+    `产物里有 ${leftovers.length} 个不该出现的残留（Key 文件或 .stale- 旧目录）：\n` +
+      leftovers.map((p) => `   ${path.relative(ROOT, p)}`).join("\n") +
+      "\n   这些会被原样打进交付包。先清掉它们（或重跑 repack 让脚本自己清理），再重新打包。",
+  );
+}
+
 // 版本一致性：产物里的 package.json 必须与仓库根同版本（否则打出一个谎报版本的包）
 const payloadPkg = path.join(PAYLOAD, "resources", "app", "package.json");
 if (fs.existsSync(payloadPkg)) {
