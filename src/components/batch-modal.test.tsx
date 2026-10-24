@@ -283,7 +283,7 @@ describe("BatchModal", () => {
     fireEvent.click(getByText("开始处理"));
 
     await waitFor(() => expect(scoreViaDetectorMock).toHaveBeenCalledTimes(4)); // 2 篇 ×2
-    expect(queryAllByText(/外部 \d+ → \d+/)).toHaveLength(2);
+    expect(queryAllByText(/外部 当前档 \d+ → \d+/)).toHaveLength(2);
   });
 
   it("外部检测器失败只标该行，不中断出稿", async () => {
@@ -303,7 +303,7 @@ describe("BatchModal", () => {
     fireEvent.click(getByLabelText(/用外部检测器打前后分/));
     fireEvent.click(getByText("开始处理"));
     await waitFor(() => expect(getAllByText("10 → 2")).toHaveLength(1)); // 本地分照常出
-    expect(queryByText(/外部检测失败/)).toBeTruthy();
+    expect(queryByText(/外部 当前档 检测失败/)).toBeTruthy();
   });
 
   it("没配检测器时不渲染外部开关", () => {
@@ -389,6 +389,52 @@ describe("BatchModal", () => {
     )[0].text;
     expect(report).toContain("外部检测器：未启用");
     expect(report).toMatch(/\| 1 \| a\.txt \| 10 → 2 \|/);
-    expect(report).not.toMatch(/外部 前 → 后/); // 没送检就不出现外部列
+    expect(report).not.toMatch(/外部 .*前 → 后/); // 没送检就不出现外部列
+  });
+
+  /**
+   * v0.9.72：多档对比——勾选预设后每档各送检一次，行内与报告都逐档列出。
+   */
+  it("多档对比：勾一档预设后，该档也参与送检并进报告表", async () => {
+    const preset = {
+      name: "自建 mock",
+      config: {
+        enabled: true,
+        url: "https://mock.example/score",
+        apiKey: "",
+        scorePath: "score",
+        scale: "0-100" as const,
+      },
+    };
+    const { getByLabelText, getByText, getByRole, queryAllByText } = render(
+      <BatchModal
+        files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
+        api={API}
+        intensity={0.9}
+        zhuqueMode={false}
+        local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_ON}
+        detectorPresets={[preset]}
+        onClose={() => {}}
+        onOpen={() => {}}
+      />,
+    );
+    fireEvent.click(getByLabelText(/用外部检测器打前后分/));
+    fireEvent.click(getByLabelText(/自建 mock/));
+    fireEvent.click(getByText("开始处理"));
+
+    // 两档 × (原文 + 产出) = 4 次
+    await waitFor(() => expect(scoreViaDetectorMock).toHaveBeenCalledTimes(4));
+    expect(queryAllByText(/外部 当前档 \d+ → \d+/)).toHaveLength(1);
+    expect(queryAllByText(/外部 自建 mock \d+ → \d+/)).toHaveLength(1);
+
+    fireEvent.click(getByRole("button", { name: /打包下载/ }));
+    await waitFor(() => expect(makeZipBlobMock).toHaveBeenCalled());
+    const report = (
+      makeZipBlobMock.mock.calls[makeZipBlobMock.mock.calls.length - 1]?.[0] as { text: string }[]
+    )[0].text;
+    // 报告里每档一列
+    expect(report).toContain("外部 当前档 前 → 后");
+    expect(report).toContain("外部 自建 mock 前 → 后");
   });
 });

@@ -3,10 +3,18 @@ import { runHumanize, effectiveKeys, type ApiConfig } from "../api/llm";
 import { scoreViaDetector, type DetectorConfig } from "../api/detector";
 import { downloadBlob, importFileToText, makeDatedName } from "../app-fileio";
 import { makeZipBlob } from "../docx-io";
-import type { LocalSettings } from "../store";
+import type { DetectorPreset, LocalSettings } from "../store";
 
 type Genre = "main" | "narrative" | "dialogue" | "humanHand";
 type Status = "pending" | "reading" | "running" | "done" | "error";
+
+/** v0.9.72：一篇稿子在**某一档**外部检测器上的读数 */
+interface ExtScore {
+  name: string;
+  before: number | null;
+  after: number | null;
+  error?: string;
+}
 
 interface Item {
   id: number;
@@ -18,10 +26,8 @@ interface Item {
   after: number;
   status: Status;
   error?: string;
-  /** v0.9.66：外部检测器的前后分（没接检测器 / 失败时为 null） */
-  extBefore?: number | null;
-  extAfter?: number | null;
-  extError?: string;
+  /** v0.9.72：外部检测器逐档读数（没接检测器 / 未勾选时为空数组） */
+  ext?: ExtScore[];
 }
 
 interface BatchModalProps {
@@ -33,6 +39,8 @@ interface BatchModalProps {
   local: LocalSettings;
   /** v0.9.66：外部检测器配置（用户在设置里填的那个，可能与朱雀无关） */
   detector: DetectorConfig;
+  /** v0.9.72：设置里存的多档预设——与当前档一起，可选几档参与本轮对比 */
+  detectorPresets?: DetectorPreset[];
   onClose: () => void;
   onOpen: (input: string, output: string, name: string) => void;
 }
@@ -72,22 +80,34 @@ export function buildBatchReport(
     "",
   ];
 
-  const anyExt = rows.some((r) => typeof r.extAfter === "number");
-  if (anyExt) {
-    lines.push("| # | 文件 | 本地 前 → 后 | 外部 前 → 后 | 备注 |");
-    lines.push("|---|---|---|---|---|");
+  // v0.9.72：多档时每档一列（表头用档位名）；单档仍是一列「外部 <名> 前 → 后」
+  const extNames = Array.from(new Set(rows.flatMap((r) => (r.ext ?? []).map((x) => x.name))));
+  if (extNames.length > 0) {
+    const head = extNames.map((n) => `外部 ${n} 前 → 后`).join(" | ");
+    const sep = extNames.map(() => "---").join("|");
+    lines.push(`| # | 文件 | 本地 前 → 后 | ${head} | 备注 |`);
+    lines.push(`|---|---|---|${sep}|---|`);
   } else {
     lines.push("| # | 文件 | 本地 前 → 后 | 备注 |");
     lines.push("|---|---|---|---|");
   }
   rows.forEach((r, i) => {
-    const note = r.extError ? `外部检测失败：${r.extError.slice(0, 60)}` : "";
-    if (anyExt) {
-      const ext =
-        typeof r.extBefore === "number" && typeof r.extAfter === "number"
-          ? `${r.extBefore} → ${r.extAfter}`
-          : "未送检";
-      lines.push(`| ${i + 1} | ${r.name} | ${r.before} → ${r.after} | ${ext} | ${note} |`);
+    const errors = (r.ext ?? []).filter((x) => x.error);
+    const note = errors.length
+      ? `外部检测失败：${errors.map((e) => `${e.name}=${(e.error ?? "").slice(0, 30)}`).join("；")}`
+      : "";
+    if (extNames.length > 0) {
+      const cells = extNames.map((n) => {
+        const hit = (r.ext ?? []).find((x) => x.name === n);
+        if (!hit) return "未送检";
+        if (typeof hit.before === "number" && typeof hit.after === "number") {
+          return `${hit.before} → ${hit.after}`;
+        }
+        return "失败";
+      });
+      lines.push(
+        `| ${i + 1} | ${r.name} | ${r.before} → ${r.after} | ${cells.join(" | ")} | ${note} |`,
+      );
     } else {
       lines.push(`| ${i + 1} | ${r.name} | ${r.before} → ${r.after} | ${note} |`);
     }
@@ -112,6 +132,7 @@ export function BatchModal({
   genre,
   local,
   detector,
+  detectorPresets = [],
   onClose,
   onOpen,
 }: BatchModalProps) {
@@ -144,6 +165,25 @@ export function BatchModal({
   /** v0.9.66：外部检测器可用 = 用户开开关且填了 URL。每篇要送 2 次（原文+产出），必须显式勾选 */
   const canUseDetector = detector.enabled && detector.url.trim() !== "";
   const [useDetector, setUseDetector] = useState(false);
+  /**
+   * v0.9.72：参与本轮对比的档位（默认只勾当前档）。
+   * 每档都是「原文 + 产出各送一次」，勾两档就是 4 次/篇——所以默认不勾、勾了也不静默加码。
+   */
+  const [picked, setPicked] = useState<Record<string, boolean>>(() => ({ __active: true }));
+  const togglePick = (key: string) => setPicked((prev) => ({ ...prev, [key]: !prev[key] }));
+  /** 勾选后真正要跑的档位；名字用于展示与报告表头 */
+  const selectedDetectors: { name: string; cfg: DetectorConfig }[] = [];
+  if (canUseDetector && picked.__active) {
+    selectedDetectors.push({ name: "当前档", cfg: detector });
+  }
+  for (const [i, p] of detectorPresets.entries()) {
+    if (!picked[`p${i}`]) continue;
+    // 预设只存非敏感字段；凭证沿用当前档的 Key（各档 Key 不同时请用 CLI 逐档指定）
+    selectedDetectors.push({
+      name: p.name,
+      cfg: { ...p.config, enabled: true, apiKey: detector.apiKey },
+    });
+  }
 
   const update = (id: number, patch: Partial<Item>) =>
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -199,18 +239,25 @@ export function BatchModal({
           before: r.before.score,
           after: r.after.score,
         });
-        // v0.9.66：外部检测器（可选）——原文与产出各送一次，拿到真实的降幅。
-        // 每篇 2 次调用会烧外部额度，所以默认不勾；失败只标这一行，不影响出稿。
-        if (useDetector && canUseDetector) {
-          try {
-            const extBefore = await scoreViaDetector(res.text, detector);
-            const extAfter = await scoreViaDetector(r.text, detector);
-            update(it.id, { extBefore, extAfter, extError: undefined });
-          } catch (e) {
-            update(it.id, {
-              extError: e instanceof Error ? e.message : String(e),
-            });
+        // v0.9.66/72：外部检测器（可选）——逐档「原文 + 产出」各送一次，拿到真实的降幅。
+        // 每篇 2 次/档会烧外部额度，所以默认不勾；某档失败只标该档，不影响出稿与其它档。
+        if (useDetector && selectedDetectors.length > 0) {
+          const rows: ExtScore[] = [];
+          for (const d of selectedDetectors) {
+            try {
+              const before = await scoreViaDetector(res.text, d.cfg);
+              const after = await scoreViaDetector(r.text, d.cfg);
+              rows.push({ name: d.name, before, after });
+            } catch (e) {
+              rows.push({
+                name: d.name,
+                before: null,
+                after: null,
+                error: e instanceof Error ? e.message : String(e),
+              });
+            }
           }
+          update(it.id, { ext: rows });
         }
       } catch (err: unknown) {
         update(it.id, {
@@ -309,15 +356,46 @@ export function BatchModal({
           </label>
         )}
         {canUseDetector && (
-          <label className="batch-llm">
-            <input
-              type="checkbox"
-              checked={useDetector}
-              onChange={(e) => setUseDetector(e.target.checked)}
-              disabled={running}
-            />
-            用外部检测器打前后分（每篇送检 <b>2 次</b>：原文 + 产出；会消耗外部额度）
-          </label>
+          <>
+            <label className="batch-llm">
+              <input
+                type="checkbox"
+                checked={useDetector}
+                onChange={(e) => setUseDetector(e.target.checked)}
+                disabled={running}
+              />
+              用外部检测器打前后分（每档每篇送检 <b>2 次</b>：原文 + 产出；会消耗外部额度）
+            </label>
+            {/* v0.9.72：多档对比——勾哪几档就逐档送检，报告里每档一列 */}
+            {useDetector && (
+              <div className="batch-detectors">
+                <span className="batch-detectors-label">参与对比的档位：</span>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!!picked.__active}
+                    onChange={() => togglePick("__active")}
+                    disabled={running}
+                  />
+                  当前档（{detector.url}）
+                </label>
+                {detectorPresets.map((p, i) => (
+                  <label key={p.name}>
+                    <input
+                      type="checkbox"
+                      checked={!!picked[`p${i}`]}
+                      onChange={() => togglePick(`p${i}`)}
+                      disabled={running}
+                    />
+                    {p.name}（{p.config.url}）
+                  </label>
+                ))}
+                <span className="batch-detectors-hint">
+                  每勾一档，每篇多 2 次外部调用；各档若用不同 Key，请改用 CLI 逐档指定。
+                </span>
+              </div>
+            )}
+          </>
         )}
 
         <div className="batch-actions">
@@ -362,14 +440,20 @@ export function BatchModal({
                 {it.status === "done" && (
                   <>
                     {`${it.before} → ${it.after}`}
-                    {/* v0.9.66：外部检测器分数单独一行，与本地代理分并排但不混为一谈 */}
-                    {typeof it.extBefore === "number" && typeof it.extAfter === "number" && (
-                      <span className="batch-ext">
-                        {" "}
-                        · 外部 {it.extBefore} → {it.extAfter}
-                      </span>
+                    {/* v0.9.66/72：外部检测器分数与本地代理分并排但不混为一谈；多档时逐档列出 */}
+                    {(it.ext ?? []).map((x) =>
+                      typeof x.before === "number" && typeof x.after === "number" ? (
+                        <span className="batch-ext" key={x.name}>
+                          {" "}
+                          · 外部 {x.name} {x.before} → {x.after}
+                        </span>
+                      ) : (
+                        <span className="batch-fail" key={x.name}>
+                          {" "}
+                          · 外部 {x.name} 检测失败
+                        </span>
+                      ),
                     )}
-                    {it.extError && <span className="batch-fail"> · 外部检测失败</span>}
                   </>
                 )}
                 {it.status === "error" && (it.error || "失败")}

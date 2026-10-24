@@ -35,8 +35,10 @@ import {
   clearDraft,
   loadViewMode,
   saveViewMode,
+  loadDetectorPresets,
   type LocalSettings,
   type ViewMode,
+  type DetectorPreset,
 } from "./store";
 import { setProtectedTerms } from "./engine/term-protect";
 import { explainChanges, type ExplainItem } from "./engine/explain";
@@ -137,6 +139,8 @@ export default function App({
   >(null);
   const [api, setApi] = useState<ApiConfig>(initialApi ?? loadApi());
   const [detector, setDetector] = useState<DetectorConfig>(initialDetector ?? loadDetector());
+  /** v0.9.72：多档检测器预设（设置里存的），批量面板用来挑「哪些档参与对比」 */
+  const detectorPresets: DetectorPreset[] = loadDetectorPresets();
   const [judgeScore, setJudgeScore] = useState<number | null>(null);
   const [judgeCritique, setJudgeCritique] = useState<string[]>([]);
   const [detectorScore, setDetectorScore] = useState<number | null>(null);
@@ -996,6 +1000,7 @@ export default function App({
           genre={genreOverride ?? undefined}
           local={local}
           detector={detector}
+          detectorPresets={detectorPresets}
           onClose={() => setBatchFiles(null)}
           onOpen={(text, outputText, name) => {
             cancelPendingRun();
