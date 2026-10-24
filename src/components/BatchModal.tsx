@@ -42,6 +42,63 @@ function baseName(name: string): string {
 }
 
 /**
+ * v0.9.69：批量导出附带的报告清单（Markdown）。
+ *
+ * 为什么放 ZIP 里而不是只留在界面：批量跑完最容易丢的信息就是「这批到底改了多少、
+ * 前后分是多少」。界面一关就没了，而交付/归档往往需要一张能贴进文档的表。
+ *
+ * 口径纪律：**本地分与外部检测器分分列两栏**，不合并——
+ * 本地分是代理分（与去味引擎共用词表，必然变好看），外部分才是有意义的真值。
+ * 没跑外部分时那一栏写「未送检」，而不是留空或填本地分冒充。
+ */
+export function buildBatchReport(
+  rows: Item[],
+  opts: { intensity: number; llm: boolean; detector: string },
+): string {
+  const now = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`;
+  const lines: string[] = [
+    "# 批量去味报告",
+    "",
+    `- 生成时间：${stamp}`,
+    `- 文件数：${rows.length}`,
+    `- 去味强度：${Math.round(opts.intensity * 100)}%`,
+    `- 引擎：${opts.llm ? "当前 LLM 设置（失败自动回退本地）" : "本地引擎（离线、零成本）"}`,
+    `- 外部检测器：${opts.detector || "未启用"}`,
+    "",
+    "> 本地分是**代理分**（与去味引擎共用词表，前后对比才有意义）；",
+    "> 外部检测器分是真值。两者口径不同，不要混为一谈。",
+    "",
+  ];
+
+  const anyExt = rows.some((r) => typeof r.extAfter === "number");
+  if (anyExt) {
+    lines.push("| # | 文件 | 本地 前 → 后 | 外部 前 → 后 | 备注 |");
+    lines.push("|---|---|---|---|---|");
+  } else {
+    lines.push("| # | 文件 | 本地 前 → 后 | 备注 |");
+    lines.push("|---|---|---|---|");
+  }
+  rows.forEach((r, i) => {
+    const note = r.extError ? `外部检测失败：${r.extError.slice(0, 60)}` : "";
+    if (anyExt) {
+      const ext =
+        typeof r.extBefore === "number" && typeof r.extAfter === "number"
+          ? `${r.extBefore} → ${r.extAfter}`
+          : "未送检";
+      lines.push(`| ${i + 1} | ${r.name} | ${r.before} → ${r.after} | ${ext} | ${note} |`);
+    } else {
+      lines.push(`| ${i + 1} | ${r.name} | ${r.before} → ${r.after} | ${note} |`);
+    }
+  });
+
+  const drop = rows.reduce((s, r) => s + (r.before - r.after), 0);
+  lines.push("", `合计本地分下降：${drop} 分（${rows.length} 篇合计，仅作趋势参考）。`, "");
+  return lines.join("\n");
+}
+
+/**
  * 批量面板：多选文件后逐个走本地引擎（离线、零成本）。
  *
  * 刻意不接 LLM：批量 × 深度闭环会变成几十次付费调用，耗时与账单都不可控；
@@ -203,13 +260,21 @@ export function BatchModal({
 
   async function exportAll() {
     if (!done.length) return;
-    const blob = await makeZipBlob(
-      done.map((it, i) => ({
+    // v0.9.69：ZIP 里先放一份**报告清单**——批量跑完最容易丢的就是"这批到底改了什么、
+    // 前后分多少"。正文之外给一张表，交付/归档时不用再回头对着界面截图。
+    const report = buildBatchReport(done, {
+      intensity,
+      llm: useLlm && canUseLlm,
+      detector: useDetector && canUseDetector ? detector.url : "",
+    });
+    const blob = await makeZipBlob([
+      { name: "00-批量报告.md", text: report },
+      ...done.map((it, i) => ({
         // 批量里可能有同名文件；序号前缀保证 ZIP 条目唯一且顺序稳定
         name: `${String(i + 1).padStart(2, "0")}-${baseName(it.name)}.humanized.txt`,
         text: it.output,
       })),
-    );
+    ]);
     downloadBlob(blob, makeDatedName("zip", "批量"));
   }
 

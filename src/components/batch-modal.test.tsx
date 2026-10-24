@@ -5,9 +5,11 @@ import { BatchModal } from "./BatchModal";
 import type { ApiConfig } from "../api/llm";
 import type { DetectorConfig } from "../api/detector";
 
-const { scoreViaDetectorMock } = vi.hoisted(() => ({
+const { scoreViaDetectorMock, makeZipBlobMock } = vi.hoisted(() => ({
   // 假外部检测器：按字数给分（原文长、产出短 → 天然有降幅）
   scoreViaDetectorMock: vi.fn(async (text: string) => Math.min(100, text.length)),
+  // 记下传给打包器的条目，用来断言"报告清单"确实进了 ZIP
+  makeZipBlobMock: vi.fn(async (_files: { name: string; text: string }[]) => new Blob(["zip"])),
 }));
 
 const DEFAULT_RUN = async (text: string, _intensity?: number, _cfg?: ApiConfig) => ({
@@ -31,6 +33,10 @@ vi.mock("../api/llm", () => ({
 vi.mock("../api/detector", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/detector")>()),
   scoreViaDetector: (text: string) => scoreViaDetectorMock(text),
+}));
+vi.mock("../docx-io", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../docx-io")>()),
+  makeZipBlob: (files: { name: string; text: string }[]) => makeZipBlobMock(files),
 }));
 vi.mock("../app-fileio", () => ({
   importFileToText: vi.fn(async (f: File) => ({ text: `原文-${f.name}`, name: f.name, note: "" })),
@@ -314,5 +320,75 @@ describe("BatchModal", () => {
       />,
     );
     expect(queryByLabelText(/用外部检测器打前后分/)).toBeNull();
+  });
+
+  /**
+   * v0.9.69：打包下载的 ZIP 里要先放一份**报告清单**。
+   * 批量跑完最容易丢的信息就是"这批改了多少、前后分多少"——界面一关就没了。
+   */
+  it("打包下载：ZIP 首条是 00-批量报告.md，且本地分与外部分分列", async () => {
+    const files = [
+      new File(["甲"], "a.txt", { type: "text/plain" }),
+      new File(["乙"], "b.txt", { type: "text/plain" }),
+    ];
+    const { getByLabelText, getByText, getByRole } = render(
+      <BatchModal
+        files={files}
+        api={API}
+        intensity={0.9}
+        zhuqueMode={false}
+        local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_ON}
+        onClose={() => {}}
+        onOpen={() => {}}
+      />,
+    );
+    fireEvent.click(getByLabelText(/用外部检测器打前后分/));
+    fireEvent.click(getByText("开始处理"));
+    await waitFor(() => expect(scoreViaDetectorMock).toHaveBeenCalledTimes(4));
+    fireEvent.click(getByRole("button", { name: /打包下载/ }));
+
+    await waitFor(() => expect(makeZipBlobMock).toHaveBeenCalled());
+    const entries = makeZipBlobMock.mock.calls[makeZipBlobMock.mock.calls.length - 1]?.[0] as {
+      name: string;
+      text: string;
+    }[];
+    expect(entries[0].name).toBe("00-批量报告.md");
+    // 正文条目仍在，且带序号前缀
+    expect(entries.slice(1).map((e) => e.name)).toEqual([
+      "01-a.humanized.txt",
+      "02-b.humanized.txt",
+    ]);
+    const report = entries[0].text;
+    expect(report).toContain("# 批量去味报告");
+    expect(report).toContain("去味强度：90%");
+    expect(report).toContain("外部检测器：https://detector.example/score");
+    expect(report).toMatch(/\| 1 \| a\.txt \| 10 → 2 \| \d+ → \d+ \|/); // 本地列与外部列都在
+    expect(report).not.toContain("未送检"); // 这次跑了两篇，都有外部分
+  });
+
+  it("打包下载：没跑外部检测时报告只有本地列，外部分不冒充", async () => {
+    const { getByText, getByRole } = render(
+      <BatchModal
+        files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
+        api={API}
+        intensity={0.6}
+        zhuqueMode={false}
+        local={{ bestOf: false, candidates: 8 }}
+        detector={DETECTOR_OFF}
+        onClose={() => {}}
+        onOpen={() => {}}
+      />,
+    );
+    fireEvent.click(getByText("开始处理"));
+    await waitFor(() => expect(runHumanize).toHaveBeenCalledTimes(1));
+    fireEvent.click(getByRole("button", { name: /打包下载/ }));
+    await waitFor(() => expect(makeZipBlobMock).toHaveBeenCalled());
+    const report = (
+      makeZipBlobMock.mock.calls[makeZipBlobMock.mock.calls.length - 1]?.[0] as { text: string }[]
+    )[0].text;
+    expect(report).toContain("外部检测器：未启用");
+    expect(report).toMatch(/\| 1 \| a\.txt \| 10 → 2 \|/);
+    expect(report).not.toMatch(/外部 前 → 后/); // 没送检就不出现外部列
   });
 });
