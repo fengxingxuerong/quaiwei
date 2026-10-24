@@ -82,6 +82,10 @@
   默认只走本地引擎（离线零成本）；有 Key 时可勾选「使用当前 LLM 设置」，每篇受 `maxApiCalls` 限制。
   失败行可单独重试，也支持全部重跑；运行中可「停止」（每篇之间生效，已完成的结果保留、可续跑）；
   ZIP 条目带序号，同名文件不会互相覆盖。
+- **批量的外部读数（v0.9.66 / v0.9.69 / v0.9.72）**：配了外部检测器后可勾选「用外部检测器打前后分」，
+  行内给「本地 10 → 2 · 外部 42 → 31」；设置里存了多档预设时可以**同时勾几档做横向对比**，
+  每档每篇各送检 2 次（原文 + 产出）。打包下载的 ZIP 首条固定是 `00-批量报告.md`：
+  逐文件列出本地前后分与各档外部分，未送检写「未送检」——**不拿本地分冒充外部分**。
 - **跨端**：Web 版任意设备浏览器打开即用（含手机，已做响应式布局）；桌面版走 Electron（Windows 免安装包，解压双击 `QuAiWei.exe` 即用），macOS 包可在对应环境构建。
 
 ---
@@ -713,7 +717,7 @@ Claude Code / Codex）。历经三次复测：首测 2026-10-03、2026-10-05 用
 | [baibanbao/qu-ai-wei](https://github.com/baibanbao/qu-ai-wei) | 71 | 2026-09-23 | Agent Skill | 同名撞车；合并三家规则并**逐条裁决 7 处矛盾** |
 | [qoqu/anti-zhuque](https://github.com/qoqu/anti-zhuque) / [weiyinerzui/humanize-cn](https://github.com/weiyinerzui/humanize-cn) | 28 / 25 | 2026-02 / 2026-05 | 工具 | 直接冲朱雀/知网/维普，**均已停更** |
 | [pengong101/ai-humanizer-cn](https://github.com/pengong101/ai-humanizer-cn) | 1 | 2026-03-25 | Python 包 | pip；质量评分而非 AI 检测 |
-| **本项目**（[fengxingxuerong/quaiwei](https://github.com/fengxingxuerong/quaiwei)） | **3** | 2026-10-16 | **Electron + Web + CLI + Skill** | 内置启发式检测打分 + 朱雀官方 API 闭环 + 1977 条用例回归；免安装 exe / 静态站 / CLI / SKILL.md |
+| **本项目**（[fengxingxuerong/quaiwei](https://github.com/fengxingxuerong/quaiwei)） | **3** | 2026-10-16 | **Electron + Web + CLI + Skill** | 内置启发式检测打分 + 外部检测器闭环（任意厂商、可多档对比）+ 2293 条用例回归；免安装 exe / 静态站 / CLI / SKILL.md |
 
 **同名撞车（2026-10-17 复核，仍未解）**：GitHub 上另有两个也叫 `qu-ai-wei` 的仓库
 （`LifelongLazyLearner` 660★、`baibanbao` 71★），与本项目 Electron **包名**同名，
@@ -727,7 +731,7 @@ Claude Code / Codex）。历经三次复测：首测 2026-10-03、2026-10-05 用
 （看布局 / 动效 / 信息密度）——五者纯属关键词撞车，与本赛道无关。
 
 **结论（诚实版）**：同类**绝大多数**仍是「给 LLM 的规则清单」，无一具备内置检测打分、闭环复测或
-桌面交付；规则清单型项目也没有回归测试可言（本项目 1977 条用例、CI 每次提交全跑）。
+桌面交付；规则清单型项目也没有回归测试可言（本项目 114 个测试文件、2293 条用例，CI 每次提交全跑）。
 ⇒ **引擎侧仍是能力超集**，本次刷新后这一点依然成立。
 
 分发形态那条差距 **v0.9.24 已补**：根目录薄壳 `SKILL.md` 指向 `scripts/humanize-cli.ts`，
@@ -742,7 +746,7 @@ Claude Code / Codex）。历经三次复测：首测 2026-10-03、2026-10-05 用
 | 缺什么 | 谁已经有 | 本项目现状 |
 |---|---|---|
 | 仓库名不含产品关键词 | ——（全部头部都自带关键词） | 仓库叫 `clear`，三个搜索词全部搜不到；改名待决策 |
-| 在线试玩 | 头部靠「一句话装进 Agent」零摩擦 | 无 Pages 托管，试玩要么 clone 装 Node、要么下载 474MB 免安装包 |
+| 在线试玩 | 头部靠「一句话装进 Agent」零摩擦 | 无 Pages 托管，试玩要么 clone 装 Node、要么下载约 203MB 免安装包 |
 | **语气克隆**（喂 2–3 段作者自己的文字，学他的口吻） | blader 语气校准、no-ai-slop（核心卖点） | 仅 `--persona` 三档**预置**人格，无样本驱动 |
 | ~~detector-only 审题模式~~ | no-ai-slop detect 模式 | ✅ **已补（v0.9.52）**：CLI `--detect-only` + 界面「审题」按钮，出逐句痕迹地图（第几句 / 风险 / 命中哪类特征 / 建议怎么动），**一个字都不改、不落盘**、不需要 Key |
 | **缺信息就提问**（而不是事后否决） | blader 铁律 | 是**事后**「编造否决 + 回退」，写完了才发现，成本高 |

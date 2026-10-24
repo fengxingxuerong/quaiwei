@@ -14,10 +14,10 @@ engine with a regression suite** — every rule is anchored to a real text sampl
 
 | | Rule-list skills | QuAiWei |
 |---|---|---|
-| Engine | A markdown file the LLM reads | TypeScript engine, **2100+ test cases**, CI on every push |
+| Engine | A markdown file the LLM reads | TypeScript engine, **2200+ test cases**, CI on every push |
 | Runs offline | No (needs an LLM) | **Yes** — default path is local, costs nothing, sends nothing |
 | Built-in scoring | No | Yes — heuristic proxy score + explainable per-item trace |
-| Real detector loop | No | Optional — Zhuque API (`EdgeOne Makers`) closed loop |
+| Real detector loop | No | **Any vendor**, not one: `--detector-url` takes any POST-`{text}`→JSON endpoint (repeatable, so several detectors can score the same draft side by side); scores land in the history and in a batch report |
 | Who owns "did it get better?" | The model's opinion | A second model acts as judge, plus a fidelity guard that rejects invented facts |
 
 The tools you compare this against at the top of the topic (`blader/humanizer`, `Humanizer-zh`,
