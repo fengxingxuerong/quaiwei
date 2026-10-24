@@ -1,4 +1,4 @@
-# 趣AI味 · QuAiWei v0.9.71
+# 趣AI味 · QuAiWei v0.9.72
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
@@ -765,5 +765,5 @@ MIT（见 LICENSE）。
 
 ## 更新日志
 
-完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.71**（以 `package.json` 的 `version` 为准）。
+完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.72**（以 `package.json` 的 `version` 为准）。
 

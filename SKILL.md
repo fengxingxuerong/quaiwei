@@ -8,7 +8,7 @@ description_zh: 去 AI 味（简体中文）——本地离线引擎或可选 LL
 description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
 metadata:
-  version: 0.9.71
+  version: 0.9.72
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 
