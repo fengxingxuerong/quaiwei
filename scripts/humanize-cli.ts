@@ -19,7 +19,7 @@
  *       [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]
  *       [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]
  *       [--out-format follow|txt|docx] [--explain] [--detect-only]
- *       [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>]
+ *       [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>]...  // 可重复，多档对比
  *        [--detector-scale 0-100|0-1]]
  *       [--recursive] [--jobs <n>] [--dry-run]
  *
@@ -178,6 +178,17 @@ interface Args {
    */
   detectOnly: boolean;
   /* ---- v0.9.66：外部检测器（任意 OpenAI 无关的 HTTP 接口，不绑定任何厂商） ---- */
+  /**
+   * v0.9.71：**可重复**的检测器档位。`--detector-url` 每出现一次就开一个新档，
+   * 紧随其后的 --detector-key/--detector-path/--detector-scale 作用在**最近一档**上。
+   * 一档时的行为与 v0.9.66 完全一致；多档时同一篇稿子会分别送检，做跨厂商横向对比。
+   */
+  detectors: {
+    url: string;
+    key: string;
+    path: string;
+    scale: "0-100" | "0-1";
+  }[];
   /** 检测器 URL；给了就启用（把 {text} POST 过去，按 --detector-path 取分） */
   detectorUrl: string;
   /** 检测器凭证（也可用环境变量 QUAIWEI_DETECTOR_KEY，避免写进 shell 历史） */
@@ -195,13 +206,14 @@ const USAGE =
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only]" +
-  " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]" +
+  " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]..." +
   " [--recursive] [--jobs <n>] [--dry-run]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
   "  --base-url 填网关绝对地址（如 https://token.sensenova.cn/v1）。UI 设置里的 /sensenova/v1" +
   " 是同源代理专用写法（代理会剥掉 /sensenova 前缀再转发），CLI 直连勿带这段前缀。\n" +
   "  --detector-url：接**任意**外部检测器（把 {text} POST 过去，按 --detector-path 取分，" +
-  "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段。" +
+  "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段；" +
+  "**可重复**——给多个 --detector-url 就逐档送检、横向对比（紧跟其后的 key/path/scale 只作用在这一档）。" +
   " 凭证建议走环境变量 QUAIWEI_DETECTOR_KEY，别写进命令行历史。\n" +
   "  --recursive 目录扫描进子目录（默认不进）；--jobs 仅 --api 模式生效（并发路数）；" +
   "  --dry-run 只列出将处理的文件不落盘。目录批量默认跳过已带输出后缀的产物（重跑幂等）。" +
@@ -240,6 +252,7 @@ function parseArgs(argv: string[]): Args {
     stdin: false,
     help: false,
     detectOnly: false,
+    detectors: [],
     detectorUrl: "",
     detectorKey: "",
     detectorPath: "score",
@@ -394,16 +407,28 @@ function parseArgs(argv: string[]): Args {
       case "--detect-only":
         args.detectOnly = true;
         break;
-      /* ---- v0.9.66 外部检测器 ---- */
-      case "--detector-url":
-        args.detectorUrl = a[++i] ?? "";
+      /* ---- v0.9.66 外部检测器（v0.9.71：--detector-url 可重复，多档横向对比） ---- */
+      case "--detector-url": {
+        const url = a[++i] ?? "";
+        args.detectorUrl = url; // 兼容单档：仍保留顶层字段（= 第一档）
+        args.detectors.push({ url, key: "", path: "score", scale: "0-100" });
         break;
-      case "--detector-key":
-        args.detectorKey = a[++i] ?? "";
+      }
+      case "--detector-key": {
+        const key = a[++i] ?? "";
+        args.detectorKey = key;
+        // 作用在**最近一档**上；还没有任何档就先记到顶层（后面的 --detector-url 会带上它）
+        const last = args.detectors[args.detectors.length - 1];
+        if (last) last.key = key;
         break;
-      case "--detector-path":
-        args.detectorPath = a[++i] || "score";
+      }
+      case "--detector-path": {
+        const p = a[++i] || "score";
+        args.detectorPath = p;
+        const last = args.detectors[args.detectors.length - 1];
+        if (last) last.path = p;
         break;
+      }
       case "--detector-scale": {
         const s = (a[++i] ?? "").trim();
         if (s !== "0-100" && s !== "0-1") {
@@ -411,6 +436,8 @@ function parseArgs(argv: string[]): Args {
           process.exit(2);
         }
         args.detectorScale = s;
+        const last = args.detectors[args.detectors.length - 1];
+        if (last) last.scale = s;
         break;
       }
       default:
@@ -554,6 +581,16 @@ interface FileReport {
   detectorBefore?: number | null;
   detectorAfter?: number | null;
   detectorError?: string;
+  /** v0.9.71：多档检测器的逐档结果（单档时就是一条，与顶层字段同源） */
+  detectorScores?: DetectorScoreRow[];
+}
+
+/** 一档检测器的读数：失败时分数为 null、error 记原因 */
+interface DetectorScoreRow {
+  url: string;
+  before: number | null;
+  after: number | null;
+  error?: string;
 }
 
 /** v0.9.32：report totals 的求和（对全部条目求和，含失败篇目——失败也是花了时间的） */
@@ -652,16 +689,17 @@ async function main() {
   /**
    * v0.9.66：外部检测器配置。给了 --detector-url 才启用；凭证优先取 flag，其次环境变量
    * （命令行会进 shell 历史，凭证更适合走 QUAIWEI_DETECTOR_KEY）。
+   * v0.9.71：`--detector-url` 可重复 —— 每档独立 URL/点路径/刻度，逐档送检做横向对比。
    */
-  const detectorCfg: DetectorConfig | null = args.detectorUrl
-    ? {
-        enabled: true,
-        url: args.detectorUrl,
-        apiKey: args.detectorKey || process.env.QUAIWEI_DETECTOR_KEY || "",
-        scorePath: args.detectorPath,
-        scale: args.detectorScale,
-      }
-    : null;
+  const detectorCfgs: DetectorConfig[] = args.detectors
+    .filter((d) => d.url.trim() !== "")
+    .map((d) => ({
+      enabled: true,
+      url: d.url,
+      apiKey: d.key || process.env.QUAIWEI_DETECTOR_KEY || "",
+      scorePath: d.path,
+      scale: d.scale,
+    }));
 
   // v0.9.38：stdin 管道模式（输入参数 - 或省略）。省略参数时在这里补判 TTY：
   // 交互终端下不给管道，维持原行为（用法 + 退出），别把用户晾在读取阻塞里。
@@ -851,19 +889,32 @@ async function main() {
       );
       // v0.9.66：外部检测器（任意厂商）——原文与产出各送一次，记前后分。
       // 失败只记原因、不中断：检测器额度/网络问题不该让整批去味白跑。
-      if (detectorCfg) {
-        try {
-          const before = await scoreViaDetector(raw, detectorCfg);
-          const after = await scoreViaDetector(out, detectorCfg);
-          rep.detectorBefore = before;
-          rep.detectorAfter = after;
-          const delta = after - before;
-          console.log(
-            `   🔎 外部检测器：${before} → ${after}（${delta > 0 ? "+" : ""}${delta}，负数=更像人写）`,
-          );
-        } catch (e) {
-          rep.detectorError = e instanceof Error ? e.message : String(e);
-          console.log(`   ⚠ 外部检测器失败（不影响出稿）：${rep.detectorError}`);
+      // v0.9.71：多档时**逐档**送检，横向对比同一篇在不同检测器下的分数。
+      if (detectorCfgs.length > 0) {
+        const scores: DetectorScoreRow[] = [];
+        for (const [idx, cfg] of detectorCfgs.entries()) {
+          const label = detectorCfgs.length > 1 ? `#${idx + 1} ` : "";
+          try {
+            const before = await scoreViaDetector(raw, cfg);
+            const after = await scoreViaDetector(out, cfg);
+            scores.push({ url: cfg.url, before, after });
+            const delta = after - before;
+            console.log(
+              `   🔎 外部检测器${label}${cfg.url}：${before} → ${after}（${delta > 0 ? "+" : ""}${delta}，负数=更像人写）`,
+            );
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            scores.push({ url: cfg.url, before: null, after: null, error: msg });
+            console.log(`   ⚠ 外部检测器${label}失败（不影响出稿）：${msg}`);
+          }
+        }
+        rep.detectorScores = scores;
+        // 兼容单档读数：顶层字段取**第一档**的结果（旧报告消费方不用改）
+        const first = scores[0];
+        if (first) {
+          rep.detectorBefore = first.before;
+          rep.detectorAfter = first.after;
+          if (first.error) rep.detectorError = first.error;
         }
       }
       // v0.9.22：低风险输入照常出稿，但把"其实不用去味"说出来。

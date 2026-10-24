@@ -191,6 +191,9 @@ QUAIWEI_DETECTOR_KEY=xxx npx tsx scripts/humanize-cli.ts ./in --out ./out \
 - **外部分会进历史**（v0.9.68）：去味时若启用了检测器，当次自动送检的分数会跟这条历史一起存下来，
   历史面板显示「· 外部 42」。本地分是代理分，这个数字才是可比的真值——回头能看同一篇稿子
   在不同检测器、不同强度下的变化。
+- **CLI 一次可接多个检测器**（v0.9.71）：`--detector-url` 可重复，紧跟其后的
+  `--detector-key` / `--detector-path` / `--detector-scale` 只作用在最近一档；输出与
+  `--report` 的 `detectorScores` 里逐档给读数，同一篇稿子的跨厂商对比一次跑完。
 
 Key 优先级：`--api-key` > `QUAIWEI_API_KEY` > `OPENAI_API_KEY` > `SENSENOVA_KEYS` / `scripts/.sensenova-keys`。
 注意 baseUrl 必须填完整地址——以 `/` 开头的同源路径只在 dev（vite 代理）和 Electron 桌面版下有效。

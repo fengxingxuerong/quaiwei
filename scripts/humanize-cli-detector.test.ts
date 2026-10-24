@@ -35,11 +35,16 @@ beforeAll(async () => {
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       const text = (JSON.parse(body || "{}") as { text?: string }).text ?? "";
-      seen.push(text);
+      seen.push(`${req.url ?? "/"}::${text}`);
       // 假检测器：字数越多分越高（去味后字数会变，天然产生前后差）
-      const score = Math.max(0, Math.min(100, Math.round(text.length / 8)));
+      const raw = Math.max(0, Math.min(100, Math.round(text.length / 8)));
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ data: { prob: score } }));
+      // v0.9.71：两个路径给不同形状/刻度，验证「每档各自读自己的点路径与刻度」
+      if ((req.url ?? "").startsWith("/half")) {
+        res.end(JSON.stringify({ data: { prob: raw / 100 } })); // 0-1 刻度
+      } else {
+        res.end(JSON.stringify({ data: { prob: raw } }));
+      }
     });
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
@@ -83,7 +88,7 @@ describe("CLI 外部检测器（--detector-url）", () => {
     );
 
     expect(seen.length, "原文与产出应各送检一次").toBe(2);
-    expect(seen[0]).toBe(SAMPLE); // 第一次送的是原文
+    expect(seen[0]).toContain(SAMPLE); // 第一次送的是原文（seen 里带上了请求路径前缀）
     expect(stdout).toContain("外部检测器");
 
     const rep = JSON.parse(fs.readFileSync(report, "utf-8")) as {
@@ -148,4 +153,68 @@ describe("CLI 外部检测器（--detector-url）", () => {
       ),
     ).rejects.toMatchObject({ code: 2 });
   }, 60_000);
+
+  /**
+   * v0.9.71：`--detector-url` 可重复 —— 同一篇稿子逐档送检，做跨厂商横向对比。
+   * 关键点不只是"送了几次"，而是**每档各自读自己的点路径与刻度**（0-100 vs 0-1 混用时不能串味）。
+   */
+  it("多档检测器：逐档送检，各自按本档的点路径与刻度取分", async () => {
+    const dir = tmpDir();
+    const input = path.join(dir, "m.txt");
+    fs.writeFileSync(input, SAMPLE, "utf-8");
+    const report = path.join(dir, "r.json");
+    seen.length = 0;
+
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      [
+        TSX,
+        CLI,
+        input,
+        "--out",
+        dir,
+        "--report",
+        report,
+        "--intensity",
+        "0.9",
+        "--seed",
+        "7",
+        // 第 1 档：0-100 刻度
+        "--detector-url",
+        `http://127.0.0.1:${port}/a`,
+        "--detector-path",
+        "data.prob",
+        // 第 2 档：0-1 刻度（同一台服务器，按路径区分）
+        "--detector-url",
+        `http://127.0.0.1:${port}/half`,
+        "--detector-path",
+        "data.prob",
+        "--detector-scale",
+        "0-1",
+      ],
+      { cwd: ROOT, timeout: 120_000 },
+    );
+
+    // 2 档 × (原文 + 产出) = 4 次送检
+    expect(seen.length, "两档检测器应各送原文与产出").toBe(4);
+    expect(stdout).toContain("#1");
+    expect(stdout).toContain("#2");
+
+    const rep = JSON.parse(fs.readFileSync(report, "utf-8")) as {
+      reports: {
+        detectorScores?: { url: string; before: number | null; after: number | null }[];
+      }[];
+    };
+    const scores = rep.reports[0].detectorScores ?? [];
+    expect(scores).toHaveLength(2);
+    expect(scores[0].url).toContain("/a");
+    expect(scores[1].url).toContain("/half");
+    // 0-1 档返回的是小数，但 extractScore 会按刻度折成 0~100 —— 两档都应落在 0~100
+    for (const row of scores) {
+      expect(row.before).toBeGreaterThanOrEqual(0);
+      expect(row.before).toBeLessThanOrEqual(100);
+      expect(row.after).toBeGreaterThanOrEqual(0);
+      expect(row.after).toBeLessThanOrEqual(100);
+    }
+  }, 120_000);
 });
