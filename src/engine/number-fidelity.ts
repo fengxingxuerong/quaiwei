@@ -1,5 +1,5 @@
 /**
- * 数字保真守卫（v0.9.76）
+ * 数字保真守卫（v0.9.75 起，v0.9.79 改成「数值+量纲」比对）
  *
  * 为什么要有：LLM 改写最常见的**内容失真**不是"写错数字"，而是**整句连数字一起删掉**。
  * 2026-10-24 的三体裁 × 五模型实测就抓到一次（deepseek-v4-flash · 财经快讯）：
@@ -7,91 +7,80 @@
  *   原文：「报告期末，公司总资产达到 126.75 亿元，较上年末上升 6.3%，资产负债率维持在 41.2%……」
  *   产出：整句消失 —— 126.75 与 6.3% 两个数字直接没了，其余数字都在。
  *
- * 这类丢失在"财报/公文/招标"场景里是硬伤（读者据此开会），而单轮 LLM 路径**没有**
- * 深度模式的收稿终审与编造复核兜底（`--strict` 只在深度闭环里生效）。
- * 所以这里加一道**确定性**检查：原文出现的数字，产出里必须都还在。
+ * 这类丢失在"财报/公文/招标"场景里是硬伤（读者据此开会）。所以这里做**确定性**检查。
  *
- * 设计边界（都是有意的）：
- *  - 只查**数字与百分数**，不查人名/机构名（中文实体的"同义改写"边界太模糊，误报率高）；
- *  - 归一化全角/半角数字与百分号、容忍千分位与省略 `%`（"12.7%" → "12.7" 视为同一事实）；
- *  - **只报不拦**（默认）：守卫返回值交给调用方决定是警告还是回退，避免把"改写成
- *    「一成二」这类合理转述"误判成丢事实；
+ * ## 判据演进（每一版都是被真实数据推翻过才改的）
+ *
+ * v0.9.75 比字符串 → 被扫查工具打回：型号 `X200` 被当成数量、「3 个」↔「三个」被判丢事实。
+ * v0.9.76 只收「数量型」 → 假阳性 3→0（24 次真实产出），真命中仍在。
+ * v0.9.78 加**量纲**：`126.75 亿元` → `126.75 万元` 量级差 10000 倍，比数字错更隐蔽。
+ * v0.9.79 改成**数值 + 量纲**比对，并用 chinese-numerals 解析中文数字：
+ *   · `3 个` 与 `三个` 现在是同一个事实（此前只能把单个数字整体丢掉，白白损失灵敏度）；
+ *   · `14 小时` 与 `十四小时` 同样互认。
+ *
+ * ## 设计边界（都是有意的）
+ *
+ *  - 只查数量（数字/百分数/带单位的量），**不查人名与机构名**——中文实体的同义改写边界太模糊，
+ *    误报率压不住，而一次误报就会让人从此忽略这条提示；
+ *  - **中文数字必须带单位才算事实**：单字「一」在中文里太像虚词（一方面/一致性/统一）；
+ *  - 只报不拦（默认）：由调用方决定是写 note 还是回退原稿；
  *  - 纯函数、零依赖、确定性——不消耗任何 API 调用。
  */
+import { parseChineseNumber, canonNumber } from "./chinese-numerals";
 
-/** 从文本里抠出数字事实（归一化后排序去重） */
-export function numericFacts(text: string): string[] {
-  const norm = text
-    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)) // 全角数字
-    .replace(/[．。]/g, (c) => (c === "．" ? "." : c)) // 全角小数点；句号不动（它不是小数点）
-    .replace(/[％]/g, "%")
-    .replace(/[，、]/g, ","); // 千分位里的中文逗号
-  const out = new Set<string>();
-  for (const m of norm.matchAll(/\d+(?:,\d{3})*(?:\.\d+)?%?/g)) {
-    out.add(m[0].replace(/,/g, ""));
-  }
-  return [...out].sort();
+/** 一个数量事实：数值 + 归一后的量纲（无单位为空串，百分数记为 %） */
+export interface QuantityFact {
+  value: string;
+  unit: string;
 }
 
 /**
- * 只挑「**数量型**数字事实」——守卫真正该盯的那一类。
+ * 量纲单位（strict）：这些**必须连同数值一起保留**，改了就改变含义。
  *
- * 两次实测把假阳性来源暴露得很清楚（都在 `npm run sweep:fidelity` 里）：
- *   ① `C4-product-copy` 报丢「200」——原文是型号 **X200 智能会议终端**，不是数量；
- *   ② `C12-paper-abstract` 报丢「3」——原文「3 个指标」，模型写成「三个指标」，事实没丢。
- *
- * 所以两道过滤（宁可漏报，不要误报——误报会让用户不再相信这条提示）：
- *   · **单个数字（1~9）**不收：中文里「3 个」↔「三个」是最常见的合法改写；
- *   · **紧跟在 ASCII 字母后面的数字**不收：`X200` / `iPhone15` / `5G` / `Wi-Fi 7` 这类是标识符。
- * 保留：多位数、小数、百分数、带单位的量——真正的数据都在这一类里。
+ * 刻意**不含**量词（个/项/类/种/条/份/名/位/家/人/次/台/套/户/成/度）：
+ * 实测回放（53 次真实产出）里，`一种方法 → 一个方法`、`两个方面 → 两方面` 这类
+ * 量词替换占了全部"报警"的绝大多数——它们是**合法改写**，不是数据失真。
+ * 把量词纳入检查会让这条提示变成噪音，用户从此不再看它。
  */
-export function quantitativeFacts(text: string): string[] {
-  const norm = text
-    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(/[．。]/g, (c) => (c === "．" ? "." : c))
-    .replace(/[％]/g, "%")
-    .replace(/[，、]/g, ",");
-  const out = new Set<string>();
-  for (const m of norm.matchAll(/([A-Za-z])?(\d+(?:,\d{3})*(?:\.\d+)?%?)/g)) {
-    const [, letter, raw] = m;
-    if (letter) continue; // 标识符：X200 / iPhone15 / 5G
-    const v = raw.replace(/,/g, "");
-    if (/^\d$/.test(v)) continue; // 单个数字：3 ↔ 三个
-    out.add(v);
-  }
-  return [...out].sort();
-}
+const UNITS = [
+  "个百分点",
+  "百分点",
+  "亿元",
+  "万元",
+  "亿",
+  "万",
+  "千",
+  "百",
+  "小时",
+  "分钟",
+  "秒",
+  "倍",
+  "GB",
+  "MB",
+  "TB",
+  "KB",
+  "GHz",
+  "MHz",
+  "Wh",
+  "W",
+  "V",
+  "A",
+  "mA",
+  "℃",
+  "千克",
+  "公斤",
+  "克",
+  "吨",
+  "公里",
+  "千米",
+  "厘米",
+  "毫米",
+  "米",
+  "升",
+  "毫升",
+];
 
-/**
- * 产出里**缺失**的数字事实。
- *
- * 判定口径：把两侧都归一成"数字集合"，产出里没有的原文数字即缺失。
- * 注意 `12.7%` 与 `12.7` 视为同一事实（有的模型会把百分号改写成"百分之 12.7"）——
- * 反过来 `12.7` 在原文、产出写成 `12.7%` 也算命中，宁可漏报不误报。
- */
-export function missingNumericFacts(source: string, output: string): string[] {
-  const want = quantitativeFacts(source);
-  if (want.length === 0) return [];
-  const have = new Set(quantitativeFacts(output).map((n) => n.replace(/%$/, "")));
-  return want.filter((n) => !have.has(n.replace(/%$/, "")));
-}
-
-/**
- * v0.9.78：**单位保真**。
- *
- * 数字对了、单位错了，一样是事故——而且比数字错更隐蔽：
- *   「总资产 126.75 **亿元**」→「总资产 126.75 **万元**」量级差 10000 倍，读者一眼看不出来。
- * 所以除"数字在不在"，还要看"数字后面跟的量纲有没有被改掉"。
- *
- * 归一化口径（都是有意的）：
- *   · `亿元`/`万元` 归一成 `亿`/`万`——「126.75 亿元」写成「126.75 亿」不算错；
- *   · 只认**贴在数字后面**的单位（中间允许一个空格），远处出现的同名字不算；
- *   · 只覆盖常见量纲；认不出来的一律不判（宁可漏报）。
- */
-const UNIT_RE =
-  /(\d+(?:,\d{3})*(?:\.\d+)?%?)\s*(亿元|万元|亿|万|千|百|个百分点|百分点|小时|分钟|秒|天|周|月|年|倍|GB|MB|TB|KB|GHz|MHz|Wh|W|V|A|mA|℃|度|克|千克|公斤|吨|公里|千米|厘米|毫米|米|升|毫升|人|次|台|套|项|户|亿元)/g;
-
-/** 单位归一：亿元→亿、万元→万（同一量纲的不同写法不该判错） */
+/** 单位归一：同量纲的不同写法不该判错 */
 function normUnit(u: string): string {
   if (u === "亿元") return "亿";
   if (u === "万元") return "万";
@@ -101,49 +90,113 @@ function normUnit(u: string): string {
   return u;
 }
 
-/** 数字 ↔ 单位 的绑定（只取数量型数字，与 quantitativeFacts 同口径） */
-export function quantitativePairs(text: string): { num: string; unit: string }[] {
-  const norm = text
+const ARABIC_RE = new RegExp(`(\\d+(?:,\\d{3})*(?:\\.\\d+)?)\\s*(%|${UNITS.join("|")})?`, "g");
+const CHINESE_RE = new RegExp(
+  `([零〇一二三四五六七八九十百千万亿两]+(?:点[零〇一二三四五六七八九]+)?)\\s*(${UNITS.join("|")})`,
+  "g",
+);
+
+function normalizeText(text: string): string {
+  return text
     .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
     .replace(/[．]/g, ".")
     .replace(/[％]/g, "%")
-    .replace(/[，、]/g, ",");
-  const out: { num: string; unit: string }[] = [];
-  UNIT_RE.lastIndex = 0;
+    .replace(/[，]/g, ",");
+}
+
+/**
+ * 抽取数量事实。
+ *
+ * 收与不收（每条都对应一个真实反例）：
+ *   ✓ 带单位的数字（`3 个` / `十四小时` / `126.75 亿元`）——中文数字也认
+ *   ✓ 多位数、小数、百分数（`2025` / `12.7%` / `3.87`）
+ *   ✗ 紧跟在 ASCII 字母后的数字（`X200` / `iPhone15` / `5G` / `Wi-Fi 7` 是标识符）
+ *   ✗ 无单位的单个阿拉伯数字（`3` 太容易是编号/序号）
+ */
+export function quantityFacts(text: string): QuantityFact[] {
+  const norm = normalizeText(text);
+  const out: QuantityFact[] = [];
+
+  ARABIC_RE.lastIndex = 0;
   let m: RegExpExecArray | null;
-  while ((m = UNIT_RE.exec(norm)) !== null) {
-    const num = m[1].replace(/,/g, "");
-    if (/^\d$/.test(num)) continue; // 单个数字不收（「3 个」↔「三个」）
-    out.push({ num, unit: normUnit(m[2]) });
+  while ((m = ARABIC_RE.exec(norm)) !== null) {
+    const raw = m[1].replace(/,/g, "");
+    const before = norm.slice(Math.max(0, m.index - 1), m.index);
+    if (/[A-Za-z]/.test(before)) continue; // 标识符：X200 / iPhone15
+    const unit = m[2] ? normUnit(m[2] === "%" ? "%" : m[2]) : "";
+    const isQuantity = unit !== "" || /\./.test(raw) || raw.length >= 2;
+    if (!isQuantity) continue; // 无单位的单个数字
+    out.push({ value: canonNumber(Number(raw)), unit });
+  }
+
+  CHINESE_RE.lastIndex = 0;
+  while ((m = CHINESE_RE.exec(norm)) !== null) {
+    const n = parseChineseNumber(m[1]);
+    if (n === null) continue;
+    out.push({ value: canonNumber(n), unit: normUnit(m[2]) });
   }
   return out;
 }
 
+/** 去重后的数值列表（保留旧接口：有些地方只关心"有哪些数"） */
+export function quantitativeFacts(text: string): string[] {
+  return [...new Set(quantityFacts(text).map((f) => f.value))].sort();
+}
+
+/** 数字原样串（最早期接口，含型号等一切数字；仅测试与调试用） */
+export function numericFacts(text: string): string[] {
+  const norm = normalizeText(text);
+  const out = new Set<string>();
+  for (const m of norm.matchAll(/\d+(?:,\d{3})*(?:\.\d+)?%?/g)) out.add(m[0].replace(/,/g, ""));
+  return [...out].sort();
+}
+
 /**
- * 原文有、但产出里**单位被换掉**的那些量（数字还在，量纲变了）。
- * 数字整个消失的情况由 `missingNumericFacts` 负责，这里只管"改单位"。
+ * 原文有、产出里**找不到**的数量事实（按 数值+量纲 比）。
+ *
+ * 量纲缺失也算缺失：`126.75 亿元` → `126.75` 是丢了量纲，不能当"数字还在"放过。
  */
+export function missingNumericFacts(source: string, output: string): string[] {
+  const want = quantityFacts(source);
+  if (want.length === 0) return [];
+  const have = new Set(quantityFacts(output).map((f) => `${f.value}|${f.unit}`));
+  const out = new Set<string>();
+  for (const f of want) {
+    if (have.has(`${f.value}|${f.unit}`)) continue;
+    // 百分数与非百分数互认（12.7% ↔ 12.7）
+    const alt = `${f.value}|${f.unit === "%" ? "" : "%"}`;
+    if (f.unit === "%" || f.unit === "") {
+      if (have.has(alt)) continue;
+    }
+    out.add(f.unit ? `${f.value}${f.unit}` : f.value);
+  }
+  return [...out];
+}
+
+/** 原文有、产出里**量纲被换掉**的那些量（数值还在，量纲变了） */
 export function changedUnits(source: string, output: string): string[] {
-  const outPairs = quantitativePairs(output);
-  const outByNum = new Map<string, Set<string>>();
-  for (const p of outPairs) {
-    const k = p.num.replace(/%$/, "");
-    if (!outByNum.has(k)) outByNum.set(k, new Set());
-    outByNum.get(k)!.add(p.unit);
+  const outFacts = quantityFacts(output);
+  const byValue = new Map<string, Set<string>>();
+  for (const f of outFacts) {
+    if (!byValue.has(f.value)) byValue.set(f.value, new Set());
+    byValue.get(f.value)!.add(f.unit);
   }
   const bad: string[] = [];
-  for (const p of quantitativePairs(source)) {
-    const units = outByNum.get(p.num.replace(/%$/, ""));
-    if (!units) continue; // 数字整个没了 → 交给缺失检查
-    if (!units.has(p.unit)) bad.push(`${p.num} ${p.unit} → ${[...units].join("/")}`);
+  for (const f of quantityFacts(source)) {
+    if (!f.unit) continue; // 原文没有量纲，无从比较
+    const units = byValue.get(f.value);
+    if (!units || units.size === 0) continue; // 数值整个没了 → 交给缺失检查
+    if (!units.has(f.unit)) {
+      const shown = [...units].map((u) => u || "（无量纲）").join("/");
+      bad.push(`${f.value}${f.unit} → ${shown}`);
+    }
   }
   return [...new Set(bad)];
 }
 
 /**
- * 面向用户的提示文案（缺失/改单位时返回 null）。
- * 之所以要文案而不是裸数组：这条提示会出现在 CLI 输出与界面 note 里，
- * 用户得知道"这不是评分问题，是稿子里少了/改了原文的数据"。
+ * 面向用户的提示文案（两类失真都没有时返回 null）。
+ * 文案会出现在 CLI 输出与界面 note 里，用户得知道"这不是评分问题，是稿子里动了原文的数据"。
  */
 export function numericFidelityWarning(source: string, output: string): string | null {
   const parts: string[] = [];

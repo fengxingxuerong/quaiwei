@@ -35,13 +35,14 @@ describe("numericFacts（归一化）", () => {
   });
 });
 
-describe("missingNumericFacts（缺失判定）", () => {
+describe("missingNumericFacts（缺失判定，按 数值+量纲 比）", () => {
   it("抓得到「整句连数字一起删」这种真实形态", () => {
     const out = SRC.replace(
       "报告期末，公司总资产达到 126.75 亿元，较上年末上升 6.3%，资产负债率维持在 41.2% 的较低水平。",
       "资产负债率维持在 41.2% 的较低水平。",
     );
-    expect(missingNumericFacts(SRC, out)).toEqual(["126.75", "6.3%"]);
+    // 带上量纲更好定位：是「126.75 亿元」这一个事实没了
+    expect(missingNumericFacts(SRC, out)).toEqual(["126.75亿", "6.3%"]);
   });
 
   it("数字全在、只是换了位置和句式 → 不报", () => {
@@ -69,23 +70,37 @@ describe("quantitativeFacts（只收数量型事实，压住假阳性）", () =>
     expect(quantitativeFacts("支持 5G 与 Wi-Fi 7、iPhone15 同传")).toEqual([]);
   });
 
-  it("单个数字不收（「3 个指标」写成「三个指标」不算丢事实）", () => {
-    expect(quantitativeFacts("共有 3 个指标、5 类样本")).toEqual([]);
+  it("中文数字与阿拉伯数字互认（量纲单位）：「14 小时」≡「十四小时」", () => {
+    expect(missingNumericFacts("会议时长 14 小时。", "会议时长为十四小时。")).toEqual([]);
+    expect(missingNumericFacts("投入 3 亿元。", "投入三亿元。")).toEqual([]);
+    // 数值真的变了仍要报
+    expect(missingNumericFacts("会议时长 14 小时。", "会议时长为十二小时。")).toEqual(["14小时"]);
+  });
+
+  it("量词不在检查范围（一种方法 → 一个方法 是合法改写）", () => {
+    // 回放 53 次真实产出时，这类"报警"占了绝大多数，全是噪音——量词必须排除
+    expect(quantitativeFacts("共有 3 个指标、5 类样本。")).toEqual([]);
+    expect(missingNumericFacts("共有 3 个指标。", "共有五个指标。")).toEqual([]);
+    expect(missingNumericFacts("这是一种方法。", "这是一个方法。")).toEqual([]);
   });
 
   it("多位数 / 小数 / 百分数 / 带单位的量都保留", () => {
     expect(quantitativeFacts("总资产 126.75 亿元、增长 6.3%、65Wh、14 小时").sort()).toEqual([
       "126.75",
       "14",
-      "6.3%",
+      "6.3",
       "65",
     ]);
+  });
+
+  it("无单位的单个阿拉伯数字仍不收（「3」太容易是编号）", () => {
+    expect(quantitativeFacts("第 3 页，共 3 处。")).toEqual([]);
   });
 
   it("真实缺陷仍然抓得到（财经快讯那次）", () => {
     const src = "报告期末，公司总资产达到 126.75 亿元，较上年末上升 6.3%，资产负债率 41.2%。";
     const out = "报告期末，资产负债率 41.2%。";
-    expect(missingNumericFacts(src, out)).toEqual(["126.75", "6.3%"]);
+    expect(missingNumericFacts(src, out)).toEqual(["126.75亿", "6.3%"]);
   });
 });
 
@@ -95,7 +110,7 @@ describe("单位保真（v0.9.78）", () => {
 
   it("改单位要报：亿元 → 万元（量级差 10000 倍）", () => {
     const out = SRC.replace("总资产 126.75 亿元", "总资产 126.75 万元");
-    expect(changedUnits(SRC, out)).toEqual(["126.75 亿 → 万"]);
+    expect(changedUnits(SRC, out)).toEqual(["126.75亿 → 万"]);
     expect(numericFidelityWarning(SRC, out)).toContain("改了原文的数字单位");
   });
 
@@ -106,7 +121,7 @@ describe("单位保真（v0.9.78）", () => {
 
   it("时间单位也不能换：14 小时 → 14 分钟", () => {
     const out = SRC.replace("14 小时", "14 分钟");
-    expect(changedUnits(SRC, out)).toEqual(["14 小时 → 分钟"]);
+    expect(changedUnits(SRC, out)).toEqual(["14小时 → 分钟"]);
   });
 
   it("数字整个消失时不走单位检查（交给缺失检查，避免同一处报两遍）", () => {
