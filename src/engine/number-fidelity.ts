@@ -77,14 +77,88 @@ export function missingNumericFacts(source: string, output: string): string[] {
 }
 
 /**
- * 面向用户的提示文案（缺失时返回 null）。
+ * v0.9.78：**单位保真**。
+ *
+ * 数字对了、单位错了，一样是事故——而且比数字错更隐蔽：
+ *   「总资产 126.75 **亿元**」→「总资产 126.75 **万元**」量级差 10000 倍，读者一眼看不出来。
+ * 所以除"数字在不在"，还要看"数字后面跟的量纲有没有被改掉"。
+ *
+ * 归一化口径（都是有意的）：
+ *   · `亿元`/`万元` 归一成 `亿`/`万`——「126.75 亿元」写成「126.75 亿」不算错；
+ *   · 只认**贴在数字后面**的单位（中间允许一个空格），远处出现的同名字不算；
+ *   · 只覆盖常见量纲；认不出来的一律不判（宁可漏报）。
+ */
+const UNIT_RE =
+  /(\d+(?:,\d{3})*(?:\.\d+)?%?)\s*(亿元|万元|亿|万|千|百|个百分点|百分点|小时|分钟|秒|天|周|月|年|倍|GB|MB|TB|KB|GHz|MHz|Wh|W|V|A|mA|℃|度|克|千克|公斤|吨|公里|千米|厘米|毫米|米|升|毫升|人|次|台|套|项|户|亿元)/g;
+
+/** 单位归一：亿元→亿、万元→万（同一量纲的不同写法不该判错） */
+function normUnit(u: string): string {
+  if (u === "亿元") return "亿";
+  if (u === "万元") return "万";
+  if (u === "百分点") return "个百分点";
+  if (u === "千米") return "公里";
+  if (u === "千克" || u === "公斤") return "kg";
+  return u;
+}
+
+/** 数字 ↔ 单位 的绑定（只取数量型数字，与 quantitativeFacts 同口径） */
+export function quantitativePairs(text: string): { num: string; unit: string }[] {
+  const norm = text
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[．]/g, ".")
+    .replace(/[％]/g, "%")
+    .replace(/[，、]/g, ",");
+  const out: { num: string; unit: string }[] = [];
+  UNIT_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = UNIT_RE.exec(norm)) !== null) {
+    const num = m[1].replace(/,/g, "");
+    if (/^\d$/.test(num)) continue; // 单个数字不收（「3 个」↔「三个」）
+    out.push({ num, unit: normUnit(m[2]) });
+  }
+  return out;
+}
+
+/**
+ * 原文有、但产出里**单位被换掉**的那些量（数字还在，量纲变了）。
+ * 数字整个消失的情况由 `missingNumericFacts` 负责，这里只管"改单位"。
+ */
+export function changedUnits(source: string, output: string): string[] {
+  const outPairs = quantitativePairs(output);
+  const outByNum = new Map<string, Set<string>>();
+  for (const p of outPairs) {
+    const k = p.num.replace(/%$/, "");
+    if (!outByNum.has(k)) outByNum.set(k, new Set());
+    outByNum.get(k)!.add(p.unit);
+  }
+  const bad: string[] = [];
+  for (const p of quantitativePairs(source)) {
+    const units = outByNum.get(p.num.replace(/%$/, ""));
+    if (!units) continue; // 数字整个没了 → 交给缺失检查
+    if (!units.has(p.unit)) bad.push(`${p.num} ${p.unit} → ${[...units].join("/")}`);
+  }
+  return [...new Set(bad)];
+}
+
+/**
+ * 面向用户的提示文案（缺失/改单位时返回 null）。
  * 之所以要文案而不是裸数组：这条提示会出现在 CLI 输出与界面 note 里，
- * 用户得知道"这不是评分问题，是稿子里少了原文的数据"。
+ * 用户得知道"这不是评分问题，是稿子里少了/改了原文的数据"。
  */
 export function numericFidelityWarning(source: string, output: string): string | null {
+  const parts: string[] = [];
   const missing = missingNumericFacts(source, output);
-  if (missing.length === 0) return null;
-  const shown = missing.slice(0, 6).join("、");
-  const more = missing.length > 6 ? ` 等 ${missing.length} 个` : "";
-  return `产出缺少原文中的数字：${shown}${more}（内容失真，请核对；严格保真模式会因此回退原稿）`;
+  if (missing.length) {
+    const shown = missing.slice(0, 6).join("、");
+    const more = missing.length > 6 ? ` 等 ${missing.length} 个` : "";
+    parts.push(`产出缺少原文中的数字：${shown}${more}`);
+  }
+  const units = changedUnits(source, output);
+  if (units.length) {
+    const shown = units.slice(0, 4).join("；");
+    const more = units.length > 4 ? ` 等 ${units.length} 处` : "";
+    parts.push(`产出改了原文的数字单位：${shown}${more}`);
+  }
+  if (parts.length === 0) return null;
+  return `${parts.join("；")}（内容失真，请核对；严格保真模式会因此回退原稿）`;
 }

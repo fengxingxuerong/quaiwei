@@ -12,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import {
   numericFacts,
   quantitativeFacts,
+  changedUnits,
   missingNumericFacts,
   numericFidelityWarning,
 } from "./number-fidelity";
@@ -85,6 +86,37 @@ describe("quantitativeFacts（只收数量型事实，压住假阳性）", () =>
     const src = "报告期末，公司总资产达到 126.75 亿元，较上年末上升 6.3%，资产负债率 41.2%。";
     const out = "报告期末，资产负债率 41.2%。";
     expect(missingNumericFacts(src, out)).toEqual(["126.75", "6.3%"]);
+  });
+});
+
+describe("单位保真（v0.9.78）", () => {
+  const SRC =
+    "营业收入 48.62 亿元，同比 12.7%，总资产 126.75 亿元，研发 3.87 亿元，会议时长 14 小时。";
+
+  it("改单位要报：亿元 → 万元（量级差 10000 倍）", () => {
+    const out = SRC.replace("总资产 126.75 亿元", "总资产 126.75 万元");
+    expect(changedUnits(SRC, out)).toEqual(["126.75 亿 → 万"]);
+    expect(numericFidelityWarning(SRC, out)).toContain("改了原文的数字单位");
+  });
+
+  it("同一量纲的不同写法不报：亿元 ↔ 亿", () => {
+    const out = SRC.replace("总资产 126.75 亿元", "总资产 126.75 亿");
+    expect(changedUnits(SRC, out)).toEqual([]);
+  });
+
+  it("时间单位也不能换：14 小时 → 14 分钟", () => {
+    const out = SRC.replace("14 小时", "14 分钟");
+    expect(changedUnits(SRC, out)).toEqual(["14 小时 → 分钟"]);
+  });
+
+  it("数字整个消失时不走单位检查（交给缺失检查，避免同一处报两遍）", () => {
+    const out = SRC.replace("总资产 126.75 亿元，", "");
+    expect(changedUnits(SRC, out)).toEqual([]);
+    expect(numericFidelityWarning(SRC, out)).toContain("缺少原文中的数字");
+  });
+
+  it("百分比不是单位：12.7% 保持 12.7% 不报", () => {
+    expect(changedUnits(SRC, SRC)).toEqual([]);
   });
 });
 
