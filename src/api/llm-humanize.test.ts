@@ -1272,3 +1272,86 @@ describe("回译洗稿（竞品吸收四）", () => {
     expect(deep.note).toContain("原文非中文为主");
   });
 });
+
+/**
+ * v0.9.77：数字保真接进深度模式。
+ *
+ * 写这三条用例时先被事实打了一次脸：深度模式的**本地质检**本来就有一条
+ * 「数字 X 出现次数减少（1→0）」的检查，丢数字的候选根本走不到交付
+ * （`各轮质检均未通过（数字 126.75 出现次数减少（1→0））`）。
+ * 所以深度模式的真实契约是"**不会交付丢数字的稿**"，而不是"交付了再提示"。
+ *
+ * 那 deliver 里的守卫还有什么用？两点：① 回译洗稿那一轮是**在质检之后**才改写的，
+ * 它引入的数字丢失没有经过 QC；② 严格保真时把这件事升级成与编造同级的否决。
+ */
+describe("数字保真（深度模式，v0.9.77）", () => {
+  const TEXT =
+    "报告期内，公司实现营业收入 48.62 亿元，同比增长 12.7%，期末总资产达到 126.75 亿元。";
+  /** 丢了 126.75 —— 模拟实测里"整句连数字一起删" */
+  const LOSSY = "报告期内，公司营业收入 48.62 亿元，同比增长 12.7%，整体规模继续扩大。";
+  /** 数字都在，只是换了句式与位置 */
+  const KEEP = "报告期内营收 48.62 亿元、同比 +12.7%；期末总资产 126.75 亿元。";
+
+  function stubDeep(outText: string) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        const body = JSON.parse(init?.body ?? "{}") as {
+          messages: { role: string; content: string }[];
+        };
+        const sys = body.messages?.[0]?.content ?? "";
+        const ok = (content: string) =>
+          new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        if (sys.includes("事实核查员")) return ok(JSON.stringify({ fabrications: [] }));
+        if (sys.includes("质检员")) return ok("PASS");
+        if (sys.includes("改写专家")) return ok(outText);
+        return ok("句长过于均匀\n15");
+      }),
+    );
+  }
+
+  it("严格保真：丢数字的稿不会交付（错误里点名缺了哪个数字）", async () => {
+    stubDeep(LOSSY);
+    await expect(
+      humanizeViaApiDeep(
+        TEXT,
+        { ...DEFAULT_API, enabled: true, apiKey: "k", strictFidelity: true },
+        undefined,
+        10,
+        2,
+        0.6,
+      ),
+    ).rejects.toThrow(/126\.75/);
+  });
+
+  it("非严格：同样不会交付（本地质检先把关，不靠事后提示）", async () => {
+    stubDeep(LOSSY);
+    await expect(
+      humanizeViaApiDeep(
+        TEXT,
+        { ...DEFAULT_API, enabled: true, apiKey: "k" },
+        undefined,
+        10,
+        2,
+        0.6,
+      ),
+    ).rejects.toThrow(/质检|126\.75/);
+  });
+
+  it("数字都在（只是换了位置与句式）：正常交付且不报数字告警", async () => {
+    stubDeep(KEEP);
+    const deep = await humanizeViaApiDeep(
+      TEXT,
+      { ...DEFAULT_API, enabled: true, apiKey: "k" },
+      undefined,
+      10,
+      2,
+      0.6,
+    );
+    expect(deep.text).toBe(KEEP);
+    expect(deep.note).not.toContain("产出缺少原文中的数字");
+  });
+});

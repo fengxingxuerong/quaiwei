@@ -24,6 +24,7 @@ import { restoreMixedSpacing } from "../engine/humanize-shuffle.ts";
 import { fingerprintCheck } from "../engine/humanize.ts";
 import { checkFidelityLocal } from "../engine/humanize-metrics";
 import { voiceDirectiveBlock } from "../engine/voice-profile";
+import { numericFidelityWarning } from "../engine/number-fidelity";
 import { errMsg } from "./llm-judge";
 
 /* ----------------------------- 去味 ----------------------------- */
@@ -412,6 +413,19 @@ export async function humanizeViaApiDeep(
           `⚠️ 编造复核未能完成（${(e as Error).message.slice(0, 40)}），本次未做否决——交付稿未经事实核查`,
         );
       }
+    }
+    /**
+     * v0.9.77：数字保真**深度模式也接上**。
+     *
+     * 单轮路径在 v0.9.76 已有此检查；深度模式此前只有编造复核——那是"多出原文没有的断言"，
+     * 与"把原文的数字连同句子删掉"是相反方向的两件事，编造复核抓不到后者。
+     * 实测（2026-10-25 矩阵）就有一次整句连 126.75 亿元 / 6.3% 一起消失。
+     * 口径与单轮一致：默认只提示；严格保真时按编造同级处理（否决并回退）。
+     */
+    const numWarn = numericFidelityWarning(text, bestText);
+    if (numWarn) {
+      if (cfg.strictFidelity) throw new FabricationVetoError([numWarn]);
+      finalNote = appendNote(finalNote, `⚠️ ${numWarn}`);
     }
     // 本地"新增内容"披露：**放在 strictFidelity 之外**，因为它是纯本地计数、零成本，
     // 而不开严格保真的用户同样该知道"交付稿凭空多出十几处『我』"。
