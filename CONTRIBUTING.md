@@ -119,9 +119,13 @@ README 标题行 / README「当前版本」行 / CHANGELOG 本版章节 / 两份
 git 默认**不会**跑它，必须设 `core.hooksPath`：
 
 ```bash
-npm install          # prepare 钩子会自动设好（scripts/install-hooks.mjs）
-npm run setup:hooks  # 或者手动跑这一条
+npm install && npm run setup:hooks   # clone 后跑一次
 ```
+
+**为什么不再挂 `prepare` 自动执行**（2026-10-25 改）：npm 11 起对"带安装脚本的包"会向
+**所有使用者**打一条 `npm warn allow-scripts …` 警告，而我们发布的是 CLI 包——为了一条只对
+贡献者有用的自动化，让每个 `npm i ai-humanizer` 的人都看到一句警告，不划算。
+代价是新克隆要多跑一条 `npm run setup:hooks`（已在上面写明）。
 
 没设的话，上面四道一条都不会执行——2026-10-22 实测过一次：钩子文件在仓库里躺着，
 `core.hooksPath` 却是空的。

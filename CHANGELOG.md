@@ -2,6 +2,41 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.80 更新（npm 首发前置：去掉会让每个使用者看到警告的 prepare，2026-10-25）
+
+### 一、问题（实测发现，不是猜的）
+
+把包按 `npm pack` 打出来、在干净目录 `npm install ./pkg.tgz` 装上，控制台出现：
+
+```
+npm warn allow-scripts ai-humanizer@0.9.79 (prepare: node scripts/install-hooks.mjs)
+```
+
+`prepare` 是给**贡献者**用的（clone 后自动设 `core.hooksPath`），但它会跟着包发给**所有使用者**，
+而且 `scripts/install-hooks.mjs` 并不在 `files` 白名单里——从 git 装还会直接报错。
+
+### 二、处置
+
+- 删掉 `package.json` 的 `prepare`，保留 `npm run setup:hooks`（clone 后跑一次，CONTRIBUTING 已写明）；
+- CONTRIBUTING 补一段说明"为什么不挂 prepare"，避免以后有人又加回去。
+
+**验证**：重新打包 → 干净目录安装 → 警告消失（`added 1 package in 448ms`），CLI 仍可运行：
+
+```
+$ node node_modules/ai-humanizer/dist-cli/humanize-cli.mjs --help      # 正常
+$ … | ai-humanizer --intensity 0.9                                    # 54→37 字，产出正常
+```
+
+### 三、顺带确认 npm 首发只剩"登录"这一步
+
+- 包名 `ai-humanizer` **未被占用**（registry 404）；
+- `npm publish --dry-run` EXIT=0，8 文件 / 185.5 kB；
+- 从 tarball 安装后 CLI 与去味都正常（这才是"发布后能不能用"的真验证）。
+
+### 四、门禁
+
+全量 117 文件 2330 用例全绿；tsc / eslint / prettier 全过。
+
 ## v0.9.79 更新（中文数字互认；并再次证明「量词不能进检查」，2026-10-25）
 
 ### 一、改了什么
