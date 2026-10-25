@@ -22,6 +22,7 @@
 | [external-judge-findings.md](external-judge-findings.md) | 证据 | 外评证据：本地 aiScore 在论说/叙事上严重低报 AI 味（v0.9.54 起「分数冲突提示」的由来） |
 | [fingerprint-and-zhuque-calibration.md](fingerprint-and-zhuque-calibration.md) | 证据 | AI 指纹检测与朱雀分映射标定（指纹面板与换算线据此实现） |
 | [judge-anchor-calibration.md](judge-anchor-calibration.md) | 证据 | glm-5.2 严评锚点问题与评判模型的宽严校准 |
+| [model-compare-2026-10-24.md](model-compare-2026-10-24.md) | 证据 | 5 个可用模型的改写效果对比（同一篇稿、真实 CLI 路径）：事实保真 / 套话残留 / 耗时 / 互补性，附各位置选型建议。复现用 `npm run compare:models` |
 | [zhuque-gap-analysis.md](zhuque-gap-analysis.md) | 证据 | 趣AI味 vs 真实朱雀的差距分析与补全清单 |
 | [zhuque-official-resubmit-plan.md](zhuque-official-resubmit-plan.md) | 计划（部分搁置） | 朱雀官方送检分批计划；2026-10-23 起「不再以朱雀为验证主线」，仅作记录 |
 
