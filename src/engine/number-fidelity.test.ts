@@ -9,7 +9,12 @@
  *   ③ 文案要能直接贴给用户看（含缺失清单 + 为什么重要）。
  */
 import { describe, it, expect } from "vitest";
-import { numericFacts, missingNumericFacts, numericFidelityWarning } from "./number-fidelity";
+import {
+  numericFacts,
+  quantitativeFacts,
+  missingNumericFacts,
+  numericFidelityWarning,
+} from "./number-fidelity";
 
 const SRC =
   "报告期内，公司实现营业收入 48.62 亿元，较上年同期增长 12.7%；归属于上市公司股东的净利润 5.34 亿元，同比增长 8.9%。" +
@@ -54,6 +59,32 @@ describe("missingNumericFacts（缺失判定）", () => {
     expect(
       missingNumericFacts("这是一段没有数字的散文。", "这是改写后的散文，仍然没有数字。"),
     ).toEqual([]);
+  });
+});
+
+describe("quantitativeFacts（只收数量型事实，压住假阳性）", () => {
+  it("型号里的数字不算数量（C4 实测：X200 智能会议终端）", () => {
+    expect(quantitativeFacts("X200 智能会议终端搭载 8 核处理器")).toEqual([]);
+    expect(quantitativeFacts("支持 5G 与 Wi-Fi 7、iPhone15 同传")).toEqual([]);
+  });
+
+  it("单个数字不收（「3 个指标」写成「三个指标」不算丢事实）", () => {
+    expect(quantitativeFacts("共有 3 个指标、5 类样本")).toEqual([]);
+  });
+
+  it("多位数 / 小数 / 百分数 / 带单位的量都保留", () => {
+    expect(quantitativeFacts("总资产 126.75 亿元、增长 6.3%、65Wh、14 小时").sort()).toEqual([
+      "126.75",
+      "14",
+      "6.3%",
+      "65",
+    ]);
+  });
+
+  it("真实缺陷仍然抓得到（财经快讯那次）", () => {
+    const src = "报告期末，公司总资产达到 126.75 亿元，较上年末上升 6.3%，资产负债率 41.2%。";
+    const out = "报告期末，资产负债率 41.2%。";
+    expect(missingNumericFacts(src, out)).toEqual(["126.75", "6.3%"]);
   });
 });
 

@@ -34,6 +34,35 @@ export function numericFacts(text: string): string[] {
 }
 
 /**
+ * 只挑「**数量型**数字事实」——守卫真正该盯的那一类。
+ *
+ * 两次实测把假阳性来源暴露得很清楚（都在 `npm run sweep:fidelity` 里）：
+ *   ① `C4-product-copy` 报丢「200」——原文是型号 **X200 智能会议终端**，不是数量；
+ *   ② `C12-paper-abstract` 报丢「3」——原文「3 个指标」，模型写成「三个指标」，事实没丢。
+ *
+ * 所以两道过滤（宁可漏报，不要误报——误报会让用户不再相信这条提示）：
+ *   · **单个数字（1~9）**不收：中文里「3 个」↔「三个」是最常见的合法改写；
+ *   · **紧跟在 ASCII 字母后面的数字**不收：`X200` / `iPhone15` / `5G` / `Wi-Fi 7` 这类是标识符。
+ * 保留：多位数、小数、百分数、带单位的量——真正的数据都在这一类里。
+ */
+export function quantitativeFacts(text: string): string[] {
+  const norm = text
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[．。]/g, (c) => (c === "．" ? "." : c))
+    .replace(/[％]/g, "%")
+    .replace(/[，、]/g, ",");
+  const out = new Set<string>();
+  for (const m of norm.matchAll(/([A-Za-z])?(\d+(?:,\d{3})*(?:\.\d+)?%?)/g)) {
+    const [, letter, raw] = m;
+    if (letter) continue; // 标识符：X200 / iPhone15 / 5G
+    const v = raw.replace(/,/g, "");
+    if (/^\d$/.test(v)) continue; // 单个数字：3 ↔ 三个
+    out.add(v);
+  }
+  return [...out].sort();
+}
+
+/**
  * 产出里**缺失**的数字事实。
  *
  * 判定口径：把两侧都归一成"数字集合"，产出里没有的原文数字即缺失。
@@ -41,9 +70,9 @@ export function numericFacts(text: string): string[] {
  * 反过来 `12.7` 在原文、产出写成 `12.7%` 也算命中，宁可漏报不误报。
  */
 export function missingNumericFacts(source: string, output: string): string[] {
-  const want = numericFacts(source);
+  const want = quantitativeFacts(source);
   if (want.length === 0) return [];
-  const have = new Set(numericFacts(output).map((n) => n.replace(/%$/, "")));
+  const have = new Set(quantitativeFacts(output).map((n) => n.replace(/%$/, "")));
   return want.filter((n) => !have.has(n.replace(/%$/, "")));
 }
 
