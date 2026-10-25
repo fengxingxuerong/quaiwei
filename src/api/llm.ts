@@ -17,6 +17,7 @@ export * from "./llm-judge";
 
 import { humanize, aiScore, checkFidelityLocal, crossChunkCleanup } from "../engine/humanize";
 import { humanizeBestOf } from "../engine/humanize-bestof";
+import { numericFidelityWarning } from "../engine/number-fidelity";
 import { aggregateStages, type PipelineTrace } from "../engine/pipeline-trace";
 import type { StageTrace } from "../engine/humanize-primitives";
 import { ApiConfig, DEEP_MAX_ROUNDS, DEEP_TARGET_SCORE, effectiveKeys } from "./llm-config";
@@ -288,6 +289,26 @@ export async function runHumanize(
         outText = crossChunkCleanup(outText);
         usedApi = true;
         engine = "llm";
+        /**
+         * v0.9.76：数字保真守卫（默认只报不拦，严格保真才回退）。
+         *
+         * 实测出处（2026-10-24 三体裁 × 五模型）：财经快讯那篇，模型把
+         * 「公司总资产达到 126.75 亿元，较上年末上升 6.3%」整句删掉——数字随句子一起没了。
+         * 单轮路径没有深度模式的收稿终审与编造复核，所以补一道**确定性**检查。
+         * 默认只提示：改写成「一成二」这类合理转述不该被判死。
+         */
+        const numWarn = numericFidelityWarning(text, outText);
+        if (numWarn && cfg.strictFidelity) {
+          const r = runLocal(text, intensity, zhuqueMode, genre, cfg.style, local, collectTrace);
+          outText = r.text;
+          bestOf = r.bestOf;
+          trace = r.trace;
+          engine = "local";
+          degrade.push(`数字保真否决：${numWarn} —— 整稿改由本地引擎产出（非 LLM）`);
+          note = "严格保真：LLM 稿丢了原文的数字，已回退本地引擎稿";
+        } else if (numWarn) {
+          note = note ? `${note}；${numWarn}` : numWarn;
+        }
       }
     } catch (e: unknown) {
       // 回退本地引擎时同样尊重择优设置
