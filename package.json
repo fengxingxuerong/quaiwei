@@ -54,6 +54,7 @@
     "setup:hooks": "node scripts/install-hooks.mjs",
     "make:zip": "node scripts/make-zip.mjs",
     "smoke:desktop": "node scripts/smoke-desktop.mjs",
+    "probe:models": "node scripts/probe-sensenova.mjs",
     "preview": "vite preview",
     "test:engine": "vitest run src/engine/humanize.test.ts",
     "test:regress": "tsx scripts/scan-bugs.ts",

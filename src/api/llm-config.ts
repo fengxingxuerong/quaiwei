@@ -100,18 +100,19 @@ export interface ApiConfig {
 }
 
 /* ---------------------- SenseNova 常驻预置 ----------------------
- * 2026-10-19 重新实测（3 Key 套餐，遍历网关全部 7 个在售模型，max_tokens=8000）：
- *   deepseek-v4-flash        ✅ 3.0s  → 默认主力改写
- *   glm-5.2                  ✅ 11.5s → 交叉评判（思考型，max_tokens≥1024 才有 content）
- *   kimi-k3                  ✅ 17.8s → 备选改写（网关强制 temperature=1，chat 已自动适配）
- *   sensenova-6.8-flash-lite ✅ 2.6s  → 兜底备选（同族，多样性差）
- *   deepseek-v4-pro          ❌ 404 model is not found（网关已下线）
- *   sensenova-u1.5-lite      ❌ 404 model is not found（网关已下线）
- *   deepseek-v4.1-flash      ❌ 403 not available in the current token plan（套餐无权限）
- *   deepseek-flash           ❌ 429 限流（配额耗尽）
- * ⚠️ 这份清单会随网关变更而过期。核实办法：`GET {baseUrl}/models` 看在售清单，
- *   再逐个发最小请求确认套餐权限——**在售 ≠ 有权限**（上面两个反例：v4-pro 已下线、
- *   v4.1-flash 在售但 403）。
+ * 2026-10-24 实测复核（3 Key 轮换；工具 scripts/probe-sensenova.mjs，
+ * 完整清单见 docs/sensenova-models-2026-10-24.md）——在售 7 个，可用 5 个：
+ *   deepseek-v4-flash        ✅ 1.9s  → 默认主力改写
+ *   glm-5.2                  ✅ 3.1s  → 交叉评判（思考型，max_tokens≥1024 才有 content）
+ *   kimi-k3                  ✅ 2.0s  → 备选改写（网关强制 temperature=1，chat 已自动适配）
+ *   sensenova-6.8-flash-lite ✅ 1.4s  → 兜底备选（同族，多样性差）
+ *   deepseek-flash           ✅ 1.3s  → 可用，但**容易撞 429**（tpm/rpm 限流）；Key 轮换后即通
+ *   deepseek-v4.1-flash      ❌ 403 not available in the current token plan（在售但套餐无权限）
+ *   sensenova-u1.5-lite      ❌ 404 model is not found（还在列表里，实际已下线）
+ * ⚠️ 这份清单会随网关变更而过期。核实办法：`npm run probe:models`
+ *   （GET {baseUrl}/models 看在售清单，再逐个发最小请求确认权限——**在售 ≠ 有权限**：
+ *   v4.1-flash 在售但 403、u1.5-lite 在列表里但 404；而 deepseek-flash 的 429 只是限流，
+ *   换一把 Key 就通，别用单把 Key 的失败给模型判死）。
  * ⚠️ altModel 指向不可用模型的症状：深度模式首轮「双模型竞争」拿到空输出并白等一轮——
  *   engine 仍为 llm，但 note 里出现「换模型 X：空输出」。且 altModel 不宜与主模型同族
  *   （否则「竞争」只是同温重采样，没有互补价值）。
