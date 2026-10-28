@@ -26,7 +26,8 @@
     "cli"
   ],
   "bin": {
-    "ai-humanizer": "dist-cli/humanize-cli.mjs"
+    "ai-humanizer": "dist-cli/humanize-cli.mjs",
+    "quaiwei-mcp": "dist-cli/quaiwei-mcp.mjs"
   },
   "dsh": {
     "bundle": {
@@ -38,6 +39,7 @@
     "index.js",
     "cordis.patch.yml",
     ".dsh",
+    "SKILL.md",
     "README.md",
     "README_EN.md",
     "LICENSE"
@@ -53,9 +55,11 @@
     "setup:hooks": "node scripts/install-hooks.mjs",
     "make:zip": "node scripts/make-zip.mjs",
     "smoke:desktop": "node scripts/smoke-desktop.mjs",
+    "smoke:mcp": "node scripts/smoke-mcp.mjs",
     "probe:models": "node scripts/probe-sensenova.mjs",
     "compare:models": "node scripts/model-compare.mjs",
     "sweep:fidelity": "node scripts/fidelity-sweep.mjs",
+    "sweep:format": "tsx scripts/format-fidelity-sweep.ts",
     "preview": "vite preview",
     "test:engine": "vitest run src/engine/humanize.test.ts",
     "test:regress": "tsx scripts/scan-bugs.ts",
@@ -70,7 +74,7 @@
     "check:ledger": "tsx scripts/check-ledger-appendonly.ts",
     "check:version": "tsx scripts/check-version-sync.ts",
     "check:regex": "tsx scripts/check-regex-defects.ts",
-    "check:release": "npm run check:version && npm run check:regex && npm run test:cov && npm run test:regress && npm run test:realcase && npm run test:regress12 && npm run test:quality && npm run test:improve && npm run test:calib && npm run test:evidence && npm run check:ledger",
+    "check:release": "npm run check:version && npm run check:regex && npm run test:cov && npm run test:regress && npm run test:realcase && npm run test:regress12 && npm run test:quality && npm run test:improve && npm run test:calib && npm run test:evidence && npm run sweep:format && npm run check:ledger",
     "check:publish": "tsx scripts/zhuque-evidence.ts audit --strict",
     "bench": "tsx scripts/bench.ts",
     "test": "vitest run",

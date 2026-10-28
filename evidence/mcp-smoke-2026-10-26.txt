@@ -1,0 +1,359 @@
+# 对齐落地证据 · 2026-10-26
+
+对应 docs/竞品周报-2026-10-26.md 的对齐清单。① MCP 通道、② 地区用词校正。
+
+## ① MCP 通道
+
+### 单元测试（协议契约，20 例）
+
+```
+npx vitest run src/mcp/server.test.ts
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+```
+
+覆盖：握手版本协商、通知不回包、未知方法 -32601、坏 JSON -32700、seed 默认值、
+固定 seed 复现、数字不被吃、超长转 CLI、variant 透传与非法值报错。
+
+### 打包产物冒烟（npm run smoke:mcp）
+
+```
+✓ initialize · 协议 2025-06-18 · 版本 0.9.81
+✓ tools/list · humanize_text / detect_ai / quality_report
+✓ humanize_text 有产出 · 114 字 → 106 字
+✓ humanize_text 没吃掉数字
+✓ humanize_text 前后分 · 32 → 14
+✓ detect_ai 返回代理分 · 分 71
+✓ variant=zh-TW 换词生效 · 打开软体，改一下预设设定。
+✓ quality_report 有保真一节 · 950 字
+✓ 冒烟 8/8 通过
+```
+
+### 从 tarball 装出来的 bin 跑通（npm pack → npm i → .bin/quaiwei-mcp.cmd）
+
+```
+serverInfo: {name: quaiwei, version: 0.9.81} · 协议 2025-06-18
+改后: 说起来，本季度共发布了 3 个版本。修复了 17 个线上问题，进一步赋能了组织协同。
+分数: 24 -> 6 · 保真: true · stderr 字节: 0 · 退出码 0
+```
+
+### 发布前校验
+
+```
+npm publish --dry-run  →  name ai-humanizer · version 0.9.81 · package 306.1 kB · 10 files · exit 0
+```
+
+未发布：本机无 npm 凭证（npm login 未做）。`npm login && npm publish` 由本人执行。
+
+---
+
+## ② 地区用词校正（--variant zh-TW）
+
+### 引擎测试（16 例）
+
+```
+npx vitest run src/engine/regional-zh.test.ts
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+```
+
+覆盖：默认不动（零漂移）、IT/生活用词、长词优先（视频会议≠影片会议）、数字不动、
+代码块/行内代码/URL 保护、半角标点转全角、数字与英文语境不误伤、摘要文案、词表倒序。
+
+### 真 CLI 跑（同一段 88 字，默认路径 vs --variant）
+
+```
+不带 --variant：
+  顺带一提,团队环绕提质增效开展了系统实践。
+  本季度发布了 3 个软件版本,修复了 17 个问题,进一步助攻了组织联手。
+
+带 --variant zh-TW：
+  顺带一提，团队环绕提质增效开展了系统实践。
+  本季度发布了 3 个软体版本，修复了 17 个问题，进一步助攻了组织联手。
+  打开设定，改一下预设帐号的登入方式，然后重新整理页面。
+
+stderr：ⓘ 地区校正：用词换了 6 处（软件→软体、默认→预设、设置→设定、账号→帐号 等） · 标点 5 处
+```
+
+`--report rep.json` 里逐篇落账：`regional.terms[].{from,to,count}` + `punctuation`。
+非法取值 `--variant zh-HK` → 退出码 1 + 用法（不静默忽略）。
+
+### 顺带抓到一个真缺陷（已修）
+
+MCP 的 `humanize_text` 不传 seed 时，引擎的 `makeRng(seed)` 退回 `Date.now()`，
+同一段 114 字在三个进程里跑出 **101 / 106 / 101 字**三种结果——"固定 seed 可复现"成了空话。
+
+修法：MCP 侧显式给默认种子 20260905（与 CLI `--seed` 一致）。修后同一输入跑 4 个进程：
+
+```
+run 1 len 106 score 14
+run 2 len 106 score 14
+run 3 len 106 score 14
+run 4 len 106 score 14
+```
+
+守卫用例：`不传 seed 时落的是文档里的默认种子`（这条在修之前是红的）。
+
+---
+
+## 全量门禁
+
+```
+npx vitest run     → Test Files 121 passed (121) / Tests 2384 passed (2384)
+npx tsc -b         → exit 0
+npx eslint         → exit 0（src/mcp、regional-zh、academic-check、smoke-mcp、humanize-cli）
+```
+
+---
+
+## ③ 成绩页（SCORECARD.md）
+
+对外一页：能做什么 / 不能做什么 / 已知失败 / 三个尺子 / 一次复现要多久 / 这页怎么维护。
+从 README 顶部第二行链进去。
+
+页面里引用的每条命令，2026-10-26 当天在本机跑过：
+
+```
+npm test                                                  → 2384 passed / 121 files（12~16 秒）
+npm run test:realcase                                     → 硬缺陷 0 / 软提示 0 · 1.7 秒 · exit 0
+npm run sweep:format                                      → 4080 次运行 · 2.4 秒 · exit 0
+npm run test:calib                                        → 0.8 秒 · exit 0（未顶红）
+npm run test:evidence                                     → 0.8 秒 · 认证 0/18、无硬伤
+npm run build:cli && npm run smoke:mcp                    → 0.9 + 0.6 秒 · 冒烟 8/8
+npx vitest run src/engine/number-fidelity.test.ts \
+  src/engine/score-conflict.test.ts                       → 48 passed
+npx vitest run src/engine/regional-zh.test.ts             → 16 passed
+```
+
+写页时改掉的两个自己造的数：
+- 初稿把 `sweep:format` / `test:realcase` 写成"分钟级"，实测 2.4 秒 / 1.7 秒——已改成本机实测值；
+- `npm install` 没计过时，改成"未计时"，没编造秒数。
+
+页面里"已知失败"一节的 6 条全部带出处（外评文档、README 顶部、`test:evidence` 输出、本文件上一节）。
+
+---
+
+## ④ 学术自检（--academic-check）
+
+### 引擎测试（10 例）
+
+```
+npx vitest run src/engine/academic-check.test.ts
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+```
+
+四类阻断各自有用例：引用键被删、引用键凭空出现、数字被吃掉、表格结构被破坏；
+提醒类（断言变重、空查）不阻断。
+
+### 端到端
+
+```
+node dist-cli/humanize-cli.mjs paper.md --academic-check
+  → stdout: 报告（结论 / 阻断项 / 提醒 / 这轮查了什么 / 边界）
+  → stderr: ✅ READY：机器没看见阻断项（退出码 0）
+  → exit=0
+```
+
+### 探测：这个门有多难被触发
+
+10 类学术片段（`\cite`/`\ref`/上下标/全角数字/区间/单位/列表/公式）× 3 文风 × 2 强度 × 3 种子
+= **180 组，阻断项 0 条**。结论写进 docs/academic-check.md 第 4 节：守卫确实守住了，
+但这条门在当前路径上很少响——它的价值是"以后改坏了会响"。
+
+未验证到：退出码 2 的**端到端**路径。阻断逻辑由单元测试覆盖，但因为本地引擎在这 180 组里
+一次阻断项都没产出，CLI 级只验到 READY=0 与"没法跑"=1。这条已写进文档「已知没做的」。
+
+**第二轮补上了**（`--against`，审外部改写稿）：
+
+```
+node dist-cli/humanize-cli.mjs paper.md --academic-check --against bad.md
+exit=2
+✗ NOT READY：5 个阻断项（退出码 2）
+
+- 产出缺少原文中的数字：4.2个百分点、91.2%
+- 结构：表格分隔行不丢 —— 原文 1 条 → 产出 0 条
+- 结构：表格行列数守恒 —— 表头+数据行 原文 2 → 产出 0
+- 结构：表格行连续段守恒 —— 原文段长 [3] → 产出 []
+- 引用键丢失（\cite）：wang2024
+
+# 换成只动措辞、数字引用都留着的改写稿：
+node dist-cli/humanize-cli.mjs paper.md --academic-check --against good.md
+exit=0
+✅ READY：机器没看见阻断项（退出码 0）
+```
+
+这条门从此有实战场景：审 LLM 深度模式的产出、合作者改的版本——那才是真会丢数字的地方。
+
+### MCP 侧也开了口子（`academic_report`）
+
+第四把工具：给原文与一份改写稿，回 READY / NOT READY + 阻断项。
+
+```
+✓ tools/list · humanize_text / detect_ai / quality_report / academic_report
+✓ academic_report 判 NOT READY · 阻断 2 项
+✓ 冒烟 9/9 通过
+```
+
+
+---
+
+## ⑤ 索引榜投稿
+
+**未提交**：本机无 GitHub 凭证（`gh` 未装、`GH_TOKEN` 未设）。材料已就绪：
+[docs/索引投稿.md](../docs/索引投稿.md) 里是他们的 issue 格式（照现有 issue #1 抄的）、
+可直接贴的英文正文、以及三条"别写什么"（不写过检率、不写星数、必须写 disclosure）。
+
+---
+
+## 第三轮：合流验证（批量 / stdin / 构建 / 其余门禁）
+
+### 批量 + 地区校正（5 个文件的目录）
+
+```
+[1/5] ⓘ 地区校正：用词换了 3 处（软件→软体、设置→设定、登录→登入） · 标点 0 处
+[1/5] ✅ a.txt：54→32（12ms，31→29 字）
+[2/5] ⓘ 地区校正：用词换了 4 处（软件→软体、默认→预设、账号→帐号、刷新→重新整理）
+[2/5] ✅ b.txt：26→27（1ms，20→22 字）
+```
+
+产出对得上（a.txt）：`顺带一提，本季度发布了 3 个软体版本。打开设定即可登入。`
+`--report` 里逐篇落账：`a.txt -> terms=3 punct=0` / `b.txt -> terms=4` / 无命中的两篇 `terms=0`。
+
+### stdin 原文 + `--against` 文件
+
+```
+node dist-cli/humanize-cli.mjs --academic-check --against bad.md < paper.md
+exit=2
+✗ NOT READY：2 个阻断项
+- 产出缺少原文中的数字：4.2个百分点
+- 引用键丢失（\cite）：wang2024
+```
+
+### 构建（`npm run build`）
+
+```
+无未提交改动时：拒绝盖源码指纹，退出 1
+  ❌ 源码指纹盖章失败：工作区有未提交改动，产物不对应任何一次提交。
+有未提交改动时 + QUAIWEI_ALLOW_DIRTY_BUILD=1：exit 0
+  ✓ built in 803ms
+  🔒 源码指纹已盖章：d4c41ac080c110a5…（192 个文件，HEAD=3919dad，工作区有未提交改动）
+  ⚠️ 已放行脏产物。章里记 dirty=true，verify-pruned 会提示别发布。
+```
+
+这条 guard 解释了为什么 `check:version` 的产物落点（`electron-dist/.../resources/app/package.json`）
+只能等 commit + 重打桌面包之后才会更新——本轮没有绕过它。
+
+### 其余门禁（全部 exit 0）
+
+```
+npm run test:cov      → Stmt 97.6% / Branch 94.5% / Func 98.5% / Lines 98.4%（阈值 94/91/95/95）
+npm run check:regex   → 无「字符类提前闭合」写法
+npm run test:regress  → fails=0 dfFails=0 v4=0 fp=0 …
+npm run test:quality  → 强度 1.0 零泄漏、零省略号、词表配对全通
+npm run check:ledger  → HEAD 18 行 → 待提交 18 行，只追加 0 行
+```
+
+唯一红着的仍是 `check:version`：`electron-app/package.json` 与 CHANGELOG 停在 0.9.80、
+产物落点同样 0.9.80 —— 这三处要一次发版动作一起做（且产物那处必须 commit 后重打包）。
+
+## 版本号：没动
+`npm run check:version` 在我动手**之前**就是红的，现状：
+
+```
+✅ 根 package.json            0.9.81
+❌ electron-app/package.json  0.9.80
+✅ README / 使用说明 / 两个 .bat / SKILL.md  0.9.81
+❌ CHANGELOG.md 本版章节       0.9.80
+❌ 产物 resources/app/package.json  0.9.80
+```
+
+三项里两项是源码落点（改一行即可），一项是 `electron-dist/` 里的打包产物——
+只有重新打桌面包才会更新。本次没有 bump，等你决定发版时一起做。
+
+---
+
+## 第四轮：网页版接入 + 浏览器验收
+
+「台湾用词」开关进网页版（专业视图，与「朱雀增强」同一排 chip）。
+判定逻辑没变：挂在 `humanize` 之后做后处理，默认 `none` 时一段代码都不执行。
+
+### 真浏览器验收（Playwright 1.64.1 + 本机 Chrome，dev server 5173）
+
+```
+PASS  chip 在专业视图里可见
+PASS  点一下变开（active）
+PASS  产出含「软体」
+PASS  产出含「预设」或「帐号」
+PASS  产出不含「软件」
+PASS  控制台无报错
+OUTPUT: 打开软体，改一下预设帐号，然后重新整理页面。这项设定很简单，体验。
+exit=0
+```
+
+截图（1280×900）：
+- `evidence/ui-variant-1-chip-off.png`（开关关着）
+- `evidence/ui-variant-2-chip-on.png`（点开变 active）
+- `evidence/ui-variant-3-output.png`（产出与本次运行提示）
+
+### 同一条链上的单元测试
+
+```
+src/App.test.tsx     ── 开关关着：产出逐字照搬引擎结果（零漂移）
+                     └─ 开关开着：产出换成台湾用词，提示里写清改了哪几处
+src/store.test.ts    ── 默认 none / zh-TW 往返 / 坏值一律落 none（不猜地区）
+npx vitest run src/App.test.tsx src/store.test.ts → 79 + 62 全绿
+```
+
+### 浏览器里顺带核到的一件事
+
+提示里写着「多候选择优：8 稿中挑最优（淘汰 0 稿，中选种子 2020967955）」——
+`humanize-bestof.ts` 的 `base = opts.seed ?? Date.now()`，而网页版不传 seed。
+所以**网页版每次跑出来的结果不完全一样**，它把中选种子报出来供回填（CLI/MCP 则默认固定种子）。
+这是既有设计，不是本轮引入的缺陷；已写进 SCORECARD 第 1 节，免得"确定性"这句被误读成网页版也稳定。
+
+---
+
+## 第五轮：学术自检进网页版 + 浏览器验收
+
+专业视图工具栏加了「学术自检」按钮。有产出就审产出（引擎不参与改写，模拟"把别的模型改写稿
+粘进产出框"），没有产出就先本地按 academic 文风跑一遍再审——与 MCP 的 `academic_report`
+同一个口径。面板只列阻断项/提醒项，不碰稿子。
+
+### 真浏览器验收（Playwright + 本机 Chrome）
+
+输入一篇带 `\cite{wang2024}` 与 `4.2 个百分点` 的论文片段，去味后把产出框里的内容换成
+一段丢了引用与数字的改写稿，再点「学术自检」：
+
+```
+PASS  面板出现
+PASS  判 NOT READY
+PASS  点名丢了引用键        （wang2024）
+PASS  点名丢了数字          （4.2）
+PASS  写清对比方式          （审现成产出）
+PASS  带「不等于审稿人会收」
+PASS  点「收起」后面板消失
+PASS  控制台无报错
+exit=0
+```
+
+截图：`evidence/ui-academic-1-not-ready.png`、`evidence/ui-academic-2-closed.png`。
+
+### 单元测试
+
+```
+src/components/AcademicPanel.test.tsx  4 例：红字结论 / READY 仍带免责那句 / 两个回调 / 「这轮查了什么」
+src/App.test.tsx                      +1 例：产出丢引用与数字 → 面板判 NOT READY
+src/store.test.ts                      1 例：地区开关坏值落 none
+npx vitest run → 2389 passed / 122 files
+```
+
+### 一次自伤与修复（留个记录）
+
+给 App.test.tsx 加用例时，`old_string` 撞到了下一个用例的 `it(` 开头，把那个用例的
+函数头吃掉了，文件一度跑不起来。修法是补回那行 `it(...)`，随后 `tsc -b` 与全量测试都恢复正常。
+教训写在这里：改测试文件用「整段替换」比「插一句」安全。
+
+
+
+

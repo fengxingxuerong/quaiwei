@@ -289,7 +289,10 @@ export function isProtectedBlock(para: string): boolean {
     isFencedBlock(para) ||
     isMarkdownStructLine(para) ||
     isIndentedBlock(para) ||
-    isFrontmatterBlock(para)
+    isFrontmatterBlock(para) ||
+    // v0.9.81：含 setext 下划线的段（`标题⏎===`）也必须整段跳过——
+    // 下游 splitSentences+join("") 会把下划线粘成标题的一部分
+    isSetextBlock(para)
   );
 }
 
@@ -330,6 +333,47 @@ const INDENT_RE = /^(?: {4}|\t)/;
 /** 段首是 4 空格 / tab —— 缩进代码块或列表项续行，整块冻结 */
 export function isIndentedBlock(para: string): boolean {
   return INDENT_RE.test(para);
+}
+
+/* ------------------------------------------------------------------ *
+ * v0.9.81：软结构两件——续行 / setext 下划线
+ *
+ * 起因（2026-10-26 格式保真扫查 `scripts/format-fidelity-sweep.ts` 实测，
+ * 用户路径 `humanize()`，**默认档 0.3 就中招**）：
+ *   · 列表项续行被拉成独立段落并丢掉缩进：
+ *     `- 第一项…⏎  续行内容…⏎- 第二项` → 续行**前后各多一个空行**、前导空格被 trim
+ *     ⇒ 原文是一个紧凑列表项段落，产出变成松散列表（CommonMark 语义变了）。
+ *   · setext 下划线被拆开，甚至被粘到标题尾巴上：
+ *     `标题一⏎===` → 段落层插空行 ⇒ 标题不再是标题；
+ *     若下游结构层拿到这段，`splitSentences + join("")` 会把 `===` 直接拼成 `标题一===`。
+ *
+ * 与前四类形态的分工（`isProtectedBlock` 上方那段注释）：围栏/缩进块是「不许改内容」，
+ * 紧凑结构行是「内容照改、不许插空行」，这两件是「**必须紧贴前一行**」——
+ * 判据只落在分隔符与缩进上，不碰内容。
+ * ------------------------------------------------------------------ */
+
+/** 1~3 空格开头的续行（4 空格以上归 `isIndentedBlock`；标记行本身归 mdStruct） */
+const CONTINUATION_RE = /^ {1,3}\S/;
+
+export function isContinuationLine(para: string): boolean {
+  return CONTINUATION_RE.test(para) && !isMarkdownStructLine(para);
+}
+
+/** setext 下划线行：`===` / `---`（`---` 同时也是 frontmatter 判据认得的那一行） */
+const SETEXT_UNDERLINE_RE = /^(?:=+|-+)[ \t]*$/;
+
+export function isSetextUnderline(para: string): boolean {
+  return SETEXT_UNDERLINE_RE.test(para);
+}
+
+/**
+ * 段内含 setext 下划线（`标题⏎===`）——该段必须整段跳过下游层。
+ *
+ * 为什么不能只靠分隔符：下游各层跑的是 `splitSentences(p)` + `join("")`，
+ * 而 `splitSentences` 把 `\n` 当句子边界 ⇒ 下划线会被拼到标题尾巴上（`标题一===`）。
+ */
+export function isSetextBlock(para: string): boolean {
+  return /\n(?:=+|-+)[ \t]*$/m.test(para);
 }
 
 /* ------------------------------------------------------------------ *

@@ -7,7 +7,9 @@ import {
   DEEP_MAX_ROUNDS,
   DEEP_TARGET_SCORE,
 } from "./api/llm";
-import { fingerprintCheck, checkFidelityLocal, aiScore } from "./engine/humanize";
+import { fingerprintCheck, checkFidelityLocal, aiScore, humanize } from "./engine/humanize";
+import { applyRegionalVariant, formatRegionalSummary } from "./engine/regional-zh";
+import { academicAudit, type AcademicAudit } from "./engine/academic-check";
 import type { FingerprintReport, ScoreBreakdown } from "./engine/humanize";
 import { detectAI, type DetectReport } from "./engine/detector";
 import { detectZhuque } from "./engine/zhuque";
@@ -21,6 +23,8 @@ import {
   saveDetector,
   loadZhuqueMode,
   saveZhuqueMode,
+  loadVariant,
+  saveVariant,
   savePplEnabled,
   hasSecureStore,
   persistApiConfig,
@@ -41,6 +45,7 @@ import {
   type DetectorPreset,
 } from "./store";
 import { setProtectedTerms } from "./engine/term-protect";
+import { parseApiConfigLink, readApiConfigParam } from "./api-config-link";
 import { explainChanges, type ExplainItem } from "./engine/explain";
 import { copyText } from "./api/zhuque";
 import { SettingsModal } from "./components/SettingsModal";
@@ -55,6 +60,7 @@ import { CalibLabModal } from "./components/CalibLabModal";
 import { BatchModal } from "./components/BatchModal";
 import { LocalDetectPanel } from "./components/LocalDetectPanel";
 import { ExplainPanel } from "./components/ExplainPanel";
+import { AcademicPanel } from "./components/AcademicPanel";
 import { ReviewPanel } from "./components/ReviewPanel";
 import { reviewText, type ReviewReport } from "./engine/review";
 import { cleanInputJunk } from "./engine/input-hygiene";
@@ -134,6 +140,10 @@ export default function App({
   const [output, setOutput] = useState(() => restoredDraft?.output ?? "");
   const [intensity, setIntensity] = useState<number>(loadIntensity());
   const [zhuqueMode, setZhuqueMode] = useState<boolean>(loadZhuqueMode());
+  // v0.9.81：地区用词校正开关（pro 视图里的 chip）。默认 "none"
+  const [variant, setVariant] = useState<"none" | "zh-TW">(loadVariant());
+  // v0.9.81：学术自检结果（pro 视图面板）。null = 面板没开
+  const [academic, setAcademic] = useState<{ audit: AcademicAudit; mode: string } | null>(null);
   const [genreOverride, setGenreOverride] = useState<
     "main" | "narrative" | "dialogue" | "humanHand" | null
   >(null);
@@ -301,6 +311,20 @@ export default function App({
         true, // collectTrace：本地引擎路径下收集逐步执行记录
       );
       if (runSeqRef.current !== seq) return; // 结果已被作废（用户点了清空/导入了新稿）：整轮丢弃
+      /**
+       * v0.9.81：地区用词校正（开了才跑）。后处理，不进去味管线——引擎与标定都不动。
+       * 改的是 r.text 本体：下游的检测、指纹、历史、复制都读同一份产出，
+       * 不出现"界面上是软体、历史里是软件"这种两个版本并存的事。
+       */
+      let regionalNote = "";
+      if (variant !== "none") {
+        const regional = applyRegionalVariant(r.text, variant);
+        if (regional.text !== r.text) {
+          r.text = regional.text;
+          r.after = aiScore(r.text);
+          regionalNote = ` · 地区用词已校正（${formatRegionalSummary(regional)}）`;
+        }
+      }
       setTrace(r.trace ?? null);
       setLastRun({
         bestOfTried: r.bestOf?.tried,
@@ -343,7 +367,7 @@ export default function App({
         }
       }
       const msg = buildHumanizeNote({ r, input, din, dout, zr, detectorNote });
-      setNote(msg);
+      setNote(msg + regionalNote);
       // 保存到历史记录
       const entry = makeHistoryEntry(
         input,
@@ -455,6 +479,44 @@ export default function App({
     // eslint 依赖仅为稳定值（惰性 state 首渲染即定），不需要重跑
   }, [restoredDraft]);
 
+  // v0.9.81 一键配置：启动链接带 #api=<base64url 配置> 时自动填入并保存。
+  // 「一键配置API.bat」收集完三项（网关/Key/模型）后带着 hash 打开页面，这里消费。
+  // 走与设置面板相同的 persistApiConfig 落盘（桌面版自动进 safeStorage），然后立刻
+  // 抹掉 hash——凭证不留在地址栏与历史里。hash 已清，StrictMode 双跑是空操作。
+  useEffect(() => {
+    const raw = readApiConfigParam(window.location.hash);
+    try {
+      if (raw !== null && window.history?.replaceState) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    } catch {
+      // file:// 等环境 replaceState 可能被拒：只影响地址栏观感，不影响配置
+    }
+    if (raw === null) return;
+    const link = parseApiConfigLink(raw);
+    if (!link) {
+      setNote("⚠️ 启动链接带了 API 配置但无法识别（可能不完整）。请重新运行「一键配置API.bat」。");
+      return;
+    }
+    void (async () => {
+      const merged: ApiConfig = {
+        ...loadApi(),
+        baseUrl: link.baseUrl,
+        apiKey: link.apiKey,
+        model: link.model,
+        enabled: true,
+      };
+      if (link.judgeModel) merged.judgeModel = link.judgeModel;
+      if (link.altModel) merged.altModel = link.altModel;
+      await persistApiConfig(merged);
+      setApi(merged);
+      setNote(
+        `✅ 已一键配置 API：模型 ${link.model} @ ${link.baseUrl}。去味时将调用该模型（调用失败会自动回退本地引擎）；可在「设置」里修改。`,
+      );
+    })();
+    // 只在挂载时消费一次；hash 在 effect 内已被清掉，依赖留空是刻意的
+  }, []);
+
   // 草稿防抖落盘：每次键入都写会让长文手感变卡（与强度滑块同一手法）
   const draftSaveRef = useRef<number | undefined>(undefined);
   useEffect(() => {
@@ -494,12 +556,30 @@ export default function App({
     setInput(v);
     setExplainItems(null); // 原文一改，旧的 diff 归因就作废了
     setReview(null); // 痕迹地图也是按旧原文出的，一并作废
+    setAcademic(null); // 学术判定同样是按旧原文出的
   }, []);
   const handleOutputChange = useCallback((v: string) => {
     setOutput(v);
     setExplainItems(null); // 手工润色后，清单对不上新输出
+    setAcademic(null); // 判定对应的是旧产出
   }, []);
   const openSettings = useCallback(() => setShowSettings(true), []);
+
+  /**
+   * v0.9.81：学术自检。有产出就审产出（引擎不参与改写），没产出就先按 academic 文风
+   * 在本地跑一遍再审——与 MCP 的 academic_report 同一个口径。
+   * 判定全在 engine 里，这里只管把两份文本凑齐。
+   */
+  function handleAcademicCheck() {
+    if (!input.trim()) return;
+    const hasOutput = Boolean(output.trim());
+    const candidate = hasOutput ? output : humanize(input, { style: "academic", intensity });
+    setAcademic({
+      audit: academicAudit(input, candidate),
+      mode: hasOutput ? "审现成产出（引擎未参与改写）" : "本地引擎按 academic 文风改写后自检",
+    });
+    setReview(null); // 两块面板叠在一起会打架
+  }
 
   function handleClear() {
     cancelPendingRun(); // 在途任务作废：清空后旧产出不许再写回
@@ -713,6 +793,34 @@ export default function App({
             🛡 朱雀增强
           </label>
         )}
+        {!simple && (
+          <label
+            className={`mode-tag ${variant === "zh-TW" ? "active" : ""}`}
+            title="台湾用词：软件→软体、信息→资讯，顺手把中文里的半角标点转全角。不做简繁转换（字形请过 OpenCC），代码块与链接不动"
+            style={
+              variant === "zh-TW"
+                ? {
+                    color: "#4fd1c5",
+                    borderColor: "rgba(79, 209, 197, 0.5)",
+                    background: "rgba(79, 209, 197, 0.1)",
+                    cursor: "pointer",
+                  }
+                : { cursor: "pointer" }
+            }
+          >
+            <input
+              type="checkbox"
+              checked={variant === "zh-TW"}
+              onChange={(e) => {
+                const v = e.target.checked ? "zh-TW" : "none";
+                setVariant(v);
+                saveVariant(v);
+              }}
+              style={{ display: "none" }}
+            />
+            🇹🇼 台湾用词
+          </label>
+        )}
         <button className="primary" onClick={handleHumanize} disabled={loading}>
           {loading ? "处理中…" : "去味"}
         </button>
@@ -723,6 +831,14 @@ export default function App({
           title="只看不看改：列出第几句有 AI 味、命中哪类特征、建议怎么动"
         >
           审题
+        </button>
+        <button
+          className="ghost"
+          onClick={handleAcademicCheck}
+          disabled={!inputHasText}
+          title="学术自检：数字/单位、引用键（\cite/\ref/[@key]）、结构、断言变重、残留套话。有产出就审产出，没有先本地按学术文风跑一遍。不判论证对不对"
+        >
+          学术自检
         </button>
         <button className="ghost" onClick={copy} disabled={!output}>
           复制
@@ -911,6 +1027,18 @@ export default function App({
 
       {!simple && explainItems && (
         <ExplainPanel items={explainItems} onClose={() => setExplainItems(null)} />
+      )}
+
+      {!simple && academic && (
+        <AcademicPanel
+          audit={academic.audit}
+          mode={academic.mode}
+          onClose={() => setAcademic(null)}
+          onRun={() => {
+            setAcademic(null);
+            void handleHumanize();
+          }}
+        />
       )}
 
       {/* 审题面板不藏进简洁档——它就是给"只想看看问题在哪"的人用的 */}

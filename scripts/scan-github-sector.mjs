@@ -1,29 +1,54 @@
-// 一次性：从 GitHub HTML 抓 star / 最后 commit 时间（绕开 api.github.com 限额）
+// 扫同类项目的 star / 最后提交（走 GitHub HTML + commits.atom，绕开 api.github.com 的 60 次/时限额）
+//
+// 用法：
+//   node scripts/scan-github-sector.mjs          行式输出，人看
+//   node scripts/scan-github-sector.mjs --md     输出 markdown 表，可直接贴进 README / 竞品周报
+//   node scripts/scan-github-sector.mjs --top 20 只出前 20 条
+//
+// 免责：star 是存量不是增速，GitHub 没有公开的 star 增量接口，本脚本也不估。
+// 单个项目取不到（限流 / 改名 / 转私有）不会拖垮整轮，silent 跳过。
 import https from "node:https";
 
+// 榜单口径：AI 文本去味 / slop 清理 / 反检测这一类。改这里就是改口径，别在别处另开一份名单。
 const REPOS = [
+  // 头部（英文为主）
   "blader/humanizer",
-  "op7418/Humanizer-zh",
   "hardikpandya/stop-slop",
-  "epoko77-ai/im-not-ai",
-  "lynote-ai/humanize-text",
-  "Nanako0129/sepia",
+  "petergyang/no-ai-slop",
+  "AhmadHassan-BTed/Turnitout-Humanizer",
+  // 中文 / 繁体
+  "op7418/Humanizer-zh",
+  "KKKKhazix/human-writing",
   "larashero3-dotcom/lieflat-less-ai-tone",
-  "iniwap/AIWriteX",
   "MrGeDiao/shuorenhua",
-  "AIScientists-Dev/academic-humanizer",
+  "iniwap/AIWriteX",
+  "chi111i/BypassAIGC",
+  "hexiecs/talk-normal",
   "Raymondhou0917/speak-human-tw",
-  "redbaronyyyyy-eng/humanizer-zh-academic",
-  "Hyacehila/humanizer-zh-next",
-  "qoqu/anti-zhuque",
-  "weiyinerzui/humanize-cn",
-  "pengong101/ai-humanizer-cn",
   "LifelongLazyLearner/qu-ai-wei",
   "baibanbao/qu-ai-wei",
-  "petergyang/no-ai-slop",
-  "KKKKhazix/human-writing",
+  "swaylq/humanize-chinese",
+  "weiyinerzui/humanize-cn",
+  "pengong101/ai-humanizer-cn",
+  "qoqu/anti-zhuque",
+  "redbaronyyyyy-eng/humanizer-zh-academic",
+  "Hyacehila/humanizer-zh-next",
+  "junbolian/Academic-Humanizer",
+  "orange2ai/renwei-writing",
+  "OUBIGFA/De-AI-Prompt-Enhancer-Writer-Booster-SKILL",
+  "hylarucoder/ai-flavor-remover",
+  // 有独立程序（非 skill）
+  "lynote-ai/humanize-text",
+  "sgaofen/humanizer-local-model",
+  "seyedehsanhadi/sloptrim",
+  "humanpen/humanpen-mcp",
+  "Nanako0129/sepia",
+  "AIScientists-Dev/academic-humanizer",
+  "epoko77-ai/im-not-ai",
+  "ilyautov/humanizer-ru",
+  "devswha/patina",
   "zenstory-ai/oh-story-claudecode",
-  "hexiecs/talk-normal",
+  // 本仓
   "fengxingxuerong/quaiwei",
 ];
 
@@ -47,20 +72,28 @@ function fetchRaw(host, path) {
   });
 }
 
+function firstMatch(html, patterns) {
+  for (const p of patterns) {
+    const m = html.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 async function repo(full) {
   let stars = -1,
     pushed = "?",
     forks = -1;
   try {
     const html = await fetchRaw("github.com", "/" + full);
-    const m = html.match(/stargazerCount":(\d+)/);
-    if (m) stars = +m[1];
-    const f = html.match(/forkCount":(\d+)/);
-    if (f) forks = +f[1];
+    const s = firstMatch(html, [/stargazerCount":(\d+)/, /id="repo-stars-counter-star"[^>]*title="([\d,]+)"/]);
+    if (s) stars = +String(s).replace(/,/g, "");
+    const f = firstMatch(html, [/forkCount":(\d+)/, /id="repo-network-counter"[^>]*title="([\d,]+)"/]);
+    if (f) forks = +String(f).replace(/,/g, "");
     const arc = html.match(/"archivedAt":\s*"?([^",}\]]+)/);
     if (arc) pushed = "ARCHIVED " + arc[1].slice(0, 10);
   } catch {
-    // 单个项目取不到（限流 / 重定向 / 改名）不该拖垮整轮，silent 跳过后留 stars=-1
+    // 单个项目取不到不该拖垮整轮，silent 跳过后留 stars=-1
   }
   if (pushed === "?") {
     try {
@@ -74,6 +107,11 @@ async function repo(full) {
   return { full, stars, forks, pushed };
 }
 
+const argv = process.argv.slice(2);
+const asMarkdown = argv.includes("--md");
+const topIdx = argv.indexOf("--top");
+const top = topIdx >= 0 ? Number(argv[topIdx + 1]) || 0 : 0;
+
 const out = [];
 for (let i = 0; i < REPOS.length; i += 6) {
   const batch = REPOS.slice(i, i + 6).map(repo);
@@ -81,4 +119,18 @@ for (let i = 0; i < REPOS.length; i += 6) {
   out.push(...rs.filter(Boolean));
 }
 out.sort((a, b) => b.stars - a.stars);
-for (const r of out) console.log(`${String(r.stars).padStart(7)} | ${r.pushed} | f=${String(r.forks).padStart(6)} | ${r.full}`);
+const rows = top > 0 ? out.slice(0, top) : out;
+
+if (asMarkdown) {
+  console.log(`抓取时间：${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`);
+  console.log("");
+  console.log("| 项目 | ★ | Fork | 最后提交 |");
+  console.log("|---|---:|---:|---|");
+  for (const r of rows) {
+    console.log(`| [${r.full}](https://github.com/${r.full}) | ${r.stars} | ${r.forks < 0 ? "—" : r.forks} | ${r.pushed} |`);
+  }
+} else {
+  for (const r of rows) {
+    console.log(`${String(r.stars).padStart(7)} | ${r.pushed} | f=${String(r.forks).padStart(6)} | ${r.full}`);
+  }
+}

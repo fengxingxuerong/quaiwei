@@ -55,6 +55,9 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--report <file>` | JSON 路径 | 逐篇运行报告 |
 | `--explain` | 开关 | 附「为什么这么改」清单：逐条标注属于哪类规则、依据哪张表（事后反查，判不准的标「推断」） |
 | `--detect-only` | 开关 | **审题模式**：只输出「AI 味痕迹地图」（第几句、风险多少、命中哪类特征、该怎么改），**一个字都不改、不落盘**。改之前先看一遍用它；不需要 API Key |
+| `--variant` | `none`（默认）\| `zh-TW` | 台湾用词校正：换词（软件→软体、信息→资讯）+ 半角标点转全角。**不做简繁转换**，输入简体、输出简体；代码块与链接不动 |
+| `--academic-check` | 开关 | **学术自检**：不落盘，只打判定报告（数字/单位、引用键、结构、断言词、残留套话）。退出码 0=READY / 2=NOT READY / 1=没法跑。默认按 `academic` 文风跑 |
+| `--against` | 文件路径 | 配合 `--academic-check`：拿这份**外部改写稿**去比原文，引擎不参与改写（审 LLM 产出 / 别人改的版本）。这条路径最容易真的丢数字与引用 |
 | `--api` | 开关 | 走 LLM 深度闭环（否则纯本地引擎） |
 | `--base-url <url>` | 绝对地址 | 网关地址；**不要**填 UI 里的 `/sensenova/v1` 相对路径 |
 | `--model` / `--judge-model` / `--alt-model` | 模型名 | 主改写 / 交叉评判 / 备选改写 |
@@ -72,6 +75,16 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--recursive` | 开关 | 目录扫描进子目录（默认不进；隐藏目录一律跳过） |
 | `--jobs <n>` | ≥1 | `--api` 模式并发路数（本地引擎单线程，给了也只提示忽略） |
 | `--dry-run` | 开关 | 只列出将处理哪些文件（含跳过原因），不建目录不落盘 |
+
+## 作为 MCP 工具（v0.9.81）
+
+同仓还有一个 MCP 服务端（`dist-cli/quaiwei-mcp.mjs`，bin 名 `quaiwei-mcp`），把同一套本地引擎
+包成三个工具：`humanize_text`（回改后正文）、`detect_ai`（只读自检）、`quality_report`
+（去味 + 逐条改动 + 结构/数字保真）。能接 MCP 的客户端（Claude Code、Claude Desktop、
+Cursor 等）**优先走这条路**——agent 拿到的是改后正文，不必自己按规则复述一遍。
+
+MCP 里只认 `intensity` / `style` / `seed` / `zhuque` 四个字段；`--api`（LLM 深度模式）、
+外部检测器送检、批量目录这些 MCP 都不支持，仍走下面的 CLI。装法与边界见 `docs/mcp-server.md`。
 
 ## 边界（**不要越界承诺**）
 

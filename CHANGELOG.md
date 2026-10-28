@@ -2,6 +2,33 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.81 更新（MCP 服务端 / 地区用词 / 学术自检 / 格式保真两件，2026-10-26）
+
+### 一、这一版加了什么
+
+- **MCP 服务端（新 bin `quaiwei-mcp`）**：Claude Code / Claude Desktop / Cursor 把本仓当 MCP
+  服务端直接调，四个工具 `humanize_text` / `detect_ai` / `quality_report` / `academic_report`。
+  seed 显式给默认值——引擎不传 seed 会退回 `Date.now()`，同一段文本三个进程跑出 101/106/101 字
+  的"跨进程不可复现"就是这么来的（SCORECARD 第 3 节在案），现与 CLI `--seed` 同默认、逐字一致。
+  冒烟：`npm run smoke:mcp` 对**打包产物**跑真协议 9/9；配置与边界见 `docs/mcp-server.md`。
+- **地区用词校正 `--variant zh-TW`**：后处理挂在引擎之后（默认 `none` 一段代码都不执行，
+  产出与 v0.9.80 逐字相同），换「软件→软体」一类无歧义词 + 半角标点转全角；
+  **不做简繁转换**。CLI、网页版专业视图开关、批量面板三处同一口径。见 `docs/regional-zh.md`。
+- **学术自检 `--academic-check`**：不落盘，只判能不能投——数字/单位、引用键、结构、
+  断言变重、残留套话；退出码 0=READY / 2=NOT READY / 1=没法跑。审别人改过的稿加
+  `--against`。MCP 侧是 `academic_report`，界面有「学术自检」面板。见 `docs/academic-check.md`。
+- **格式保真两件**（`sweep:format` 扫查实测抓到）：列表项**续行**被拆成独立段并丢缩进、
+  setext 下划线（`标题⏎===`）被拆开或粘到标题尾巴上。守卫落在分隔符与缩进上，内容照常去味；
+  4080 次全量运行退出码 0（`npm run sweep:format`，已纳入 `check:release`）。
+- **打包**：`files` 白名单补入 `SKILL.md`；`bin` 增加 `quaiwei-mcp`；`build-cli.mjs` 改双产物
+  （humanize-cli / quaiwei-mcp）。
+
+### 二、门禁
+
+全量 **2405 用例 / 123 文件**全绿；test:cov / test:regress / test:realcase / test:regress12 /
+test:quality / test:improve / test:calib / test:evidence / sweep:format / check:ledger /
+check:regex 全过；tsc / eslint 干净；版本号九处落点由 `check:version` 锁平。
+
 ## v0.9.80 更新（npm 首发前置：去掉会让每个使用者看到警告的 prepare，2026-10-25）
 
 ### 一、问题（实测发现，不是猜的）

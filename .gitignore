@@ -57,6 +57,13 @@ artifacts/judge-calib/*
 artifacts/human-corpus/*
 !artifacts/human-corpus/*.ts
 !artifacts/experiments/
+# 十篇小说规模测试（2026-10-28）：脚本与现场日志进版本控制，语料与产物（10 万字 + 三档输出）忽略
+!artifacts/novel-test-1028/
+artifacts/novel-test-1028/*
+!artifacts/novel-test-1028/*.mjs
+!artifacts/novel-test-1028/*.ts
+!artifacts/novel-test-1028/*.md
+!artifacts/novel-test-1028/specs.json
 .tmp-p1/
 .tmp-submit/
 .tmp-ppl-cache/

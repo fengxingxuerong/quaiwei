@@ -378,6 +378,23 @@ export function saveZhuqueMode(v: boolean): void {
   localStorage.setItem(K_ZQ, String(v));
 }
 
+/* ------------------------------------------------------------------ *
+ * v0.9.81：地区用词校正（界面开关）。
+ * 只存 "none" / "zh-TW" 两个值；读坏了落 "none"——不认识的取值一律当没开，
+ * 别拿一个猜出来的规则去改用户的稿子。
+ * ------------------------------------------------------------------ */
+const K_VARIANT = "aihumanizer.variant";
+
+export type UiVariant = "none" | "zh-TW";
+
+export function loadVariant(): UiVariant {
+  return localStorage.getItem(K_VARIANT) === "zh-TW" ? "zh-TW" : "none";
+}
+
+export function saveVariant(v: UiVariant): void {
+  localStorage.setItem(K_VARIANT, v === "zh-TW" ? "zh-TW" : "none");
+}
+
 /* ------------------------------------------------------------------
    v0.9.48 视图模式：简洁 / 专业
    ------------------------------------------------------------------

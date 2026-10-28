@@ -22,6 +22,7 @@ import {
 } from "./store";
 import { DEFAULT_API } from "./api/llm-config";
 import { DEFAULT_DETECTOR } from "./api/detector";
+import { encodeApiConfigLink } from "./api-config-link";
 
 const {
   runHumanizeMock,
@@ -221,6 +222,56 @@ describe("App 去味闭环", () => {
     expect(getByText(/使用本地引擎去味/)).toBeTruthy();
   });
 
+  it("学术自检：产出丢了引用键与数字 → 面板判 NOT READY，并点名丢了什么（v0.9.81）", async () => {
+    const PAPER = "本文在 3 个数据集上做了消融实验，准确率提升 4.2 个百分点~\\cite{wang2024}。";
+    runHumanizeMock.mockResolvedValue(
+      makeRunResult("我们在多个数据集上做了实验，效果有明显提升。", "local"),
+    );
+    const { getByText, getByPlaceholderText } = await renderApp();
+    fireEvent.change(getByPlaceholderText(/把 AI 写的文章粘进来/), { target: { value: PAPER } });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => {
+      expect((getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value).toContain(
+        "多个数据集",
+      );
+    });
+    fireEvent.click(getByText("学术自检"));
+    await waitFor(() => {
+      expect(getByText(/NOT READY TO SUBMIT/)).toBeTruthy();
+    });
+    expect(getByText(/审现成产出/)).toBeTruthy();
+  });
+
+  it("地区用词开关关着：产出逐字照搬引擎结果（零漂移）", async () => {
+    runHumanizeMock.mockResolvedValue(makeRunResult("打开软件，改一下默认账号。", "local"));
+    const { getByText, getByPlaceholderText } = await renderApp();
+    fireEvent.change(getByPlaceholderText(/把 AI 写的文章粘进来/), {
+      target: { value: INPUT_TEXT },
+    });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => {
+      expect((getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value).toBe(
+        "打开软件，改一下默认账号。",
+      );
+    });
+  });
+
+  it("地区用词开关开着：产出换成台湾用词，并在提示里如实写改了哪几处（v0.9.81）", async () => {
+    runHumanizeMock.mockResolvedValue(makeRunResult("打开软件，改一下默认账号。", "local"));
+    localStorage.setItem("aihumanizer.variant", "zh-TW");
+    const { getByText, getByPlaceholderText } = await renderApp();
+    fireEvent.change(getByPlaceholderText(/把 AI 写的文章粘进来/), {
+      target: { value: INPUT_TEXT },
+    });
+    fireEvent.click(getByText("去味"));
+    await waitFor(() => {
+      expect((getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value).toBe(
+        "打开软体，改一下预设帐号。",
+      );
+    });
+    expect(getByText(/地区用词已校正/)).toBeTruthy();
+  });
+
   it("并发守卫：去味进行中热键再按不再发起第二次（v0.9.54）", async () => {
     let resolveRun: (v: ReturnType<typeof makeRunResult>) => void = () => {};
     runHumanizeMock.mockImplementation(
@@ -308,6 +359,52 @@ describe("App 持久化", () => {
       },
       { timeout: 1500 },
     );
+  });
+});
+
+describe("App 一键配置链接（v0.9.81 #api= 消费）", () => {
+  const LINK_CFG = {
+    baseUrl: "https://token.sensenova.cn/v1",
+    apiKey: "sk-test-pool",
+    model: "deepseek-v4-flash",
+    judgeModel: "glm-5.2",
+  };
+
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  it("合法 #api= 链接：自动落盘 enabled+三项+judgeModel，界面出确认文案，hash 被抹掉", async () => {
+    window.location.hash = `#api=${encodeApiConfigLink(LINK_CFG)}`;
+    const { getByText } = render(<App />);
+    await waitFor(() => {
+      expect(getByText(/已一键配置 API/).textContent).toContain("deepseek-v4-flash");
+    });
+    const saved = JSON.parse(localStorage.getItem("aihumanizer.api") ?? "{}");
+    expect(saved.enabled).toBe(true);
+    expect(saved.baseUrl).toBe("https://token.sensenova.cn/v1");
+    expect(saved.apiKey).toBe("sk-test-pool");
+    expect(saved.model).toBe("deepseek-v4-flash");
+    expect(saved.judgeModel).toBe("glm-5.2");
+    expect(window.location.hash).toBe("");
+  });
+
+  it("坏掉的 #api= 值：出「无法识别」提示，绝不写半份配置进存储", async () => {
+    window.location.hash = "#api=不是编码!!!";
+    const { getByText } = render(<App />);
+    await waitFor(() => {
+      expect(getByText(/无法识别/).textContent).toContain("一键配置API");
+    });
+    expect(localStorage.getItem("aihumanizer.api")).toBeNull();
+  });
+
+  it("没有 api 参数的普通 hash：静默忽略，不出配置文案", async () => {
+    window.location.hash = "#section-2";
+    const { getByText, queryByText } = render(<App />);
+    expect(queryByText(/已一键配置 API/)).toBeNull();
+    expect(localStorage.getItem("aihumanizer.api")).toBeNull();
+    // 页面本身照常渲染（此断言同时防止 effect 把普通 hash 访问搞崩）
+    expect(getByText(/把 AI 写的文章粘进来|原文/)).toBeTruthy();
   });
 });
 

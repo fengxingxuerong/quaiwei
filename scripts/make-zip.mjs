@@ -85,6 +85,14 @@ if (fs.existsSync(payloadPkg)) {
   if (pv !== version) die(`产物版本 ${pv} ≠ 仓库 ${version}，先重跑 repack`);
 }
 
+// 小白包随包带教程：把《使用教程.md》放进包根目录（rebuild-app 整目录重建会清掉它，
+// 所以在打包这一步放，而不是指望 repack 保留）。文件不存在就静默跳过（老树也照常打包）。
+const TUTORIAL = path.join(ROOT, "使用教程.md");
+if (fs.existsSync(TUTORIAL)) {
+  fs.copyFileSync(TUTORIAL, path.join(PAYLOAD, "使用教程.md"));
+  console.log("📄 已随包放入：使用教程.md");
+}
+
 if (DRY) {
   console.log(`[dry-run] 将打包 ${path.relative(ROOT, PAYLOAD)} → electron-dist/${NAME}`);
   process.exit(0);

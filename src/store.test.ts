@@ -13,6 +13,8 @@ import {
   saveIntensity,
   loadZhuqueMode,
   saveZhuqueMode,
+  loadVariant,
+  saveVariant,
   loadPplEnabled,
   savePplEnabled,
   loadFuseWeight,
@@ -321,6 +323,19 @@ describe("强度 / 朱雀模式 / 困惑度开关 / 融合权重 / 本地设置"
     expect(loadZhuqueMode()).toBe(false);
     saveZhuqueMode(true);
     expect(loadZhuqueMode()).toBe(true);
+  });
+
+  it("地区用词：默认 none，存 zh-TW 读得回来，坏值一律落 none", () => {
+    expect(loadVariant()).toBe("none");
+    saveVariant("zh-TW");
+    expect(loadVariant()).toBe("zh-TW");
+    saveVariant("none");
+    expect(loadVariant()).toBe("none");
+    // 手工写坏：不认识的取值不能被当成"开着"，更不许猜一个地区去改用户稿子
+    localStorage.setItem("aihumanizer.variant", "zh-HK");
+    expect(loadVariant()).toBe("none");
+    localStorage.setItem("aihumanizer.variant", "yes");
+    expect(loadVariant()).toBe("none");
   });
 
   it("困惑度开关：默认开（无值 !== 'false'），保存关闭后读回 false", () => {

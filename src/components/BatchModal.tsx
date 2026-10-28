@@ -4,6 +4,9 @@ import { scoreViaDetector, type DetectorConfig } from "../api/detector";
 import { downloadBlob, importFileToText, makeDatedName } from "../app-fileio";
 import { makeZipBlob } from "../docx-io";
 import type { DetectorPreset, LocalSettings } from "../store";
+import { loadVariant } from "../store";
+import { applyRegionalVariant } from "../engine/regional-zh";
+import { aiScore } from "../engine/humanize";
 
 type Genre = "main" | "narrative" | "dialogue" | "humanHand";
 type Status = "pending" | "reading" | "running" | "done" | "error";
@@ -233,11 +236,18 @@ export function BatchModal({
           genre,
           local.bestOf ? { bestOf: true, candidates: local.candidates } : undefined,
         );
+        /**
+         * v0.9.81：地区用词校正。与单篇同一口径——挂在引擎之后做后处理，默认 none 时不动。
+         * 分数也要跟着走：界面上显示的就是用户要发出去的稿子，分数若按引擎原始产出来算，
+         * 会跟眼前的字对不上。
+         */
+        const v = loadVariant();
+        const delivered = v === "none" ? r.text : applyRegionalVariant(r.text, v).text;
         update(it.id, {
           status: "done",
-          output: r.text,
+          output: delivered,
           before: r.before.score,
-          after: r.after.score,
+          after: v === "none" ? r.after.score : aiScore(delivered).score,
         });
         // v0.9.66/72：外部检测器（可选）——逐档「原文 + 产出」各送一次，拿到真实的降幅。
         // 每篇 2 次/档会烧外部额度，所以默认不勾；某档失败只标该档，不影响出稿与其它档。
@@ -246,7 +256,7 @@ export function BatchModal({
           for (const d of selectedDetectors) {
             try {
               const before = await scoreViaDetector(res.text, d.cfg);
-              const after = await scoreViaDetector(r.text, d.cfg);
+              const after = await scoreViaDetector(delivered, d.cfg);
               rows.push({ name: d.name, before, after });
             } catch (e) {
               rows.push({

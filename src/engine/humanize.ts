@@ -98,6 +98,9 @@ import {
   isIndentedBlock,
   isMarkdownStructLine,
   isProtectedBlock,
+  // v0.9.81：续行 / setext 下划线（格式保真扫查抓出的两类「软结构」）
+  isContinuationLine,
+  isSetextUnderline,
   isFactDenseParagraph,
   spanGuard,
   maskCodeSpans,
@@ -373,6 +376,28 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   // v0.9.54（续）：紧凑 Markdown 结构行（表格 / 列表项 / 引用行）——内容照改，
   // 但与相邻同类行之间必须沿用**原文分隔符**，否则表格会被插空行插到失效。
   const mdStruct = chunks.map((c) => isMarkdownStructLine(c.text));
+  // v0.9.81：软结构两件——续行（1~3 空格开头）与 setext 下划线。
+  // 前者必须紧贴它所属的结构行（否则列表项被空行拆断），后者必须紧贴标题行。
+  // 与 mdStruct 的区别：判定落在**分隔符**上，内容照常去味。
+  const contLine = chunks.map((c) => isContinuationLine(c.text));
+  const setextU = chunks.map((c) => isSetextUnderline(c.text));
+  /**
+   * 续行的**锚**：往回穿过连续的续行，找最近的非续行。
+   *
+   * 为什么要锚定而不是「上一行也是续行就算」：中文粘贴稿里「每段缩进两格、
+   * 段间没有空行」极常见（regression-12samples 的 N0 叙事稿就是），
+   * 那种稿子的既定口径是**每行一段**（`\n` → `\n\n`）。
+   * 若把「续行贴续行」也算成结构续行，整篇会被粘成一个大段——实测就是这么翻的车
+   * （E/N1 的 12 样本棘轮当场变红）。只有**锚在结构行上**的续行才必须紧贴。
+   */
+  const anchorOf = (k: number): number => {
+    let j = k - 1;
+    while (j >= 0 && contLine[j]) j--;
+    return j;
+  };
+  /** 结构行，或锚在结构行上的续行——这一族内部沿用原文分隔符 */
+  const structFamily = (k: number): boolean =>
+    mdStruct[k] || (contLine[k] && anchorOf(k) >= 0 && mdStruct[anchorOf(k)]);
   const paragraphs = chunks.map((c) => c.text);
   const tPara = nowMs();
   let result: string;
@@ -397,7 +422,12 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
       // humanizeSingle 会 trim 掉它，实测 `  - Redis 7.2 集群` → `- Redis 7.2 集群`，
       // 二级列表被压平成一级。这里把原始缩进摘下来、处理完再原样贴回；
       // 非结构行（缩进为空）行为不变。产出为空时退回原文，避免留下一条光杆 `- `。
-      const lead = mdStruct[i] ? (/^[ \t]*/.exec(p)?.[0] ?? "") : "";
+      //
+      // v0.9.81：**结构行的续行**同理——`- 项⏎  续行` 里的两格缩进是语义（续行属于该列表项）。
+      // 判据必须**锚定**：只有往回穿过连续续行后落在结构行上的续行才算（`structFamily`）；
+      // 整篇「每段缩进两格」的粘贴稿仍然按「一行一段」处理（零回归）。
+      const lead =
+        mdStruct[i] || (contLine[i] && structFamily(i)) ? (/^[ \t]*/.exec(p)?.[0] ?? "") : "";
       if (!lead) return out;
       return out.trim() ? lead + out : p;
     });
@@ -407,9 +437,14 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
         joined = parts[i];
         continue;
       }
-      // 冻结段（代码块）与紧凑结构行（表格/列表/引用）都沿用原文分隔符
-      const tight = (k: number): boolean => frozen[k] || mdStruct[k];
-      joined += (tight(i) && tight(i - 1) ? chunks[i - 1].sep : "\n\n") + parts[i];
+      // 沿用原文分隔符的四种情形：冻结/结构行相邻（原有）、结构行与它的续行相邻（本轮新增，
+      // 两个方向都要）、setext 下划线贴住标题。原文若本来就是空行分隔，沿用原样也仍是空行。
+      const tightish = (k: number): boolean => frozen[k] || mdStruct[k];
+      joined +=
+        (tightish(i) && tightish(i - 1)) || (structFamily(i) && structFamily(i - 1)) || setextU[i]
+          ? chunks[i - 1].sep
+          : "\n\n";
+      joined += parts[i];
     }
     result = joined;
   }

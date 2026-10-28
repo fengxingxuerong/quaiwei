@@ -66,6 +66,8 @@ import { runHumanize } from "../src/api/llm";
 import { DEFAULT_API, loadPresetKeys, type ApiConfig } from "../src/api/llm-config";
 import { scoreViaDetector, type DetectorConfig } from "../src/api/detector";
 import { readDocxText, writeDocxText } from "../src/docx-io";
+import { applyRegionalVariant, formatRegionalSummary, type RegionalHit } from "../src/engine/regional-zh";
+import { academicAudit, formatAcademicReport } from "../src/engine/academic-check";
 
 /** Buffer → 独立 ArrayBuffer（Buffer 可能是共享内存池上的视图，直接给 .buffer 会串） */
 function toArrayBuffer(b: Buffer): ArrayBuffer {
@@ -177,6 +179,24 @@ interface Args {
    * 这里列的是本文的问题清单。
    */
   detectOnly: boolean;
+  /**
+   * v0.9.81：地区用词校正。`none` = 不动（默认，行为与之前逐字相同）；
+   * `zh-TW` = 台湾用词 + 半角标点转全角。**不做简繁转换**——字形是 OpenCC 的活，
+   * 本仓手写表只会拼出混合字形，所以这里明确只换词与标点。
+   */
+  variant: "none" | "zh-TW";
+  /**
+   * v0.9.81：学术自检（`--academic-check`）。**不落盘**，只打一份带判定的报告：
+   * 数字/单位、引用键、结构、断言词、残留套话，有阻断项退出码 2（NOT READY）。
+   */
+  academicCheck: boolean;
+  /**
+   * v0.9.81：`--against <文件>`。给学术自检用：拿这份**外部改写稿**去比原文，
+   * 引擎不参与改写（审的是 LLM 深度模式产出 / 外部改写 / 合作者改的版本）。
+   */
+  against: string;
+  /** v0.9.81：`--style` 是否被显式给过。学术自检默认按 academic 跑，用户显式指定就不覆盖 */
+  styleExplicit: boolean;
   /* ---- v0.9.66：外部检测器（任意 OpenAI 无关的 HTTP 接口，不绑定任何厂商） ---- */
   /**
    * v0.9.71：**可重复**的检测器档位。`--detector-url` 每出现一次就开一个新档，
@@ -205,7 +225,8 @@ const USAGE =
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
-  " [--out-format follow|txt|docx] [--explain] [--detect-only]" +
+  " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
+  " [--academic-check [--against <改后稿>]]" +
   " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]..." +
   " [--recursive] [--jobs <n>] [--dry-run]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
@@ -219,7 +240,16 @@ const USAGE =
   "  --dry-run 只列出将处理的文件不落盘。目录批量默认跳过已带输出后缀的产物（重跑幂等）。" +
   "\n  --detect-only 审题模式：只给「AI 味痕迹地图」（哪句、为什么命中、怎么改），" +
   "一个字都不改也不落盘，无需 API Key。与 --dry-run（列待处理文件清单）不是一回事。" +
-  "\n  --help / -h 打印本用法（退出码 0）。";
+  "\n  --help / -h 打印本用法（退出码 0）。" +
+  "\n  --variant zh-TW：台湾用词 + 半角标点转全角（默认 none 不动）。" +
+  "**不做简繁转换**——字形请自己过 OpenCC，这里只换词与标点，输入简体、输出简体。" +
+  "词表只收无歧义的词（`程序`/`质量`/`文件` 这类一词两义的不换）。" +
+  "\n  --academic-check：学术自检。**不落盘**，只打一份带判定的报告（数字/单位、引用键、" +
+  "结构、断言词、残留套话）。退出码 0 = READY，2 = NOT READY（有阻断项），1 = 没法跑。" +
+  "默认按 academic 文风跑，显式给 --style 则以你给的为准。" +
+  "\n  --against <文件>：配合 --academic-check 用。拿这份**外部改写稿**去比原文，" +
+  "引擎不参与改写——审的是 LLM 深度模式产出、别人改的版本。这条路最容易真的丢数字/丢引用，" +
+  "也是唯一能判出 NOT READY 的实战场。";
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
@@ -228,6 +258,10 @@ function parseArgs(argv: string[]): Args {
     intensity: 0.6,
     zhuque: false,
     style: "plain",
+    variant: "none",
+    academicCheck: false,
+    against: "",
+    styleExplicit: false,
     suffix: ".humanized",
     seed: 20260905,
     api: false,
@@ -277,6 +311,8 @@ function parseArgs(argv: string[]): Args {
     "--out",
     "--intensity",
     "--style",
+    "--variant",
+    "--against",
     "--suffix",
     "--seed",
     "--base-url",
@@ -333,7 +369,23 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--style":
         args.style = (a[++i] as Args["style"]) || "plain";
+        args.styleExplicit = true;
         break;
+      case "--academic-check":
+        args.academicCheck = true;
+        break;
+      case "--against":
+        args.against = a[++i] ?? "";
+        break;
+      case "--variant": {
+        const v = (a[++i] ?? "").trim();
+        if (v !== "none" && v !== "zh-TW") {
+          console.error(`--variant 只认 none 或 zh-TW，收到：${v}\n${USAGE}`);
+          process.exit(1);
+        }
+        args.variant = v;
+        break;
+      }
       case "--suffix":
         args.suffix = a[++i] ?? ".humanized";
         break;
@@ -583,6 +635,8 @@ interface FileReport {
   detectorError?: string;
   /** v0.9.71：多档检测器的逐档结果（单档时就是一条，与顶层字段同源） */
   detectorScores?: DetectorScoreRow[];
+  /* v0.9.81：地区用词/标点校正（--variant zh-TW 时才有） */
+  regional?: { variant: string; terms: RegionalHit[]; punctuation: number };
 }
 
 /** 一档检测器的读数：失败时分数为 null、error 记原因 */
@@ -651,12 +705,16 @@ async function runStdinMode(args: Args): Promise<void> {
 
   const t0 = Date.now();
   const before = detectAI(raw).probability;
-  const out = humanize(raw, {
+  const out0 = humanize(raw, {
     intensity: args.intensity,
     seed: args.seed,
     zhuqueMode: args.zhuque,
     style: args.style,
   });
+  // v0.9.81：地区校正只在这条分支显式给了 --variant 才跑，默认路径逐字不变
+  const regional = applyRegionalVariant(out0, args.variant === "none" ? undefined : args.variant);
+  const out = regional.text;
+  if (args.variant !== "none") console.error(`ⓘ 地区校正（${args.variant}）：${formatRegionalSummary(regional)}`);
   // 正文：stdout（保留引擎产出的换行结构，末尾补一个换方便终端查看）
   process.stdout.write(out.endsWith("\n") ? out : `${out}\n`);
   // 诊断：stderr
@@ -675,6 +733,70 @@ async function runStdinMode(args: Args): Promise<void> {
         .join("\n"),
     );
   }
+}
+
+/**
+ * v0.9.81：学术自检。**不落盘**，只打一份带判定的报告。
+ *
+ * 退出码是给脚本用的：0 = READY，2 = NOT READY（有阻断项）。1 留给"根本没法跑"（输入缺失/为空）。
+ * 判定逻辑全在 `src/engine/academic-check.ts`，这里只负责读输入、跑一遍去味、把报告打出去。
+ */
+async function runAcademicCheck(args: Args): Promise<void> {
+  let raw: string;
+  try {
+    raw = args.stdin ? fs.readFileSync(0, "utf8") : await readInputText(args.input);
+  } catch (e) {
+    console.error(`✗ 读输入失败：${(e as Error).message}`);
+    process.exitCode = 1;
+    return;
+  }
+  if (!raw.trim()) {
+    console.error("✗ 输入为空（学术自检需要一篇有内容的稿子）");
+    process.exitCode = 1;
+    return;
+  }
+
+  let candidate: string;
+  let mode: string | undefined;
+
+  if (args.against) {
+    /**
+     * v0.9.81：对比模式。审的是**别人改过的稿**（LLM 深度模式产出、外部改写、合作者改的版本），
+     * 引擎不参与——这条路径才最容易真的丢数字、丢引用，也是 `academicAudit` 唯一能判出
+     * NOT READY 的实战场（本地引擎自己的产出在 180 组探测里一次都没触发阻断项）。
+     */
+    try {
+      candidate = await readInputText(args.against);
+    } catch (e) {
+      console.error(`✗ 读对比稿失败（--against）：${(e as Error).message}`);
+      process.exitCode = 1;
+      return;
+    }
+    if (!candidate.trim()) {
+      console.error(`✗ 对比稿为空：${args.against}`);
+      process.exitCode = 1;
+      return;
+    }
+    mode = `外部改写稿 vs 原文（引擎未参与）：${path.basename(args.against)} 对标 ${args.stdin ? "stdin" : path.basename(args.input)}`;
+  } else {
+    // 学术稿默认按 academic 跑；用户显式给了 --style 就尊重他
+    const style = args.styleExplicit ? args.style : "academic";
+    candidate = humanize(raw, {
+      intensity: args.intensity,
+      seed: args.seed,
+      zhuqueMode: args.zhuque,
+      style,
+    });
+  }
+
+  const audit = academicAudit(raw, candidate);
+  process.stdout.write(`${formatAcademicReport(audit, { style: args.style, intensity: args.intensity, mode })}\n`);
+  console.error(
+    audit.verdict === "blocked"
+      ? `✗ NOT READY：${audit.blockers.length} 个阻断项（退出码 2）`
+      : "✅ READY：机器没看见阻断项（退出码 0）",
+  );
+  process.exitCode = audit.verdict === "blocked" ? 2 : 0;
 }
 
 async function main() {
@@ -700,6 +822,12 @@ async function main() {
       scorePath: d.path,
       scale: d.scale,
     }));
+
+  // v0.9.81：学术自检优先于批量流程——它不落盘，只出判定
+  if (args.academicCheck) {
+    await runAcademicCheck(args);
+    return;
+  }
 
   // v0.9.38：stdin 管道模式（输入参数 - 或省略）。省略参数时在这里补判 TTY：
   // 交互终端下不给管道，维持原行为（用法 + 退出），别把用户晾在读取阻塞里。
@@ -878,6 +1006,13 @@ async function main() {
         });
       }
       rep.ms = Date.now() - t0;
+      // v0.9.81：地区校正（--variant）。默认 none，不跑、不记账，产出与之前逐字相同
+      if (args.variant !== "none") {
+        const regional = applyRegionalVariant(out, args.variant);
+        out = regional.text;
+        rep.regional = { variant: args.variant, terms: regional.terms, punctuation: regional.punctuation };
+        console.log(`${step}   ⓘ 地区校正：${formatRegionalSummary(regional)}`);
+      }
       rep.charsOut = out.length;
       rep.detectAfter = detectAI(out).probability;
       const ext = outExtOf(f, args.outFormat);
