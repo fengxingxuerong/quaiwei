@@ -8,7 +8,7 @@ description_zh: 去 AI 味（简体中文）——本地离线引擎或可选 LL
 description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
 metadata:
-  version: 0.9.81
+  version: 0.9.82
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 
@@ -67,6 +67,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--max-calls <n>` / `--max-wait <sec>` | 预算 | 整篇调用预算 / 轮间最长等待 |
 | `--target <1~100>` | 默认 10 | 深度模式达标线：LLM 评判 ≤ 此分即收手。调低=多压几轮更彻底也更慢，调高=更快收手；不给则沿用默认 |
 | `--strict` | 开关 | 严格保真：发现编造事实即拒绝交付并回退 |
+| `--structural` | 开关 | 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，对守卫全过的相邻句做**至多一次交换**——产出是原句排列，不新增任何内容；叙事/人写体裁不受影响 |
 | `--persona` | `default` \| `netgen` \| `classic` | 人味人格分档 |
 | `--detector-url <url>` | 任意 HTTP 接口，**可重复** | 接**外部检测器**（不绑定厂商）：把 `{text}` POST 过去，按 `--detector-path` 取分；原文与产出各送一次，前后分写进 `--report` 的 `detectorBefore` / `detectorAfter`（多档时另有 `detectorScores` 数组）。给多个 URL 就逐档送检、横向对比 |
 | `--detector-key <key>` | — | 检测器凭证，作用在**最近一档** `--detector-url` 上；更建议走环境变量 `QUAIWEI_DETECTOR_KEY`（命令行会进 shell 历史） |

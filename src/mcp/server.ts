@@ -21,6 +21,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { humanize, adviceFor } from "../engine/humanize";
 import { aiScore, checkFidelityLocal } from "../engine/humanize-metrics";
 import { detectAI } from "../engine/detector";
+import { registerIndex } from "../engine/register-metrics";
 import { explainChanges, type ExplainItem } from "../engine/explain";
 import { reviewText } from "../engine/review";
 import { formatIssues } from "../engine/format-integrity";
@@ -127,6 +128,11 @@ const OPTION_PROPS = {
     description:
       "地区用词校正，默认不传（不动）。zh-TW = 台湾用词（软件→软体、信息→资讯）+ 半角标点转全角；不做简繁转换，输入简体输出简体",
   },
+  structural: {
+    type: "boolean",
+    description:
+      "受限句序重排，默认 false。开启后（强度 ≥0.55 且论说/公文/学术体裁）对守卫全过的相邻句做至多一次交换：产出是原句排列，不新增任何内容；叙事/人写体裁不受影响",
+  },
 };
 
 export const TOOLS: ToolDef[] = [
@@ -222,6 +228,7 @@ function asOptions(args: Record<string, unknown>): HumanizeOptions {
   const seed = args.seed;
   o.seed = typeof seed === "number" && Number.isFinite(seed) ? Math.trunc(seed) : DEFAULT_SEED;
   if (args.zhuque === true) o.zhuqueMode = true;
+  if (args.structural === true) o.structural = true;
   return o;
 }
 
@@ -290,11 +297,17 @@ function toolDetect(args: Record<string, unknown>): ToolResult {
   const rawTop = typeof args.top === "number" ? Math.trunc(args.top) : 5;
   const top = Math.min(8, Math.max(1, rawTop));
   const r = detectAI(text);
+  // v0.9.82 语体维度：aiScore/detectAI 对「书面↔口语」替换是盲区（实测 2/21，见
+  // artifacts/human-corpus/probe-inject.ts），registerIndex 是为此并列的第二把尺。
+  const reg = registerIndex(text);
 
   const lines: string[] = [];
   lines.push(`本地 AI 味代理分 ${r.probability} / 100（${r.levelText}）· 置信度 ${r.confidence}`);
   lines.push(
     `共 ${r.stats.sentences} 句 / ${r.stats.chars} 字 / 句长变异系数 ${r.stats.sentenceCV.toFixed(2)}`,
+  );
+  lines.push(
+    `语体指数 ${reg.index} / 100（${reg.label}）——量的是书面度，不是 AI 味；与上面的套话分互补（语体高 + 套话少 = 政务体那类本地盲区画像）`,
   );
   if (r.topSegments.length) {
     lines.push("");
@@ -319,6 +332,8 @@ function toolDetect(args: Record<string, unknown>): ToolResult {
       levelText: r.levelText,
       confidence: r.confidence,
       stats: r.stats,
+      registerIndex: reg.index,
+      registerLabel: reg.label,
       topSegments: r.topSegments.slice(0, top),
       warnings: r.warnings,
     },

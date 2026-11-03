@@ -55,6 +55,18 @@ export default defineConfig({
     // 放宽的是**等待时间**，判据一条没动：该为空的仍必须为空、退出码仍必须是 0。
     // 代价：真死循环要多等 25 秒才暴露 —— 可接受，且 coverage-gate 的杀进程树兜底仍在。
     testTimeout: 30_000,
+    // v0.9.82：限制并发 worker 数（默认 = CPU 逻辑核数-1，本机 12 线程 ⇒ 11 个）。
+    //
+    // 症状：全量跑时「哪条红是随机的」，且红的一定是 **spawn 子进程**的用例 ——
+    // 2026-11-04 三连跑分别红在 check-env 的自证 / humanize-cli-stdin 的强度透传（60s）/
+    // humanize-cli-detector 的送检（120s）；三者单独跑全部通过（1.5s / 2.6s）。
+    // 根因：这些用例每次 `spawn(tsx scripts/humanize-cli.ts)`，而 tsx 起一个进程要
+    // node + esbuild 转译；11 个 worker 同时 spawn 时 CPU 打满，子进程排不上队，
+    // 于是一个 672ms 的用例被拖到 120s 超时。抬 per-test 超时（已有 60s/120s）治不了。
+    //
+    // 取 6 = 物理核数，留出被 spawn 的子进程的调度余量。
+    // CI 只有 2~4 核，该值取 min 后不生效，不影响流水线。
+    maxWorkers: 6,
     // 覆盖率阈值从 scripts/coverage-thresholds.ts 取（**唯一事实源**）。
     // 此前阈值在本文件与 `test:cov` 的命令行参数里各写了一份，两份会各自漂移；
     // 2026-10-03 核实发现本机覆盖率门禁从未真正生效（结构性假红，详见

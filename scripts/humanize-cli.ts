@@ -59,6 +59,7 @@ import fs from "fs";
 import path from "path";
 import { humanize, adviceFor } from "../src/engine/humanize";
 import { aiScore } from "../src/engine/humanize-metrics.ts";
+import { registerIndex, type RegisterReport } from "../src/engine/register-metrics.ts";
 import { detectAI } from "../src/engine/detector";
 import { explainChanges, formatExplain, type ExplainItem } from "../src/engine/explain";
 import { formatReview, reviewText, type ReviewReport } from "../src/engine/review";
@@ -157,6 +158,8 @@ interface Args {
   /** v0.9.62 深度模式达标线：LLM 评判 ≤ 此分即收手。0 = 沿用默认（DEEP_TARGET_SCORE） */
   target: number;
   strict: boolean;
+  /** v0.9.82：受限句序重排（默认关）。产出是原句排列，"不新增事实"构造上成立 */
+  structural: boolean;
   persona: string;
   report: string;
   /** v0.9.17：输出格式。follow = 跟随输入扩展名（.docx 进 → .docx 出） */
@@ -242,6 +245,9 @@ const USAGE =
   "一个字都不改也不落盘，无需 API Key。与 --dry-run（列待处理文件清单）不是一回事。" +
   "\n  --help / -h 打印本用法（退出码 0）。" +
   "\n  --variant zh-TW：台湾用词 + 半角标点转全角（默认 none 不动）。" +
+  "\n  --structural 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，" +
+  "对守卫全过的相邻句做至多一次交换——产出是原句排列，句多重集逐字不变，" +
+  "\"不新增事实\"构造上成立；叙事/人写体裁不受影响（保留作者结构）。" +
   "**不做简繁转换**——字形请自己过 OpenCC，这里只换词与标点，输入简体、输出简体。" +
   "词表只收无歧义的词（`程序`/`质量`/`文件` 这类一词两义的不换）。" +
   "\n  --academic-check：学术自检。**不落盘**，只打一份带判定的报告（数字/单位、引用键、" +
@@ -276,6 +282,7 @@ function parseArgs(argv: string[]): Args {
     maxWait: 0,
     target: 0,
     strict: false,
+    structural: false,
     persona: "default",
     report: "",
     outFormat: "follow",
@@ -428,6 +435,9 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--strict":
         args.strict = true;
+        break;
+      case "--structural":
+        args.structural = true;
         break;
       case "--persona":
         args.persona = a[++i] || "default";
@@ -610,10 +620,14 @@ function baseUrlHasProxyPrefix(baseUrl: string): boolean {
   return /^\/sensenova(\/|$)/.test(m[1] ?? "");
 }
 
+/** v0.9.82：report 里的语体摘要只留 {index,label}，密度明细不进报告（要细节走 --explain 的思路，别把 JSON 撑肥） */
+function briefRegister(r: RegisterReport): { index: number; label: string } {
+  return { index: r.index, label: r.label };
+}
+
 interface FileReport {
   file: string;
-  ms: number;
-  charsIn: number;
+  ms: number;  charsIn: number;
   charsOut: number;
   detectBefore: number;
   detectAfter: number;
@@ -632,6 +646,10 @@ interface FileReport {
   /* v0.9.66：外部检测器（--detector-url）前后分。失败只记原因，不让整篇失败 */
   detectorBefore?: number | null;
   detectorAfter?: number | null;
+  /* v0.9.82：语体指数（registerIndex，独立维度不并入代理分）。书面↔口语替换
+   * 在 aiScore 上是实测盲区（2/21），这两处让批量报告能看到语体被往哪边推 */
+  registerBefore?: { index: number; label: string };
+  registerAfter?: { index: number; label: string };
   detectorError?: string;
   /** v0.9.71：多档检测器的逐档结果（单档时就是一条，与顶层字段同源） */
   detectorScores?: DetectorScoreRow[];
@@ -710,6 +728,7 @@ async function runStdinMode(args: Args): Promise<void> {
     seed: args.seed,
     zhuqueMode: args.zhuque,
     style: args.style,
+    structural: args.structural,
   });
   // v0.9.81：地区校正只在这条分支显式给了 --variant 才跑，默认路径逐字不变
   const regional = applyRegionalVariant(out0, args.variant === "none" ? undefined : args.variant);
@@ -786,6 +805,7 @@ async function runAcademicCheck(args: Args): Promise<void> {
       seed: args.seed,
       zhuqueMode: args.zhuque,
       style,
+      structural: args.structural,
     });
   }
 
@@ -975,6 +995,7 @@ async function main() {
         charsOut: 0,
         detectBefore: detectAI(raw).probability,
         detectAfter: 0,
+        registerBefore: briefRegister(registerIndex(raw)),
         ok: true,
       };
       let out: string;
@@ -1003,6 +1024,7 @@ async function main() {
           seed: args.seed,
           zhuqueMode: args.zhuque,
           style: args.style,
+          structural: args.structural,
         });
       }
       rep.ms = Date.now() - t0;
@@ -1015,6 +1037,7 @@ async function main() {
       }
       rep.charsOut = out.length;
       rep.detectAfter = detectAI(out).probability;
+      rep.registerAfter = briefRegister(registerIndex(out));
       const ext = outExtOf(f, args.outFormat);
       const dest = path.join(args.out, name.replace(/\.(txt|md|docx)$/i, "") + args.suffix + ext);
       await writeOutput(dest, out, ext === ".docx");
@@ -1104,10 +1127,17 @@ async function main() {
   if (done.length) {
     const sum = (g: (r: FileReport) => number) => done.reduce((s, r) => s + g(r), 0);
     const avg = (g: (r: FileReport) => number) => Math.round(sum(g) / done.length);
+    // 语体均值：只在两段都有读数时附加（老报告路径/失败篇不凑数）
+    const regPairs = done.filter((r) => r.registerBefore && r.registerAfter);
+    const regAvg = (g: (r: FileReport) => number) =>
+      Math.round(regPairs.reduce((s, r) => s + g(r), 0) / regPairs.length);
     console.log(
       `汇总：${done.length} 篇 | 引擎耗时 ${sum((r) => r.ms)}ms | ` +
         `字数 ${sum((r) => r.charsIn)}→${sum((r) => r.charsOut)} | ` +
-        `AI 味代理分（均值）${avg((r) => r.detectBefore)}→${avg((r) => r.detectAfter)}`,
+        `AI 味代理分（均值）${avg((r) => r.detectBefore)}→${avg((r) => r.detectAfter)}` +
+        (regPairs.length
+          ? ` | 语体 ${regAvg((r) => r.registerBefore!.index)}→${regAvg((r) => r.registerAfter!.index)}（书面度，非 AI 味）`
+          : ""),
     );
   }
 

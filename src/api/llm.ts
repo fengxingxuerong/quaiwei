@@ -61,6 +61,8 @@ export interface RunResult {
 export interface LocalOptions {
   bestOf?: boolean;
   candidates?: number;
+  /** v0.9.82：受限句序重排（默认关；与 CLI --structural / MCP structural 同一开关） */
+  structural?: boolean;
 }
 
 /** 本地引擎统一出口：按是否开启择优分流（API 失败回退同样尊重该设置） */
@@ -85,6 +87,7 @@ function runLocal(
       style,
       genre,
       candidates: local.candidates,
+      structural: local.structural,
     });
     // 多候选择优：N 个候选各自跑完整条流水线，逐步记录会互相穿插，
     // 这里刻意不产出 trace（UI 侧说明原因，而不是给一份会误导人的合并记录）
@@ -101,6 +104,7 @@ function runLocal(
       zhuqueMode,
       style,
       genre,
+      structural: local?.structural,
       onStage: (s: StageTrace) => events.push(s),
     });
     return {
@@ -110,7 +114,13 @@ function runLocal(
       trace: aggregateStages(events, text.length, out.length),
     };
   }
-  const out = humanize(text, { intensity, zhuqueMode, style, genre });
+  const out = humanize(text, {
+    intensity,
+    zhuqueMode,
+    style,
+    genre,
+    structural: local?.structural,
+  });
   return { text: out, after: aiScore(out), bestOf: undefined };
 }
 

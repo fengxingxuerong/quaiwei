@@ -91,6 +91,13 @@ function pruneFixture(): string {
     { rel: "resources/app/node_modules/onnxruntime-web/package.json", content: '{"name":"onnxruntime-web"}' },
     { rel: "resources/app/node_modules/onnxruntime-node/bin/napi-v6/linux/a.node" },
     { rel: "resources/app/node_modules/onnxruntime-node/bin/napi-v6/darwin/a.node" },
+    // 2026-11-03 体积审计补：纯类型包（.d.ts / license / package.json），运行时不加载
+    { rel: "resources/app/node_modules/@types/node/package.json", content: '{"name":"@types/node"}' },
+    { rel: "resources/app/node_modules/@types/node/fs.d.ts", content: "export {}" },
+    { rel: "resources/app/node_modules/undici-types/package.json", content: '{"name":"undici-types"}' },
+    { rel: "resources/app/node_modules/undici-types/errors.d.ts", content: "export {}" },
+    { rel: "resources/app/node_modules/type-fest/package.json", content: '{"name":"type-fest"}' },
+    { rel: "resources/app/node_modules/type-fest/license", content: "MIT" },
     // 必须保留
     { rel: "resources/app/node_modules/onnxruntime-node/bin/napi-v6/win32/a.node" },
     {
@@ -132,6 +139,10 @@ describe("prune-dist.cjs", () => {
     expect(exists(dist, "resources/app/node_modules/onnxruntime-web"), r.out).toBe(false);
     expect(exists(dist, "resources/app/node_modules/onnxruntime-node/bin/napi-v6/linux")).toBe(false);
     expect(exists(dist, "resources/app/node_modules/onnxruntime-node/bin/napi-v6/darwin")).toBe(false);
+    // 2026-11-03 补：纯类型包也删（运行时不加载 .d.ts）
+    expect(exists(dist, "resources/app/node_modules/@types")).toBe(false);
+    expect(exists(dist, "resources/app/node_modules/undici-types")).toBe(false);
+    expect(exists(dist, "resources/app/node_modules/type-fest")).toBe(false);
 
     expect(exists(dist, "resources/app/node_modules/onnxruntime-node/bin/napi-v6/win32/a.node")).toBe(true);
     expect(exists(dist, "resources/app/node_modules/@huggingface/transformers/package.json")).toBe(true);

@@ -379,6 +379,21 @@ export function saveZhuqueMode(v: boolean): void {
 }
 
 /* ------------------------------------------------------------------ *
+ * v0.9.82：受限句序重排（界面开关，默认关）。
+ * 与 --structural / MCP structural 同一开关三处入口；引擎侧默认关，
+ * 读坏了当没开——不拿猜出来的默认值去重排用户的稿子。
+ * ------------------------------------------------------------------ */
+const K_STRUCTURAL = "quaiwei.structural";
+
+export function loadStructuralMode(): boolean {
+  return localStorage.getItem(K_STRUCTURAL) === "true";
+}
+
+export function saveStructuralMode(v: boolean): void {
+  localStorage.setItem(K_STRUCTURAL, String(v));
+}
+
+/* ------------------------------------------------------------------ *
  * v0.9.81：地区用词校正（界面开关）。
  * 只存 "none" / "zh-TW" 两个值；读坏了落 "none"——不认识的取值一律当没开，
  * 别拿一个猜出来的规则去改用户的稿子。

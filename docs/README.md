@@ -13,6 +13,9 @@
 |---|---|---|
 | [key-rotation-status.md](key-rotation-status.md) | 当前口径 | Key 轮换与泄露面处置记录（2026-09-05 → 2026-10-14 多次复测）。涉及凭证时先看这份 |
 | [mcp-server.md](mcp-server.md) | 当前口径 | MCP 服务端（v0.9.81）：三个工具的参数与返回、装法、边界、验法、已知没做的 |
+| [structural-shuffle.md](structural-shuffle.md) | 当前口径 | 受限句序重排（v0.9.82）：`--structural` 的五类守卫、三道门槛、默认关的逐字保证、已知边界与验法 |
+| [register-metrics.md](register-metrics.md) | 当前口径 | 语体指数（v0.9.82）：量**书面度**的第二把尺、口径公式与 CAP、21 篇双向注入实测、为什么不并入 aiScore |
+| [check-env.md](check-env.md) | 当前口径 | 环境预检（v0.9.82）：两次平台二进制丢失事故、五个检查项、红灯修法、挂载位置与自证写法 |
 | [竞品对比-2026-10-27.md](竞品对比-2026-10-27.md) | 当前口径 | 同赛道 33 项横比：实时星数、形态分布、能力面、撞名处置、该做与不做。抓数用 `node scripts/scan-github-sector.mjs --md`，脚本里的 `REPOS` 是竞品名单唯一出处 |
 | [regional-zh.md](regional-zh.md) | 当前口径 | 地区用词校正（v0.9.81）：`--variant zh-TW` 的用法、三条边界、词表门槛、验法 |
 | [academic-check.md](academic-check.md) | 当前口径 | 学术自检（v0.9.81）：`--academic-check` 与 `--against` 判什么/不判什么、退出码、180 组实测、真阻断样例 |

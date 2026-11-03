@@ -11,6 +11,7 @@ import { fingerprintCheck, checkFidelityLocal, aiScore, humanize } from "./engin
 import { applyRegionalVariant, formatRegionalSummary } from "./engine/regional-zh";
 import { academicAudit, type AcademicAudit } from "./engine/academic-check";
 import type { FingerprintReport, ScoreBreakdown } from "./engine/humanize";
+import { registerIndex, type RegisterReport } from "./engine/register-metrics";
 import { detectAI, type DetectReport } from "./engine/detector";
 import { detectZhuque } from "./engine/zhuque";
 import { DetectorConfig, scoreViaDetector } from "./api/detector";
@@ -23,6 +24,8 @@ import {
   saveDetector,
   loadZhuqueMode,
   saveZhuqueMode,
+  loadStructuralMode,
+  saveStructuralMode,
   loadVariant,
   saveVariant,
   savePplEnabled,
@@ -140,6 +143,8 @@ export default function App({
   const [output, setOutput] = useState(() => restoredDraft?.output ?? "");
   const [intensity, setIntensity] = useState<number>(loadIntensity());
   const [zhuqueMode, setZhuqueMode] = useState<boolean>(loadZhuqueMode());
+  // v0.9.82：受限句序重排开关（pro 视图 chip，默认关）。与 --structural / MCP 同一开关
+  const [structuralMode, setStructuralMode] = useState<boolean>(loadStructuralMode());
   // v0.9.81：地区用词校正开关（pro 视图里的 chip）。默认 "none"
   const [variant, setVariant] = useState<"none" | "zh-TW">(loadVariant());
   // v0.9.81：学术自检结果（pro 视图面板）。null = 面板没开
@@ -161,6 +166,11 @@ export default function App({
   const [note, setNote] = useState("");
   const [before, setBefore] = useState<Score | null>(null);
   const [after, setAfter] = useState<Score | null>(null);
+  /** v0.9.82：语体指数前后对比（独立维度）。null = 本轮没跑 */
+  const [registerCompare, setRegisterCompare] = useState<{
+    before: RegisterReport;
+    after: RegisterReport;
+  } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [roundScores, setRoundScores] = useState<number[]>([]);
   const [fingerprint, setFingerprint] = useState<FingerprintReport | null>(null);
@@ -307,7 +317,14 @@ export default function App({
         },
         zhuqueMode,
         genreOverride ?? undefined,
-        local.bestOf ? { bestOf: true, candidates: local.candidates } : undefined,
+        // v0.9.82：structural 并入第 7 参。两个开关全关时保持旧契约——**整个 undefined**
+        //（App.test「短路那半边」锁的就是这个分支，别改成总传对象）
+        local.bestOf || structuralMode
+          ? {
+              ...(local.bestOf ? { bestOf: true, candidates: local.candidates } : {}),
+              ...(structuralMode ? { structural: true } : {}),
+            }
+          : undefined,
         true, // collectTrace：本地引擎路径下收集逐步执行记录
       );
       if (runSeqRef.current !== seq) return; // 结果已被作废（用户点了清空/导入了新稿）：整轮丢弃
@@ -335,6 +352,12 @@ export default function App({
       setReview(null); // 已经决定改写，痕迹地图退场（它是"改之前看"的东西）
       setBefore(r.before);
       setAfter(r.after);
+      // v0.9.82：语体指数前后对比（独立维度，量书面度不量 AI 味）。
+      // 地区校正之后取终稿，保证与界面展示的产出同一份。
+      setRegisterCompare({
+        before: registerIndex(input),
+        after: registerIndex(r.text),
+      });
       setJudgeScore(null);
       setJudgeCritique([]);
       setDetectorScore(null);
@@ -590,6 +613,7 @@ export default function App({
     setReview(null);
     setBefore(null);
     setAfter(null);
+    setRegisterCompare(null);
     setJudgeScore(null);
     setJudgeCritique([]);
     setDetectorScore(null);
@@ -821,6 +845,33 @@ export default function App({
             🇹🇼 台湾用词
           </label>
         )}
+        {!simple && (
+          <label
+            className={`mode-tag ${structuralMode ? "active" : ""}`}
+            title="受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，对守卫全过的相邻句做至多一次交换——产出是原句排列，不新增任何内容；叙事/人写体裁不受影响"
+            style={
+              structuralMode
+                ? {
+                    color: "#b48bff",
+                    borderColor: "rgba(180, 139, 255, 0.5)",
+                    background: "rgba(180, 139, 255, 0.1)",
+                    cursor: "pointer",
+                  }
+                : { cursor: "pointer" }
+            }
+          >
+            <input
+              type="checkbox"
+              checked={structuralMode}
+              onChange={(e) => {
+                setStructuralMode(e.target.checked);
+                saveStructuralMode(e.target.checked);
+              }}
+              style={{ display: "none" }}
+            />
+            🔄 句序重排
+          </label>
+        )}
         <button className="primary" onClick={handleHumanize} disabled={loading}>
           {loading ? "处理中…" : "去味"}
         </button>
@@ -950,6 +1001,18 @@ export default function App({
               <span className="result-hint">已生成，复制后请用真实检测器复核</span>
             )}
           </div>
+          {registerCompare && (
+            <div
+              className="result-score"
+              title="语体指数：量的是书面度，不是 AI 味。真人公文会得高分；与上面的套话指数互补着看"
+            >
+              <span className="result-label">语体</span>
+              <b className="result-num">{registerCompare.before.index}</b>
+              <span className="result-arrow">→</span>
+              <b className="result-num ok">{registerCompare.after.index}</b>
+              <span className="result-hint">{registerCompare.after.label}</span>
+            </div>
+          )}
           <div className="result-actions">
             <button className="primary" onClick={copy}>
               复制结果
@@ -993,6 +1056,18 @@ export default function App({
               {Math.abs(before.score - after.score)}
             </div>
           </div>
+          {registerCompare && (
+            <div
+              className="delta"
+              title="语体指数：量的是书面度，不是 AI 味。真人公文会得高分；与套话指数互补着看"
+            >
+              <div className="delta-label">语体（书面度）</div>
+              <div className="delta-value" style={{ color: "#8ab4f8" }}>
+                {registerCompare.before.index}→{registerCompare.after.index}
+              </div>
+              <div className="delta-label">{registerCompare.after.label}</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1136,6 +1211,10 @@ export default function App({
             setOutput(outputText);
             setBefore(aiScore(text));
             setAfter(aiScore(outputText));
+            setRegisterCompare({
+              before: registerIndex(text),
+              after: registerIndex(outputText),
+            });
             // v0.9.64：批量载入的是**另一篇**稿子，逐篇运行期的状态必须一起清掉——
             // 否则对标/判定/本地检测三个面板会把上一篇的数字挂在新稿上
             // （正常跑那条路径在 handleHumanize 开头做的是同一件事，这里对齐）。

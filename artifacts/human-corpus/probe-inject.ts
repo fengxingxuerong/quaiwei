@@ -23,6 +23,7 @@
  */
 import { readFileSync } from "node:fs";
 import { aiScore } from "../../src/engine/humanize.ts";
+import { registerIndex } from "../../src/engine/register-metrics.ts";
 
 const DIR = "artifacts/human-corpus";
 
@@ -143,6 +144,12 @@ interface Row {
   colloqHits: number;
   colloqScore: number;
   dColloq: number;
+  // v0.9.82 语体维度（registerIndex，独立指标不并入 aiScore）
+  regBase: number;
+  regFormal: number;
+  dRegFormal: number;
+  regColloq: number;
+  dRegColloq: number;
 }
 
 const rows: Row[] = [];
@@ -156,6 +163,9 @@ for (const it of manifest.items) {
   const fScore = aiScore(fText).score;
   const { out: qText, hits: qHits } = toColloq(prose);
   const qScore = aiScore(qText).score;
+  const regBase = registerIndex(prose).index;
+  const regFormal = registerIndex(fText).index;
+  const regColloq = registerIndex(qText).index;
   rows.push({
     title: it.title,
     genre: it.genre,
@@ -169,6 +179,11 @@ for (const it of manifest.items) {
     colloqHits: qHits,
     colloqScore: qScore,
     dColloq: qScore - base,
+    regBase,
+    regFormal,
+    dRegFormal: regFormal - regBase,
+    regColloq,
+    dRegColloq: regColloq - regBase,
   });
 }
 
@@ -216,6 +231,38 @@ console.log(
 );
 console.log(
   `               Δ 均值 ${avg(dq).toFixed(1)}｜范围 ${Math.min(...dq)} ~ ${Math.max(...dq)}`,
+);
+
+// ━━━ v0.9.82 语体维度（registerIndex）━━━
+// aiScore 对「书面→口语」是 2/21 的盲区（见文件头）。registerIndex 是为此新增的
+// 独立第二把尺：上面的 toFormal / toColloq 产物原样复测，同口径对照。
+const dRegF = rows.map((r) => r.dRegFormal);
+const dRegQ = rows.map((r) => r.dRegColloq);
+const upRegF = dRegF.filter((x) => x > 0).length;
+const dnRegQ = dRegQ.filter((x) => x < 0).length;
+const regBases = rows.map((r) => r.regBase).sort((a, b) => a - b);
+
+console.log(`\n━━━ 语体维度（registerIndex · 独立指标，不并入 aiScore）━━━`);
+console.log(
+  `  书面化替换（正向·应升）${upRegF}/${rows.length} = ${((upRegF / rows.length) * 100).toFixed(0)}% 方向正确`,
+);
+console.log(
+  `               Δ 均值 ${avg(dRegF).toFixed(1)}｜范围 ${Math.min(...dRegF)} ~ ${Math.max(...dRegF)}`,
+);
+console.log(
+  `  口语化替换（反向·应降）${dnRegQ}/${rows.length} = ${((dnRegQ / rows.length) * 100).toFixed(0)}% 方向正确（同一替换，aiScore 只有 ${dnQ}/${rows.length}）`,
+);
+console.log(
+  `               Δ 均值 ${avg(dRegQ).toFixed(1)}｜范围 ${Math.min(...dRegQ)} ~ ${Math.max(...dRegQ)}`,
+);
+console.log(
+  `  真人基线 registerIndex：${regBases.join(", ")}（中位 ${regBases[Math.floor(regBases.length / 2)]}）`,
+);
+console.log(
+  `  ⇒ 维基正文本身就是书面语，基线落「偏书面/公文腔浓」属预期——`,
+);
+console.log(
+  `    这把尺量的是**语体**，不是 AI 味；它与 aiScore 互补（语体高 + 套话少 = 政务体那类本地盲区画像）`,
 );
 
 console.log(`\n━━━ 真人基线的关键事实 ━━━`);

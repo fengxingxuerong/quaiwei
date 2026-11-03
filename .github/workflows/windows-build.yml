@@ -24,6 +24,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-fund --no-audit
 
+      - name: Environment probe (环境预检)
+        # Windows 正是 2026-11-03 esbuild.exe 静默丢失事故的平台（31 用例红了 4 天没人发现），
+        # 打包机上这道闸必须有。说明见 ci.yml 同名步骤。
+        run: npm run check:env
+
       - name: Type check
         run: npx tsc -b
 

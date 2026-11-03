@@ -17,6 +17,7 @@ import {
   saveDraft,
   loadDraft,
   loadZhuqueMode,
+  loadStructuralMode,
   loadDetector,
   saveViewMode,
 } from "./store";
@@ -973,6 +974,32 @@ describe("App 守卫分支与面板回调（行覆盖补锁）", () => {
     expect(checkbox.checked).toBe(true);
     expect(container.querySelector(".mode-tag.active")).toBeTruthy();
     expect(loadZhuqueMode()).toBe(true);
+  });
+
+  it("「句序重排」开关（2026-11-03）：勾选写入 store，开启后 runHumanize 第 7 参带上 structural", async () => {
+    const utils = render(<App />);
+    const label = utils.getByText("🔄 句序重排").closest("label")!;
+    const checkbox = label.querySelector("input") as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+    expect(loadStructuralMode()).toBe(false);
+    fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(true);
+    expect(loadStructuralMode()).toBe(true);
+
+    // 开关透传：开着重跑一轮，runHumanize 收到的 local 选项必须带 structural: true
+    runHumanizeMock.mockResolvedValue(makeRunResult(OUTPUT_TEXT, "local"));
+    fireEvent.change(utils.getByPlaceholderText(/把 AI 写的文章粘进来/), {
+      target: { value: INPUT_TEXT },
+    });
+    fireEvent.click(utils.getByText("去味"));
+    await waitFor(() => {
+      expect((utils.getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value).toBe(
+        OUTPUT_TEXT,
+      );
+    });
+    const calls = runHumanizeMock.mock.calls;
+    const lastLocal = calls[calls.length - 1][6] as { structural?: boolean } | undefined;
+    expect(lastLocal?.structural).toBe(true);
   });
 
   it("「用 LLM 评判」守卫：Key 全是空白时按钮可点但直接返回、不发请求", async () => {

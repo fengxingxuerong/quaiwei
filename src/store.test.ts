@@ -13,6 +13,8 @@ import {
   saveIntensity,
   loadZhuqueMode,
   saveZhuqueMode,
+  loadStructuralMode,
+  saveStructuralMode,
   loadVariant,
   saveVariant,
   loadPplEnabled,
@@ -323,6 +325,17 @@ describe("强度 / 朱雀模式 / 困惑度开关 / 融合权重 / 本地设置"
     expect(loadZhuqueMode()).toBe(false);
     saveZhuqueMode(true);
     expect(loadZhuqueMode()).toBe(true);
+  });
+
+  it("句序重排：默认 false，true 正常往返，坏值不当 true（2026-11-03 store.test 补）", () => {
+    expect(loadStructuralMode()).toBe(false);
+    saveStructuralMode(true);
+    expect(loadStructuralMode()).toBe(true);
+    saveStructuralMode(false);
+    expect(loadStructuralMode()).toBe(false);
+    // 手工写坏：语体重排是动结构的事，读不出 true 就必须当没开
+    localStorage.setItem("quaiwei.structural", "yes");
+    expect(loadStructuralMode()).toBe(false);
   });
 
   it("地区用词：默认 none，存 zh-TW 读得回来，坏值一律落 none", () => {

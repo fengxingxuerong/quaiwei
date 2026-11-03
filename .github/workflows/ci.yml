@@ -46,6 +46,13 @@ jobs:
         # optional 类型缺失的兜底见 src/types/optional-deps.d.ts（用户侧保险）。
         run: npm ci --no-fund --no-audit
 
+      - name: Environment probe (环境预检)
+        # 2026-11-03 事故：本机 @esbuild/win32-x64 里的 esbuild.exe 被静默删除后，
+        # 31 个用例红了 4 天没人发现——tsc/vitest 的报错都被各自的失败掩盖。
+        # 这道闸在最前面回答「环境还健康吗」：esbuild 平台二进制在场、可执行、
+        # 版本与 JS 包一致；不过闸就别往下跑了，省得红出一片无关失败。
+        run: npm run check:env
+
       - name: Type check (tsc)
         run: npx tsc -b
 

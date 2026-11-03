@@ -89,6 +89,8 @@ import {
 
 // P7 引擎级体裁联动：自动体裁识别 + 每体裁参数旋钮
 import { classifyGenre, AutoGenre, suppressSelfQA } from "./classify-genre.ts";
+// v0.9.82：受限句序重排（--structural，默认关；守卫与设计缘由见模块头注释）
+import { structuralSentenceShuffle } from "./structural-shuffle.ts";
 // v0.9.53 拆分阶段 1b：朱雀增强 + 本地引擎单遍主体搬到 humanize-zhuque-apply.ts
 import { applyZhuqueFeatures, humanizeSingle, injectDialect } from "./humanize-zhuque-apply.ts";
 // v0.9.54：围栏代码块整块冻结（判据与区间表都在 text-shield.ts）
@@ -578,6 +580,13 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
       // 只有 casual 且非正式文档才允许聊天桥接；默认 plain 也不插「懂吧/你别说」
       officialDoc || (opts.style ?? "plain") !== "casual",
     );
+    // v0.9.82 受限句序重排（--structural / opts.structural，默认关）：
+    // 结构层收尾追加"相邻句至多一次交换"。产出是原句排列（句多重集不变），
+    // 补上"换词不换骨"里最后一块骨——句序——同时守住"不新增事实"。
+    // 守卫（回指/序列因果/引语/数字/首句锚定）见 structural-shuffle.ts。
+    if (opts.structural) {
+      result = structuralSentenceShuffle(result, structRng, intensity);
+    }
     // P7-D：humanHand 跳过错别字注入
     if (!knobs.disableTyposAnchor) {
       result = injectHumanTypos(result, structRng, intensity);
@@ -593,7 +602,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
         charsBefore: text.length,
         metric:
           intensity >= 0.55 && structuralAllowedGenre
-            ? "拆解论说文骨架 + 段落重排 + 错别字锚点"
+            ? "拆解论说文骨架 + 段落重排 + 错别字锚点" + (opts.structural ? " + 受限句序重排" : "")
             : intensity < 0.55
               ? `强度 ${intensity.toFixed(2)} < 0.55，不动结构`
               : `体裁 ${effectiveGenre} 按设计跳过结构层`,

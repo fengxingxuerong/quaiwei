@@ -15,6 +15,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import App from "./App";
 import { aiScore } from "./engine/humanize";
+import { registerIndex } from "./engine/register-metrics";
 import { loadViewMode, saveDraft } from "./store";
 
 const INPUT_TEXT =
@@ -144,6 +145,26 @@ describe("简洁模式：去味闭环与结果条", () => {
     expect(utils.getByText("复制结果")).toBeTruthy();
     expect(utils.getByText("导出 .docx")).toBeTruthy();
     expect(utils.getByText("导出 .txt")).toBeTruthy();
+  });
+
+  it("结果条带语体指数（2026-11-03）：数字与 registerIndex 逐位一致，标签是分带人话", async () => {
+    const utils = render(<App />);
+    await runOnce(utils);
+
+    const boxes = utils.container.querySelectorAll(".result-score");
+    expect(boxes.length).toBeGreaterThanOrEqual(2); // 第一个套话指数，第二个语体
+    const regBox = boxes[boxes.length - 1];
+    expect(regBox.textContent).toContain("语体");
+
+    // 数字不许是装饰：与 registerIndex(原文/产出) 逐位对上
+    const regBefore = registerIndex(INPUT_TEXT).index;
+    const regAfter = registerIndex(
+      (utils.getByPlaceholderText(/点击「去味」生成/) as HTMLTextAreaElement).value,
+    ).index;
+    expect(regBox.textContent).toContain(String(regBefore));
+    expect(regBox.textContent).toContain(String(regAfter));
+    // 标签必须来自 labelOf 分带，不是空白
+    expect(regBox.textContent).toMatch(/公文\/书面腔浓|偏书面|中性|偏口语|口语/);
   });
 
   it("点「复制结果」真的写剪贴板", async () => {

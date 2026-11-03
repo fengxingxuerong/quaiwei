@@ -55,6 +55,12 @@ const DROP_DIRS = [
   { p: path.join(APP_MODULES, "onnxruntime-web"), why: "浏览器版 ORT，主进程不加载" },
   { p: path.join(APP_MODULES, "onnxruntime-node", "bin", "napi-v6", "linux"), why: "非 win32 平台二进制" },
   { p: path.join(APP_MODULES, "onnxruntime-node", "bin", "napi-v6", "darwin"), why: "非 win32 平台二进制" },
+  // 2026-11-03 体积审计补：纯类型包，运行时永不加载 .d.ts。
+  // @types 经 sharp/protobufjs 等的 dependencies 传入（2.7MB），undici-types/type-fest 同理。
+  // 判据：目录里只有 .d.ts / *.d.ts 引用，无任何 require 目标。新增前请先核实这一点。
+  { p: path.join(APP_MODULES, "@types"), why: "纯 .d.ts，运行时不加载" },
+  { p: path.join(APP_MODULES, "undici-types"), why: "纯 .d.ts（@types/node 的传递依赖）" },
+  { p: path.join(APP_MODULES, "type-fest"), why: "纯 .d.ts（typedoc 链的传递依赖）" },
 ];
 
 if (!fs.existsSync(DIST)) {

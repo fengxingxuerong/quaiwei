@@ -25,6 +25,13 @@ export interface HumanizeOptions {
    *  / academic=学术体（禁方言/网络梗/主观意见，保留结构操作）。 */
   style?: RewriteStyle;
   /**
+   * v0.9.82 受限句序重排（默认关）。开启后在结构层（强度 ≥0.55、论说/公文/学术体裁）
+   * 末尾对守卫全过的相邻句做**至多一次交换**：产出是原句排列，句多重集逐字不变，
+   * "不新增事实"在构造上成立。守卫与翻车模式见 structural-shuffle.ts 头注释。
+   * 叙事/人写体裁不受此开关影响（保留作者结构是既有裁决）。
+   */
+  structural?: boolean;
+  /**
    * v3 P7 引擎级体裁联动：
    *  · main/narrative/dialogue：引擎自动/显式识别后，对应调 avgLen/burst 阈值、P3 结构门控强度
    *  · humanHand：纯人写原稿，强制强度 ≤0.48、关闭朱雀增强、跳过自问自答/错别字等（负斜率，越去味越升官%）
