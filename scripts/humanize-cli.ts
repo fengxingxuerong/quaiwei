@@ -69,6 +69,7 @@ import { scoreViaDetector, inferZhuqueDefaults, type DetectorConfig } from "../s
 import { readDocxText, writeDocxText } from "../src/docx-io";
 import { applyRegionalVariant, formatRegionalSummary, type RegionalHit } from "../src/engine/regional-zh";
 import { academicAudit, formatAcademicReport } from "../src/engine/academic-check";
+import { auditStructure, formatStructureReport } from "../src/engine/structure-audit";
 
 /** Buffer → 独立 ArrayBuffer（Buffer 可能是共享内存池上的视图，直接给 .buffer 会串） */
 function toArrayBuffer(b: Buffer): ArrayBuffer {
@@ -198,6 +199,12 @@ interface Args {
    */
   academicCheck: boolean;
   /**
+   * v0.9.84：篇章结构审计（`--audit-structure`）。**不落盘、不改一个字**，
+   * 只报「骨架像不像 AI」：标题承诺兑现、论点前置、首尾复述、小标题密度、
+   * 无人称解说腔、编号步骤化、段落均匀度。有 high 项退出码 2。
+   */
+  auditStructure: boolean;
+  /**
    * v0.9.81：`--against <文件>`。给学术自检用：拿这份**外部改写稿**去比原文，
    * 引擎不参与改写（审的是 LLM 深度模式产出 / 外部改写 / 合作者改的版本）。
    */
@@ -235,6 +242,7 @@ const USAGE =
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
   " [--academic-check [--against <改后稿>]]" +
+  " [--audit-structure [--against <改后稿>]]" +
   " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]..." +
   " [--recursive] [--jobs <n>] [--dry-run] [--skip-low-risk]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
@@ -269,7 +277,14 @@ const USAGE =
   "--report 记 lowYieldRisk / skippedLowRisk；引擎层（Web/MCP/API）行为不变。" +
   "\n  --against <文件>：配合 --academic-check 用。拿这份**外部改写稿**去比原文，" +
   "引擎不参与改写——审的是 LLM 深度模式产出、别人改的版本。这条路最容易真的丢数字/丢引用，" +
-  "也是唯一能判出 NOT READY 的实战场。";
+  "也是唯一能判出 NOT READY 的实战场。" +
+  "\n  --audit-structure：篇章结构审计。**不落盘、不改一个字**，只报骨架问题：" +
+  "标题承诺没兑现（说三个方法只写了一个）、论点后置（结论落在 60% 之后）、首尾复述、" +
+  "小标题过密、无人称解说腔、编号步骤化、段落长度过于均匀。判据全是可数特征，" +
+  "同一份稿子跑一百次报告逐字相同；不调模型、不联网。有 high 项退出码 2，否则 0。" +
+  "配 --against 则把外部改写稿也审一遍（对比用），不参与改写。" +
+  "**只报告，不自动改结构**——动段落顺序会破「不新增事实」的构造性保证，那一步留给人。" +
+  "\n  --style academic 时「无人称解说腔」降为 low（学术写作里「我们」本就合法），其余判据一视同仁。";
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
@@ -280,6 +295,7 @@ function parseArgs(argv: string[]): Args {
     style: "plain",
     variant: "none",
     academicCheck: false,
+    auditStructure: false,
     against: "",
     styleExplicit: false,
     suffix: ".humanized",
@@ -397,6 +413,9 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--academic-check":
         args.academicCheck = true;
+        break;
+      case "--audit-structure":
+        args.auditStructure = true;
         break;
       case "--against":
         args.against = a[++i] ?? "";
@@ -861,9 +880,77 @@ async function runAcademicCheck(args: Args): Promise<void> {
   process.exitCode = audit.verdict === "blocked" ? 2 : 0;
 }
 
+/**
+ * v0.9.84：篇章结构审计。**不落盘、不改一个字**，只打「骨架像不像 AI」的清单。
+ *
+ * 与 `--detect-only` 的分工：后者看**词句**（哪句像 AI、命中哪条规则），
+ * 这里看**篇章**（标题承诺兑没兑现、论点在第几段、首尾是否复述）。两者可以同跑，互不依赖。
+ *
+ * 退出码：0 = 没有 high 项，2 = 至少一处 high（可进 CI 当「别这么发」的闸），1 = 读不到输入。
+ * 为什么不直接给个「结构分」：本仓 2026-11-06 的评测已经证明单席绝对分不可复现
+ * （同一批文本、同模型同 prompt，隔一天能漂 12 分）。结构层同理——只报可数的命中，
+ * 不造第二个没有真值的分数。
+ */
+async function runStructureAudit(args: Args): Promise<void> {
+  const targets: { label: string; text: string }[] = [];
+
+  const readOne = async (f: string): Promise<string> =>
+    args.stdin ? fs.readFileSync(0, "utf8") : readInputText(f);
+
+  try {
+    if (args.stdin) {
+      const raw = await readOne("-");
+      if (!raw.trim()) {
+        console.error("✗ 标准输入为空（用法示例：cat 稿.txt | ai-humanizer --audit-structure）");
+        process.exitCode = 1;
+        return;
+      }
+      targets.push({ label: "stdin", text: raw });
+    } else {
+      const collected = collectInputFiles(args.input, {
+        recursive: args.recursive,
+        skipSuffix: args.suffix,
+      });
+      if (!collected.files.length) {
+        console.error(`未找到可审计的文件（支持 ${INPUT_EXTS_LABEL}）: ${args.input}`);
+        process.exitCode = 1;
+        return;
+      }
+      for (const f of collected.files) {
+        targets.push({ label: path.basename(f), text: await readInputText(f) });
+      }
+    }
+    if (args.against) {
+      targets.push({ label: `对比稿 ${path.basename(args.against)}`, text: await readInputText(args.against) });
+    }
+  } catch (e) {
+    console.error(`✗ 读输入失败：${(e as Error).message}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  let high = 0;
+  let mid = 0;
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    const step = targets.length > 1 ? `[${i + 1}/${targets.length}] ` : "";
+    const report = auditStructure(t.text, { style: args.style });
+    high += report.issues.filter((x) => x.severity === "high").length;
+    mid += report.issues.filter((x) => x.severity === "medium").length;
+    console.log(`${step}── ${t.label} ──`);
+    console.log(formatStructureReport(report));
+    console.log("");
+  }
+
+  if (targets.length > 1) {
+    console.log(`汇总：${targets.length} 份 · 硬伤 ${high} 处 · 待商榷 ${mid} 处`);
+  }
+  // 硬伤进退出码：CI 里「结构没收拾好就别发」比一句提示有用
+  process.exitCode = high > 0 ? 2 : 0;
+}
+
 async function main() {
   const args = parseArgs(process.argv);
-
   // v0.9.40：--help / -h → 用法走 stdout + 退出 0（诊断才走 stderr，帮助不是错误）
   if (args.help) {
     process.stdout.write(`${USAGE}\n`);
@@ -894,6 +981,12 @@ async function main() {
   // v0.9.81：学术自检优先于批量流程——它不落盘，只出判定
   if (args.academicCheck) {
     await runAcademicCheck(args);
+    return;
+  }
+
+  // v0.9.84：结构审计同理——不落盘、不改字，读输入出报告（支持 stdin 与目录）
+  if (args.auditStructure) {
+    await runStructureAudit(args);
     return;
   }
 
