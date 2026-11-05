@@ -40,7 +40,10 @@ beforeAll(async () => {
       const raw = Math.max(0, Math.min(100, Math.round(text.length / 8)));
       res.writeHead(200, { "Content-Type": "application/json" });
       // v0.9.71：两个路径给不同形状/刻度，验证「每档各自读自己的点路径与刻度」
-      if ((req.url ?? "").startsWith("/half")) {
+      if ((req.url ?? "").startsWith("/v1/providers/zhuque-text/classify")) {
+        // 朱雀官方网关形状：分数在 softmax_confidence，0-1 刻度
+        res.end(JSON.stringify({ status: "success", msg: "", softmax_confidence: 0.4 }));
+      } else if ((req.url ?? "").startsWith("/half")) {
         res.end(JSON.stringify({ data: { prob: raw / 100 } })); // 0-1 刻度
       } else {
         res.end(JSON.stringify({ data: { prob: raw } }));
@@ -216,5 +219,42 @@ describe("CLI 外部检测器（--detector-url）", () => {
       expect(row.after).toBeGreaterThanOrEqual(0);
       expect(row.after).toBeLessThanOrEqual(100);
     }
+  }, 120_000);
+
+  it("朱雀官方网关 URL 只给 --detector-url 也能自动补 softmax_confidence / 0-1", async () => {
+    const dir = tmpDir();
+    const input = path.join(dir, "z.txt");
+    fs.writeFileSync(input, SAMPLE, "utf-8");
+    const report = path.join(dir, "r.json");
+    seen.length = 0;
+
+    await execFileAsync(
+      process.execPath,
+      [
+        TSX,
+        CLI,
+        input,
+        "--out",
+        dir,
+        "--report",
+        report,
+        "--intensity",
+        "0.6",
+        "--seed",
+        "7",
+        "--detector-url",
+        `http://127.0.0.1:${port}/v1/providers/zhuque-text/classify`,
+      ],
+      { cwd: ROOT, timeout: 120_000 },
+    );
+
+    const rep = JSON.parse(fs.readFileSync(report, "utf-8")) as {
+      reports: { detectorBefore?: number; detectorAfter?: number; detectorError?: string }[];
+    };
+    const row = rep.reports[0];
+    expect(row.detectorError).toBeUndefined();
+    // 假靶场固定回 0.4；0-1 刻度折算后是 40。若退回默认 score/0-100 会因取不到路径而失败。
+    expect(row.detectorBefore).toBe(40);
+    expect(row.detectorAfter).toBe(40);
   }, 120_000);
 });

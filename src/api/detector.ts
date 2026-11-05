@@ -43,8 +43,25 @@ export const ZHUQUE_OFFICIAL_DETECTOR: DetectorConfig = {
   scale: "0-1",
 };
 
+/**
+ * 朱雀官方网关 URL 形状。命中即补官方 scorePath / scale ——
+ * 用户只给 `--detector-url` 也能用对口径，不必手填三个参数。
+ * 显式传过 --detector-path / --detector-scale 的以用户为准（由调用方判断是否覆盖）。
+ */
+const ZHUQUE_PATH_RE = /\/v1\/providers\/zhuque-text\/classify(?:[/?#]|$)/i;
+export function inferZhuqueDefaults(url: string): { scorePath: string; scale: "0-1" } | null {
+  return ZHUQUE_PATH_RE.test(url)
+    ? { scorePath: ZHUQUE_OFFICIAL_DETECTOR.scorePath, scale: "0-1" }
+    : null;
+}
+
 /** status 字段白名单。只在响应**自报**状态时开火；没有 status 的第三方接口不受影响。 */
 const SUCCESS_STATUS = /^(success|ok|true|passed)$/i;
+
+/** msg 里的失败语义词。很多第三方接口把 "ok" / "检测完成" 放进 msg，
+ *  一刀切当成失败会让正常响应被误判成故障（外部靶场实测）。 */
+const FAILURE_MSG_RE =
+  /fail|error|quota|exceed|invalid|expired|denied|unauthor|forbidden|timeout|degraded|insufficient|too short|below the .*minimum|失败|错误|配额|超限|无效|过期|不足|不可用/i;
 
 /**
  * 显式失败信号。要挡的是这种最危险的形态：
@@ -62,9 +79,11 @@ function failureSignal(data: Record<string, unknown>): string | null {
     why.push(`接口自报状态 status=${st.trim()}`);
   }
   const msg = data.msg;
-  if (typeof msg === "string" && msg.trim()) why.push(`错误信息：${msg.trim().slice(0, 120)}`);
+  if (typeof msg === "string" && msg.trim() && FAILURE_MSG_RE.test(msg)) {
+    why.push(`错误信息：${msg.trim().slice(0, 120)}`);
+  }
   const err = data.error;
-  if (err != null && err !== false && err !== "") {
+  if (err != null && err !== false && err !== "" && err !== 0) {
     const s = typeof err === "string" ? err : JSON.stringify(err);
     if (s.trim() && s !== "{}" && s !== "[]") why.push(`接口返回错误：${s.slice(0, 120)}`);
   }
@@ -91,7 +110,14 @@ export function extractScore(
   raw: Record<string, unknown>,
   cfg: DetectorConfig = ZHUQUE_OFFICIAL_DETECTOR,
 ): number {
-  let n = Number(getPath(raw, cfg.scorePath));
+  const v = getPath(raw, cfg.scorePath);
+  // Number("") / Number(false) / Number([]) / Number(null) 全是 0 —— 一次接口字段异常
+  // 会被静默读成「0 分 = 完全人类」，与 failureSignal 要挡的是同一类失败方向。
+  // 只接受有限数字与非空数字字符串；布尔/数组/对象/null 一律判为解析失败。
+  let n: number;
+  if (typeof v === "number") n = v;
+  else if (typeof v === "string" && v.trim() !== "") n = Number(v.trim());
+  else throw new Error(`无法从响应解析分数（路径 ${cfg.scorePath}）`);
   if (!isFinite(n)) throw new Error(`无法从响应解析分数（路径 ${cfg.scorePath}）`);
   if (cfg.scale === "0-1") n = n * 100;
   return Math.max(0, Math.min(100, Math.round(n)));

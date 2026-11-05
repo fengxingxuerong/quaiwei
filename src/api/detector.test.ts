@@ -10,6 +10,7 @@ import {
   DEFAULT_DETECTOR,
   ZHUQUE_OFFICIAL_DETECTOR,
   scoreViaDetector,
+  inferZhuqueDefaults,
   type DetectorConfig,
 } from "./detector";
 
@@ -91,6 +92,19 @@ describe("scoreViaDetector（失败路径）", () => {
     await expect(scoreViaDetector("文本", cfg())).rejects.toThrow("无法从响应解析分数");
   });
 
+  // 外部靶场实测：这些形状 Number() 都会得到 0，旧逻辑会把接口故障读成「0 分 = 完全人类」。
+  it.each([
+    ["空字符串", ""],
+    ["布尔 false", false],
+    ["布尔 true", true],
+    ["空数组", []],
+    ["null", null],
+    ["对象", {}],
+  ])("scorePath 命中 %s 时抛错，不读成 0 分", async (_label, value) => {
+    stubFetch({ body: { score: value } });
+    await expect(scoreViaDetector("文本", cfg())).rejects.toThrow("无法从响应解析分数");
+  });
+
   it("嵌套路径中途断裂（data 为 null）时抛错而不是崩溃", async () => {
     stubFetch({ body: { data: null } });
     await expect(scoreViaDetector("文本", cfg({ scorePath: "data.prob" }))).rejects.toThrow(
@@ -127,6 +141,20 @@ describe("scoreViaDetector（失败路径）", () => {
   it("error:false / msg 空串 / status=success 的正常响应不误伤", async () => {
     stubFetch({ body: { status: "success", msg: "", error: false, score: 12 } });
     await expect(scoreViaDetector("文本", cfg())).resolves.toBe(12);
+  });
+
+  it.each([
+    ["msg=ok", { msg: "ok", score: 12 }],
+    ["msg=检测完成", { msg: "检测完成", score: 12 }],
+    ["error:0", { error: 0, score: 12 }],
+  ])("正常响应里的 %s 不该被当成失败信号", async (_label, extra) => {
+    stubFetch({ body: { status: "success", ...extra } });
+    await expect(scoreViaDetector("文本", cfg())).resolves.toBe(12);
+  });
+
+  it("msg 含失败语义（degraded）时仍按既有裁决拦截", async () => {
+    stubFetch({ body: { status: "success", msg: "degraded: fallback model", score: 5 } });
+    await expect(scoreViaDetector("文本", cfg())).rejects.toThrow(/degraded/);
   });
 
   it("没有 status 字段的第三方接口不受白名单影响（向后兼容）", async () => {
@@ -240,5 +268,25 @@ describe("ZHUQUE_OFFICIAL_DETECTOR（朱雀官方预设）", () => {
     await expect(
       scoreViaDetector("hello world", { ...ZHUQUE_OFFICIAL_DETECTOR, apiKey: "k" }),
     ).resolves.toBe(19);
+  });
+});
+
+describe("inferZhuqueDefaults（官方网关 URL 自动补口径）", () => {
+  it("官方网关 URL 命中，给出 softmax_confidence / 0-1", () => {
+    expect(inferZhuqueDefaults(ZHUQUE_OFFICIAL_DETECTOR.url)).toEqual({
+      scorePath: "softmax_confidence",
+      scale: "0-1",
+    });
+  });
+
+  it("带查询串的同路径也命中；自建/第三方路径不命中", () => {
+    expect(
+      inferZhuqueDefaults("http://127.0.0.1:9999/v1/providers/zhuque-text/classify?x=1"),
+    ).toEqual({
+      scorePath: "softmax_confidence",
+      scale: "0-1",
+    });
+    expect(inferZhuqueDefaults("https://det.example.com/score")).toBeNull();
+    expect(inferZhuqueDefaults("")).toBeNull();
   });
 });

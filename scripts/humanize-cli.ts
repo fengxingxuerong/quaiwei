@@ -65,7 +65,7 @@ import { explainChanges, formatExplain, type ExplainItem } from "../src/engine/e
 import { formatReview, reviewText, type ReviewReport } from "../src/engine/review";
 import { runHumanize } from "../src/api/llm";
 import { DEFAULT_API, loadPresetKeys, type ApiConfig } from "../src/api/llm-config";
-import { scoreViaDetector, type DetectorConfig } from "../src/api/detector";
+import { scoreViaDetector, inferZhuqueDefaults, type DetectorConfig } from "../src/api/detector";
 import { readDocxText, writeDocxText } from "../src/docx-io";
 import { applyRegionalVariant, formatRegionalSummary, type RegionalHit } from "../src/engine/regional-zh";
 import { academicAudit, formatAcademicReport } from "../src/engine/academic-check";
@@ -239,6 +239,8 @@ const USAGE =
   "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段；" +
   "**可重复**——给多个 --detector-url 就逐档送检、横向对比（紧跟其后的 key/path/scale 只作用在这一档）。" +
   " 凭证建议走环境变量 QUAIWEI_DETECTOR_KEY，别写进命令行历史。\n" +
+  "  --detector-url 指向朱雀官方网关（.../v1/providers/zhuque-text/classify）时自动补 " +
+  "softmax_confidence + 0-1 刻度，不必手填；显式给 path/scale 则以你给的为准。\n" +
   "  --recursive 目录扫描进子目录（默认不进）；--jobs 仅 --api 模式生效（并发路数）；" +
   "  --dry-run 只列出将处理的文件不落盘。目录批量默认跳过已带输出后缀的产物（重跑幂等）。" +
   "\n  --detect-only 审题模式：只给「AI 味痕迹地图」（哪句、为什么命中、怎么改），" +
@@ -835,13 +837,19 @@ async function main() {
    */
   const detectorCfgs: DetectorConfig[] = args.detectors
     .filter((d) => d.url.trim() !== "")
-    .map((d) => ({
-      enabled: true,
-      url: d.url,
-      apiKey: d.key || process.env.QUAIWEI_DETECTOR_KEY || "",
-      scorePath: d.path,
-      scale: d.scale,
-    }));
+    .map((d) => {
+      // 朱雀官方网关：只给 --detector-url 也自动用官方口径（softmax_confidence / 0-1）。
+      // 显式传过 path 或 scale 的以用户为准，避免覆盖自定义检测器。
+      const preset =
+        d.path === "score" && d.scale === "0-100" ? inferZhuqueDefaults(d.url) : null;
+      return {
+        enabled: true,
+        url: d.url,
+        apiKey: d.key || process.env.QUAIWEI_DETECTOR_KEY || "",
+        scorePath: preset?.scorePath ?? d.path,
+        scale: (preset?.scale ?? d.scale) as "0-100" | "0-1",
+      };
+    });
 
   // v0.9.81：学术自检优先于批量流程——它不落盘，只出判定
   if (args.academicCheck) {

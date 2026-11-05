@@ -42,6 +42,25 @@
 - `scripts/calibration-data-v2-genres.json` 保留：它是 `regression-12samples` D 组的冻结夹具
   （`V2_JSON_PATH` 指向它），与已删除的 `calibration-data.json` 是两个文件。
 
+### 三、CLI 外部检测器兼容性（外部靶场实测后补，2026-11-05）
+
+用本地 mock 靶场模拟 16 种第三方返回形状，逐项跑真 CLI（`dist-cli/humanize-cli.mjs`），
+抓到并修掉三类问题：
+
+- **危险形状被读成「0 分 = 完全人类」**：`{"score": ""}` / `false` / `true` / `[]` / `null`
+  经 `Number()` 都会得到 0 或 1，旧逻辑当成合法分数。改为只接受有限数字与非空数字字符串，
+  其余一律判解析失败并写进 `detectorError`（不中断出稿）。这与 `failureSignal` 挡的是同一类失败方向。
+- **正常响应被误判失败**：`status=success, msg="ok"` 这类第三方常见形状，旧逻辑因 msg 非空直接判故障。
+  改为只在 msg 带失败语义词（error / quota / degraded / 配额…）时拦截，`error: 0` 同样不再误伤；
+  既有「status=error」「degraded」裁决保持不变。
+- **朱雀官方网关零适配**：`--detector-url` 指向 `.../v1/providers/zhuque-text/classify`
+  且未显式给 path/scale 时，自动补 `softmax_confidence` + `0-1` 刻度，不必手填三参数；
+  显式传过 path/scale 的以用户为准，不影响自建检测器。
+
+测试：`src/api/detector.test.ts` 40 例、`scripts/humanize-cli-detector.test.ts` 5 例
+（新增进程级「官方网关自动补口径」用例）；全量门禁 122 文件 / 2293 用例全绿。
+靶场脚本与结果留档在本机 `/d/projects/_quaiwei-tmp/target_range.py`（不入库）。
+
 ## v0.9.82 更新（受限句序重排 / 语体指数 / 环境预检 / 并发门禁，2026-11-04）
 
 ### 一、这一版加了什么
