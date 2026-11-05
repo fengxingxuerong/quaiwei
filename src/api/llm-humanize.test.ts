@@ -4,6 +4,7 @@ import {
   humanizeViaApiDeep,
   FabricationVetoError,
   buildSystemPrompt,
+  emptyContentError,
 } from "./llm-humanize.ts";
 import { DEFAULT_API } from "./llm-config.ts";
 import { buildRevisionPrompt } from "./llm-prompts.ts";
@@ -1055,7 +1056,7 @@ describe("全链路失败时的对外契约（探针实证：行 517-521 是死�
       }),
     );
     // 契约：抛出的必须是「可操作提示」，而不是空稿（用户看不出发生了什么）
-    await expect(
+    const run = () =>
       humanizeViaApiDeep(
         "值得注意的是，人工智能正在深刻地改变着我们的生活方式。",
         cfg,
@@ -1063,8 +1064,37 @@ describe("全链路失败时的对外契约（探针实证：行 517-521 是死�
         10,
         4,
         0.6,
-      ),
-    ).rejects.toThrow(/空内容|回退本地引擎/);
+      );
+    await expect(run()).rejects.toThrow(/空内容|回退本地引擎/);
+    // 2026-11-05：401 这类网关失败不能被伪装成「思考预算耗尽」，现场必须带状态码
+    let msg = "";
+    try {
+      await run();
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    expect(msg).toContain("401");
+  });
+});
+
+describe("emptyContentError（空内容错误要带真实网关原因）", () => {
+  it("没有失败原因时沿用旧提示", () => {
+    const m = emptyContentError().message;
+    expect(m).toContain("模型返回空内容");
+    expect(m).toContain("思考型模型 token 预算耗尽");
+    expect(m).not.toContain("网关失败");
+  });
+
+  it("有 429/超时原因时写进错误，而不是让玩家猜", () => {
+    const m = emptyContentError("API 返回 429（网关限流）").message;
+    expect(m).toContain("模型返回空内容");
+    expect(m).toContain("网关失败");
+    expect(m).toContain("429");
+  });
+
+  it("超长原因截断，避免把整个响应体刷进日志", () => {
+    const m = emptyContentError("x".repeat(500)).message;
+    expect(m.length).toBeLessThan(300);
   });
 });
 

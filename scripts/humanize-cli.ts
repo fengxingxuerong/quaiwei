@@ -155,6 +155,8 @@ interface Args {
   contest: number;
   maxCalls: number;
   maxWait: number;
+  /** 单次 LLM 请求超时（秒）。0 = 沿用默认 90 秒 */
+  llmTimeout: number;
   /** v0.9.62 深度模式达标线：LLM 评判 ≤ 此分即收手。0 = 沿用默认（DEEP_TARGET_SCORE） */
   target: number;
   strict: boolean;
@@ -227,6 +229,7 @@ const USAGE =
   " [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]" +
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
+  " [--llm-timeout <sec>]" +
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
   " [--academic-check [--against <改后稿>]]" +
@@ -235,6 +238,8 @@ const USAGE =
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
   "  --base-url 填网关绝对地址（如 https://token.sensenova.cn/v1）。UI 设置里的 /sensenova/v1" +
   " 是同源代理专用写法（代理会剥掉 /sensenova 前缀再转发），CLI 直连勿带这段前缀。\n" +
+  "  --llm-timeout <sec>：单次 LLM 请求超时，默认 90 秒（上限 600）。思考型模型 + 长提示词" +
+  " 在慢网关上可能要 2~3 分钟，调大它可避免请求被掐断后误报「模型返回空内容」。\n" +
   "  --detector-url：接**任意**外部检测器（把 {text} POST 过去，按 --detector-path 取分，" +
   "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段；" +
   "**可重复**——给多个 --detector-url 就逐档送检、横向对比（紧跟其后的 key/path/scale 只作用在这一档）。" +
@@ -282,6 +287,7 @@ function parseArgs(argv: string[]): Args {
     contest: 1,
     maxCalls: 0,
     maxWait: 0,
+    llmTimeout: 0,
     target: 0,
     strict: false,
     structural: false,
@@ -332,6 +338,7 @@ function parseArgs(argv: string[]): Args {
     "--contest",
     "--max-calls",
     "--max-wait",
+    "--llm-timeout",
     "--persona",
     "--report",
     "--out-format",
@@ -430,6 +437,10 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--max-wait":
         args.maxWait = Math.max(0, Math.floor(num(a[++i], 0)));
+        break;
+      case "--llm-timeout":
+        // 0 = 不覆盖（沿用 90 秒）；上限由 resolveRequestTimeoutMs 统一钳到 600 秒
+        args.llmTimeout = Math.max(0, Math.floor(num(a[++i], 0)));
         break;
       case "--target":
         // 1~100：0 与负数留给"不设、走默认"，>100 等于永不达标之外的反效果
@@ -539,6 +550,7 @@ function buildApiConfig(args: Args): ApiConfig {
   // 达标线：只覆盖用户显式给过的（0 = 沿用 DEEP_TARGET_SCORE），保持"不传即旧行为"
   if (args.target > 0) cfg.deepTargetScore = args.target;
   if (args.baseUrl) cfg.baseUrl = args.baseUrl;
+  if (args.llmTimeout > 0) cfg.requestTimeoutMs = args.llmTimeout * 1000;
   if (args.model) cfg.model = args.model;
   if (args.judgeModel) cfg.judgeModel = args.judgeModel;
   if (args.altModel) cfg.altModel = args.altModel;

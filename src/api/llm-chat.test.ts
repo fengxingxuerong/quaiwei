@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { chat } from "./llm-chat";
+import { chat, resolveRequestTimeoutMs } from "./llm-chat";
 import type { ApiConfig } from "./llm-config";
 
 function resp(status: number, content = "改写后的文本。"): Response {
@@ -548,5 +548,24 @@ describe("请求体：推理强度按需附加 + 响应畸形兜底", () => {
     const r = await chat(cfg, msgs2, opts2);
     expect(r.content).toBe("");
     expect(r.reasoning).toBe("");
+  });
+});
+
+describe("resolveRequestTimeoutMs（单次请求超时可配）", () => {
+  it("不配 = 90 秒，保持旧行为", () => {
+    expect(resolveRequestTimeoutMs({})).toBe(90_000);
+    expect(resolveRequestTimeoutMs({ requestTimeoutMs: undefined })).toBe(90_000);
+  });
+
+  it("配了合法值就用它（CLI 传秒，这里已是毫秒）", () => {
+    expect(resolveRequestTimeoutMs({ requestTimeoutMs: 300_000 })).toBe(300_000);
+    expect(resolveRequestTimeoutMs({ requestTimeoutMs: 1200.6 })).toBe(1201);
+  });
+
+  it("非法/越界值回退或钳制，不把请求立刻掐死", () => {
+    expect(resolveRequestTimeoutMs({ requestTimeoutMs: 0 })).toBe(90_000);
+    expect(resolveRequestTimeoutMs({ requestTimeoutMs: -1 })).toBe(90_000);
+    expect(resolveRequestTimeoutMs({ requestTimeoutMs: Number.NaN })).toBe(90_000);
+    expect(resolveRequestTimeoutMs({ requestTimeoutMs: 9_999_999 })).toBe(600_000);
   });
 });

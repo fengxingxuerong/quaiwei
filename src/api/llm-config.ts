@@ -49,6 +49,11 @@ export interface ApiConfig {
    *  low / medium / high / max / x-high。max 最强但最慢。
    *  OpenRouter 的推理模型通过 reasoning.effort 参数传入。 */
   reasoningEffort?: "low" | "medium" | "high" | "max" | "x-high";
+  /** 单次 LLM 请求超时（毫秒）。不传 = 90 秒（保持旧行为）。
+   *  2026-11-05 实测：思考型模型 + 长 system prompt + 8000/16000 max_tokens 在部分网关上
+   *  单次要 88~180 秒，90 秒硬编码会把可用请求掐断，最终被误报成「模型返回空内容」。
+   *  上限 600000（10 分钟），下限 1000，避免误填 0 或负数把请求立刻掐掉。 */
+  requestTimeoutMs?: number;
   /** 深度模式最长等待时间（秒）：0 = 不限制，超过后带当前最优结果收场。
    *  推理模型（Ox Alpha max 档约 50s/轮）跑 4 轮可能 3-4 分钟，用户可设 60/120/300 控制耐心。 */
   maxWaitSeconds?: number;

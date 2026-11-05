@@ -37,6 +37,17 @@ export class BudgetStoppedError extends Error {
   }
 }
 
+/**
+ * 单次请求超时。默认 90 秒不变（老网关/老行为），可通过 ApiConfig.requestTimeoutMs 调长。
+ * 抽成纯函数是为了能直接单测：慢思考型网关上，超时值配错的表现是「空内容回退本地」，
+ * 现场完全没有时间线索，只能靠这里守住边界。
+ */
+export function resolveRequestTimeoutMs(cfg: Pick<ApiConfig, "requestTimeoutMs">): number {
+  const n = cfg?.requestTimeoutMs;
+  if (typeof n !== "number" || !Number.isFinite(n) || n < 1000) return 90_000;
+  return Math.min(600_000, Math.round(n));
+}
+
 export async function chat(
   cfg: ApiConfig,
   messages: ChatMessage[],
@@ -86,7 +97,7 @@ export async function chat(
     try {
       resp = await fetch(url, {
         method: "POST",
-        signal: AbortSignal.timeout(90_000),
+        signal: AbortSignal.timeout(resolveRequestTimeoutMs(cfg)),
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${keys[keyIdx]}`,

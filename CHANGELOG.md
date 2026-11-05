@@ -61,6 +61,22 @@
 （新增进程级「官方网关自动补口径」用例）；全量门禁 122 文件 / 2293 用例全绿。
 靶场脚本与结果留档在本机 `/d/projects/_quaiwei-tmp/target_range.py`（不入库）。
 
+### 四、LLM 深度模式：超时可配 + 网关错误不再伪装成「空内容」
+
+2026-11-05 双网关真实压测（思考型 `glm-5.3-flash`）暴露两处硬伤：
+
+- `src/api/llm-chat.ts` 把单次请求超时**写死 90 秒**；慢网关上长 system prompt（3866 字）
+  加 8000/16000 `max_tokens` 实测要 88~180 秒，可用请求被客户端掐断。新增
+  `ApiConfig.requestTimeoutMs`（默认 90 秒不变，钳在 1~600 秒）与 CLI `--llm-timeout <sec>`，
+  纯函数 `resolveRequestTimeoutMs()` 单测锁住边界。
+- `chatNonEmpty()` 逐档吞异常、全失败只回空串；上层把 429 限流 / 超时 / 401 一律报成
+  「模型返回空内容（思考型模型 token 预算耗尽）」，用户无从判断该换网关还是提预算。
+  现在保留最后一次真实失败原因，经 `emptyContentError()` 写进错误与 note；
+  既有「空内容」降级契约与测试断言不变。
+
+配套：`llm-chat.test.ts` +3 例、`llm-humanize.test.ts` +4 例（含 401 现场必须带状态码）、
+`check:release` 全链复跑。
+
 ## v0.9.82 更新（受限句序重排 / 语体指数 / 环境预检 / 并发门禁，2026-11-04）
 
 ### 一、这一版加了什么

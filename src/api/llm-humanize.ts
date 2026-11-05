@@ -233,7 +233,11 @@ async function chatNonEmpty(
   opts: { temperature: number; maxTokens: number; model?: string },
   altModel: string,
   isOverBudget: () => boolean,
-): Promise<{ content: string; via: string }> {
+): Promise<{ content: string; via: string; failure?: string }> {
+  // 保留最后一次真实失败原因（429 限流 / 请求超时 / 401 鉴权…）。
+  // 2026-11-05 实测：全档失败只回空串，上层一律报「思考预算耗尽」，
+  // 把网关故障伪装成模型问题，用户无从判断该换网关还是调 max_tokens。
+  let lastFailure = "";
   const attempts: { model?: string; maxTokens: number; label: string }[] = [
     { model: opts.model, maxTokens: opts.maxTokens, label: "" },
     { model: opts.model, maxTokens: Math.min(32000, opts.maxTokens * 2), label: "token 预算翻倍" },
@@ -258,13 +262,25 @@ async function chatNonEmpty(
         isOverBudget,
       );
       if (r.content) return { content: r.content, via: attempts[i].label };
-    } catch {
+    } catch (e) {
+      lastFailure = errMsg(e).slice(0, 200);
       // 单档失败交给下一档降级；全部失败由调用方按空内容处理。
       // 预算到点(BudgetStopped)也走这里：其结果是"本轮拿不到内容"，与既有
       // "超预算带已有最优结果收场"是同一条路径，不改变交付语义。
     }
   }
-  return { content: "", via: "" };
+  return { content: "", via: "", failure: lastFailure || undefined };
+}
+
+/**
+ * 「空内容」错误的唯一构造点。有网关失败原因就带上（429 限流 / 请求超时 / 401 鉴权），
+ * 否则沿用原来的「思考预算耗尽」提示。保留「模型返回空内容」前缀，既有降级契约不变。
+ */
+export function emptyContentError(failure?: string): Error {
+  const why = failure ? `网关失败：${failure.slice(0, 200)}；` : "";
+  return new Error(
+    `模型返回空内容（${why}也可能是思考型模型 token 预算耗尽，可重试或换非思考型模型）`,
+  );
 }
 
 /** v0.9.4 P2：去空白字符数之比（产出/原文），作为压缩率口径 */
@@ -592,6 +608,7 @@ export async function humanizeViaApiDeep(
     // 单轮失败（限流耗尽/网络）不丢掉已完成成果：有 bestText 就带结果收场
     let content: string;
     let retryVia: string | undefined; // v0.8.9：记录本轮靠哪档降级重试拿到的内容（undefined=未重试）
+    let lastFailure: string | undefined; // 本轮网关真实失败原因，用于把「空内容」错误说清楚
     try {
       const userMsg = bestText
         ? buildRevisionPrompt(
@@ -622,6 +639,7 @@ export async function humanizeViaApiDeep(
       );
       content = r.content;
       retryVia = r.via;
+      lastFailure = r.failure;
     } catch (e: unknown) {
       // ⚠️ 结构性死分支（2026-10-05 核实）：本 catch 在**任何网关失败下都不可达**。
       // chatNonEmpty（行 163-186）逐档 try/catch，异常一律吞掉，全失败时
@@ -655,13 +673,15 @@ export async function humanizeViaApiDeep(
         content = fb.content;
         retryVia = retryVia ? `${retryVia}+纯原文重改写` : "纯原文重改写";
       }
+      lastFailure = fb.failure || lastFailure;
     }
     if (!content) {
       if (!bestText) {
-        throw new Error("模型返回空内容（思考型模型 token 预算耗尽，可重试或换非思考型模型）");
+        throw emptyContentError(lastFailure);
       }
       // v0.8.9：已走完降级重试仍为空才放弃，并把重试情况写进 note 让 UI 可见
       note = `第 ${round} 轮模型返回空内容${retryVia ? `（已重试：${retryVia}）` : "（降级重试亦为空）"}，返回已有最优结果`;
+      if (lastFailure) note += `｜网关原因：${lastFailure}`;
       break;
     }
 
