@@ -226,14 +226,19 @@ export interface ParaChunk {
 }
 
 /**
- * 按 `\n+` 切段，同时保留偏移与分隔符。
+ * 按连续换行切段，同时保留偏移与分隔符。
+ *
+ * v0.9.84：`\n+` → `(?:\r\n|\n)+`。Windows 文本模式下写入的 CRLF 稿里，
+ * 旧正则只吃掉 `\n`、把 `\r` 留在段文本中，结构行沿用 `sep` 拼回去时会少一个空行
+ * （C22-markdown-struct 实测 5 空行 → 4）。对纯 LF 输入本改法与 `\n+` 逐字等价，
+ * 因为 `\r\n` 分支永不命中；CRLF 输入则能把完整行尾收进 `sep`，按原样还原。
  *
  * 与 `text.split(/\n+/)` 等价（同样丢空段），但多带两个字段——冻结块（代码块）
  * 要靠 `sep` 拼回原文的行间距，靠 `start` 判断自己是否落在保护区里。
  */
 export function splitParagraphChunks(text: string): ParaChunk[] {
   const out: ParaChunk[] = [];
-  const re = /\n+/g;
+  const re = /(?:\r\n|\n)+/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {

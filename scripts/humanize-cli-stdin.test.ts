@@ -90,6 +90,11 @@ async function runCli(argv: string[], input: string): Promise<RunResult> {
 const AI_TEXT =
   "本文首先阐述了人工智能技术的发展现状，其次分析了其在各行各业中的广泛应用。综上所述，人工智能技术具有广阔的发展前景，值得我们高度重视。";
 
+/** v0.9.84：人写口语稿，探针实测 aiScore=6（人写带 ≤27）。
+ *  注意 AI_TEXT 的 aiScore 也只有 11——这正是「不能用 aiScore 一刀切跳过」的实物证据。 */
+const HUMAN_TEXT =
+  "我家楼下那家早餐店开了快十年了。老板娘记得我不吃香菜，每次都是提前给我挑出来。有次我出差一个月没去，回来她问我：上哪儿发财去了？这店能开十年，靠的不是什么营销打法，就是记得住人。";
+
 describe("humanize-cli stdin 模式", () => {
   it("显式 - 参数：stdin 进 → stdout 出去味正文，诊断在 stderr", async () => {
     const r = await runCli(["-", "--seed", "42"], `${AI_TEXT}\n`);
@@ -168,5 +173,79 @@ describe("humanize-cli stdin 模式", () => {
     const r = await runCli(["--help"], "");
     expect(r.code).toBe(0);
     expect(r.stdout).toContain("--help");
+  }, 60_000);
+});
+
+/* ─────────── v0.9.84 --skip-low-risk ───────────
+ * 背景：双网关独立评委实测，aiScore≤27 的 20 篇里 7 篇改后反而更像 AI；
+ * 但 13 篇是改善的，且典型 AI 腔短稿（上面 AI_TEXT）aiScore 也只有 11。
+ * ⇒ 不能默认跳过，只给醒目警告；想要保护的人自己加 --skip-low-risk（opt-in）。
+ * 这三条锁住：默认不 breaking、开关真跳过、批量仍产出同名文件且报告可查。
+ */
+describe("v0.9.84 --skip-low-risk（人写带可选原样出稿）", () => {
+  it("默认（无开关）：人写带照常改写，stderr 给独立评委实测的醒目警告", async () => {
+    const r = await runCli(["-", "--intensity", "0.9", "--seed", "42"], HUMAN_TEXT);
+    expect(r.code).toBe(0);
+    expect(r.stderr).toContain("人写带");
+    expect(r.stderr).toContain("独立评委实测");
+    expect(r.stderr).not.toContain("按 --skip-low-risk 原样输出");
+  }, 60_000);
+
+  it("--skip-low-risk：stdin 人写带原样输出，stderr 明说未改写", async () => {
+    const r = await runCli(["-", "--skip-low-risk"], HUMAN_TEXT);
+    expect(r.code).toBe(0);
+    expect(r.stdout.trimEnd()).toBe(HUMAN_TEXT);
+    expect(r.stderr).toContain("按 --skip-low-risk 原样输出");
+  }, 60_000);
+
+  it("批量：仍产出同名文件（内容=原文），--report 记 skippedLowRisk", async () => {
+    const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "quaiwei-lowrisk-"));
+    const out = path.join(dir, "out");
+    const rep = path.join(dir, "rep.json");
+    fs.mkdirSync(out);
+    fs.writeFileSync(path.join(dir, "a.txt"), HUMAN_TEXT, "utf8");
+    try {
+      const r = await runCli([dir, "--out", out, "--skip-low-risk", "--report", rep], "");
+      expect(r.code).toBe(0);
+      expect(fs.readFileSync(path.join(out, "a.humanized.txt"), "utf8")).toBe(HUMAN_TEXT);
+      const j = JSON.parse(fs.readFileSync(rep, "utf8"));
+      expect(j.totals.skippedLowRisk).toBe(1);
+      expect(j.reports[0].skippedLowRisk).toBe(true);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it("组合判据更准：书面套话命中多的低分稿不再被跳过（真改写）", async () => {
+    const corpus = JSON.parse(
+      fs.readFileSync(path.join(ROOT, "scripts", "realcase", "cases.json"), "utf8"),
+    ) as { cases: { id: string; text: string }[] };
+    // C23：aiScore=12（人写带）但 formalHits=3；双网关评测里改写改善 +47.5，旧判据会误拦
+    const rescued = corpus.cases.find((c) => c.id === "C23-frontmatter-indent")!.text;
+    const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "quaiwei-lowyield-"));
+    const out = path.join(dir, "out");
+    const rep = path.join(dir, "rep.json");
+    fs.mkdirSync(out);
+    fs.writeFileSync(path.join(dir, "a.txt"), HUMAN_TEXT, "utf8");
+    fs.writeFileSync(path.join(dir, "b.txt"), rescued, "utf8");
+    type Row = { file: string; lowYieldRisk?: boolean; skippedLowRisk?: boolean };
+    try {
+      const r = await runCli([dir, "--out", out, "--skip-low-risk", "--report", rep], "");
+      expect(r.code).toBe(0);
+      const j = JSON.parse(fs.readFileSync(rep, "utf8")) as {
+        totals: { lowYieldRisk: number };
+        reports: Row[];
+      };
+      const byFile = Object.fromEntries(j.reports.map((x) => [x.file, x])) as Record<string, Row>;
+      expect(byFile["a.txt"].lowYieldRisk).toBe(true);
+      expect(byFile["a.txt"].skippedLowRisk).toBe(true);
+      expect(fs.readFileSync(path.join(out, "a.humanized.txt"), "utf8")).toBe(HUMAN_TEXT);
+      expect(byFile["b.txt"].lowYieldRisk).toBe(false);
+      expect(byFile["b.txt"].skippedLowRisk).toBeUndefined();
+      expect(fs.readFileSync(path.join(out, "b.humanized.txt"), "utf8")).not.toBe(rescued);
+      expect(j.totals.lowYieldRisk).toBe(1);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   }, 60_000);
 });

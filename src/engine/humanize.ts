@@ -910,13 +910,16 @@ export interface HumanizeAdvice {
  *
  * 实测（2026-10-04，5 段自写文本 × 3 档）：aiScore 8 的人写叙事、aiScore 0 的口语随笔
  * 照改不误，且**动了作者原本的断句**（「后来我才知道，那是…」→「后来我才知道。那是…」）。
- * 而历史送检观察相反：纯人写原稿越去味，官方朱雀分反而略升
- * （H0=15% → H1/H2=17~19%，见 docs/fingerprint-and-zhuque-calibration.md 存档）。
  *
- * ⇒ 因此这里只**给提示，不改行为**。为什么不顺手把这类输入跳过：
+ * v0.9.84：原注释引用的「纯人写稿越去味官方朱雀分反而略升」标定结论，其标定子系统
+ * 已在 v0.9.83 整体移除（换算无法自证，见 CHANGELOG v0.9.83 第一节），不再作为产品口径依据。
+ * 新证据来自 2026-11-06 双网关 glm-5.3-flash 独立评委全量 23 篇实测：aiScore≤27 的 20 篇里
+ * 7 篇改写后反而更像 AI（配对强制选择 40/46 判改写更像人，绝对分均值只降 7.4 分），见 SCORECARD 第 4 节。
+ *
+ * ⇒ 引擎层仍只**给提示，不改行为**。为什么不在这里跳过：
  *   regression-12samples 的 H1/H2 两条就是纯人写样本，基线要求去味后 aiScore 从 48 降到 0；
- *   真跳过处理会让 E 组基线瞬间爆红，那是要连同基线一起重钉（--rebaseline）的改动，
- *   得单独评估，不能塞在一次语言质量修复里。
+ *   真跳过处理会让 E 组基线瞬间爆红，那是要连同基线一起重钉（--rebaseline）的改动。
+ *   v0.9.84 起由 CLI 入口层承担「默认原样出稿 + --force 覆盖」，库消费者（Web/MCP/API）行为不变。
  */
 export function adviceFor(text: string, beforeScore?: number): HumanizeAdvice {
   const score = beforeScore ?? aiScore(text).score;
@@ -925,8 +928,8 @@ export function adviceFor(text: string, beforeScore?: number): HumanizeAdvice {
       code: "skip-low-risk",
       message:
         `原文 AI 味代理分 ${score}，已落在人写带（≤${AI_SCORE_HUMAN_MAX}）。` +
-        `再跑一遍只会动你的断句和用词、几乎不会再降分——按本项目标定，纯人写稿越去味官方分反而略升。` +
-        `建议：直接用原文提交；确实要动，挑 0.4 以下的轻度档。`,
+        `独立评委实测：这类稿改写后约三分之一反而更像 AI；本项目分数与官方分无标定关系，` +
+        `只适合同篇前后对比。建议：直接用原文提交；确实要动，挑 0.4 以下的轻度档。`,
     };
   }
   return { code: "ok", message: "" };

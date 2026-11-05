@@ -77,6 +77,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--recursive` | 开关 | 目录扫描进子目录（默认不进；隐藏目录一律跳过） |
 | `--jobs <n>` | ≥1 | `--api` 模式并发路数（本地引擎单线程，给了也只提示忽略） |
 | `--dry-run` | 开关 | 只列出将处理哪些文件（含跳过原因），不建目录不落盘 |
+| `--skip-low-risk` | 开关 | **低收益风险稿**原样出稿、不改写（默认关：照常改写，只给醒目警告）。判据 = `aiScore≤27` **且**书面套话命中 `formalHits≤2`——这类稿删套话规则没有作用对象，改写主要只能动断句和用词。双网关 23 篇实测：单用 `aiScore` 命中 20 篇误伤 13 篇，组合判据命中 13 篇误伤 6 篇，还救回 7 篇改善最明显的稿。仍不足以默认拦截，所以只作用于本开关；批量仍产出同名文件（内容=原文），`--report` 记 `lowYieldRisk` / `skippedLowRisk`；引擎层（Web/MCP/API）不受影响 |
 
 ## 作为 MCP 工具（v0.9.84）
 

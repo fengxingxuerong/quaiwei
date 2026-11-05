@@ -162,6 +162,8 @@ interface Args {
   strict: boolean;
   /** v0.9.82：受限句序重排（默认关）。产出是原句排列，"不新增事实"构造上成立 */
   structural: boolean;
+  /** v0.9.84：显式跳过人写带输入（默认关，照常改写）。aiScore 不是可靠门槛，故 opt-in */
+  skipLowRisk: boolean;
   persona: string;
   report: string;
   /** v0.9.17：输出格式。follow = 跟随输入扩展名（.docx 进 → .docx 出） */
@@ -234,7 +236,7 @@ const USAGE =
   " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
   " [--academic-check [--against <改后稿>]]" +
   " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]..." +
-  " [--recursive] [--jobs <n>] [--dry-run]\n" +
+  " [--recursive] [--jobs <n>] [--dry-run] [--skip-low-risk]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
   "  --base-url 填网关绝对地址（如 https://token.sensenova.cn/v1）。UI 设置里的 /sensenova/v1" +
   " 是同源代理专用写法（代理会剥掉 /sensenova 前缀再转发），CLI 直连勿带这段前缀。\n" +
@@ -260,6 +262,11 @@ const USAGE =
   "\n  --academic-check：学术自检。**不落盘**，只打一份带判定的报告（数字/单位、引用键、" +
   "结构、断言词、残留套话）。退出码 0 = READY，2 = NOT READY（有阻断项），1 = 没法跑。" +
   "默认按 academic 文风跑，显式给 --style 则以你给的为准。" +
+  "\n  --skip-low-risk 低收益风险稿**原样出稿、不改写**（默认关，照常改写）。" +
+  "判据 = aiScore≤27 且书面套话命中≤2：这类稿删套话规则没有作用对象，改写主要动断句/用词。" +
+  "双网关 23 篇实测：单用 aiScore 命中 20 篇、误伤 13 篇；组合判据命中 13 篇、误伤 6 篇，" +
+  "且救回 7 篇改善最明显的稿。仍不足以默认拦截，故只作用于本开关；" +
+  "--report 记 lowYieldRisk / skippedLowRisk；引擎层（Web/MCP/API）行为不变。" +
   "\n  --against <文件>：配合 --academic-check 用。拿这份**外部改写稿**去比原文，" +
   "引擎不参与改写——审的是 LLM 深度模式产出、别人改的版本。这条路最容易真的丢数字/丢引用，" +
   "也是唯一能判出 NOT READY 的实战场。";
@@ -291,6 +298,7 @@ function parseArgs(argv: string[]): Args {
     target: 0,
     strict: false,
     structural: false,
+    skipLowRisk: false,
     persona: "default",
     report: "",
     outFormat: "follow",
@@ -451,6 +459,9 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--structural":
         args.structural = true;
+        break;
+      case "--skip-low-risk":
+        args.skipLowRisk = true;
         break;
       case "--persona":
         args.persona = a[++i] || "default";
@@ -649,6 +660,10 @@ interface FileReport {
   error?: string;
   /** v0.9.32：产物落盘路径（并发/嵌套目录场景里 basename 不足以定位） */
   outPath?: string;
+  /** v0.9.84：低收益风险（aiScore≤27 且书面套话命中≤2），与开关是否开启无关 */
+  lowYieldRisk?: boolean;
+  /** v0.9.84：仅 --skip-low-risk 生效时置位：低收益稿原样出稿（未改写） */
+  skippedLowRisk?: boolean;
   /* 以下仅 --api 模式有 */
   engine?: string;
   usedApi?: boolean;
@@ -737,17 +752,25 @@ async function runStdinMode(args: Args): Promise<void> {
 
   const t0 = Date.now();
   const before = detectAI(raw).probability;
-  const out0 = humanize(raw, {
-    intensity: args.intensity,
-    seed: args.seed,
-    zhuqueMode: args.zhuque,
-    style: args.style,
-    structural: args.structural,
-  });
+  // v0.9.84：与批量路径同口径——低收益风险 + --skip-low-risk 时原样输出；默认照常改写并给警告。
+  const stdinAdvice = adviceFor(raw, aiScore(raw).score);
+  const stdinLowYield = stdinAdvice.code !== "ok" && registerIndex(raw).formalHits <= 2;
+  const stdinSkip = stdinLowYield && args.skipLowRisk;
+  const out0 = stdinSkip
+    ? raw
+    : humanize(raw, {
+        intensity: args.intensity,
+        seed: args.seed,
+        zhuqueMode: args.zhuque,
+        style: args.style,
+        structural: args.structural,
+      });
   // v0.9.81：地区校正只在这条分支显式给了 --variant 才跑，默认路径逐字不变
-  const regional = applyRegionalVariant(out0, args.variant === "none" ? undefined : args.variant);
-  const out = regional.text;
-  if (args.variant !== "none") console.error(`ⓘ 地区校正（${args.variant}）：${formatRegionalSummary(regional)}`);
+  // v0.9.84：跳过改写时连地区校正也不跑，保证 stdout 与输入逐字一致
+  const regional =
+    stdinSkip || args.variant === "none" ? undefined : applyRegionalVariant(out0, args.variant);
+  const out = regional ? regional.text : out0;
+  if (regional) console.error(`ⓘ 地区校正（${args.variant}）：${formatRegionalSummary(regional)}`);
   // 正文：stdout（保留引擎产出的换行结构，末尾补一个换方便终端查看）
   process.stdout.write(out.endsWith("\n") ? out : `${out}\n`);
   // 诊断：stderr
@@ -755,8 +778,13 @@ async function runStdinMode(args: Args): Promise<void> {
   console.error(
     `✅ stdin：${before}→${after}（${Date.now() - t0}ms，${raw.length}→${out.length} 字）`,
   );
-  const advice = adviceFor(raw, aiScore(raw).score);
-  if (advice.code !== "ok") console.error(`ⓘ ${advice.message}`);
+  if (stdinSkip) {
+    console.error(`⏭ 低收益风险：按 --skip-low-risk 原样输出，未改写`);
+  } else if (stdinAdvice.code !== "ok") {
+    console.error(`ⓘ ${stdinAdvice.message}`);
+    if (stdinLowYield)
+      console.error(`ⓘ 低收益风险：书面套话命中少，规则引擎主要只能动断句和用词，建议先与原文对比再决定要不要用`);
+  }
   if (args.explain) {
     const items = explainChanges(raw, out);
     console.error(
@@ -1018,8 +1046,29 @@ async function main() {
         registerBefore: briefRegister(registerIndex(raw)),
         ok: true,
       };
+      // v0.9.84：人写带**可选**原样出稿（--skip-low-risk，默认关）。
+      // 判定只放 CLI 入口层——引擎层 adviceFor 仍「只提示不改行为」，
+      // regression-12samples 的 H1/H2 基线、Web/MCP/API 消费者行为都不受影响。
+      // 为什么不默认开：aiScore 与独立评委分只弱相关（r=0.353），典型 AI 腔短稿也会落在人写带，
+      // 一刀切会误伤；实测 20 篇低分稿里 13 篇改写反而更好。
+      // 开启后仍落盘同名文件（内容=原文），不静默不产出，批量文件数与旧版一致。
+      const advice = adviceFor(raw, aiScore(raw).score);
+      // v0.9.84：--skip-low-risk 的判据从「只看 aiScore≤27」升级为组合信号。
+      // 机制：书面套话命中（formalHits）少 ⇒ 删套话规则没有作用对象，改写只剩动断句/用词，
+      // 正是 adviceFor 注释里「动了作者原本的断句」那类稿。
+      // 双网关 23 篇实测：aiScore≤27 命中 20 篇、精确率 0.35 / F1 0.52；
+      // 加上 formalHits≤2 后命中 13 篇、精确率 0.54 / F1 0.70，留一法 23/23 优于旧判据；
+      // 救回的 7 篇里含改善最明显的 C23(+47.5) / C14(+21) / C12(+19)。
+      // 仍不足以默认拦截（13 篇里 6 篇误伤），故只作用于 opt-in 开关。
+      // ⚠️ 阈值来自同一批 23 篇、正例仅 7 个，属探索性，未做独立验证集，别当标定用。
+      const lowYieldRisk = advice.code !== "ok" && registerIndex(raw).formalHits <= 2;
+      rep.lowYieldRisk = lowYieldRisk;
+      const didSkip = lowYieldRisk && args.skipLowRisk;
       let out: string;
-      if (cfg) {
+      if (didSkip) {
+        out = raw;
+        rep.skippedLowRisk = true;
+      } else if (cfg) {
         const r = await runHumanize(
           raw,
           args.intensity,
@@ -1049,7 +1098,7 @@ async function main() {
       }
       rep.ms = Date.now() - t0;
       // v0.9.81：地区校正（--variant）。默认 none，不跑、不记账，产出与之前逐字相同
-      if (args.variant !== "none") {
+      if (args.variant !== "none" && !didSkip) {
         const regional = applyRegionalVariant(out, args.variant);
         out = regional.text;
         rep.regional = { variant: args.variant, terms: regional.terms, punctuation: regional.punctuation };
@@ -1065,6 +1114,7 @@ async function main() {
       console.log(
         `${step}✅ ${name}：${rep.detectBefore}→${rep.detectAfter}（${rep.ms}ms，${raw.length}→${out.length} 字）→ ${path.basename(dest)}`,
       );
+      if (didSkip) console.log(`   ⏭ 低收益风险：按 --skip-low-risk 原样出稿，未改写`);
       // v0.9.66：外部检测器（任意厂商）——原文与产出各送一次，记前后分。
       // 失败只记原因、不中断：检测器额度/网络问题不该让整批去味白跑。
       // v0.9.71：多档时**逐档**送检，横向对比同一篇在不同检测器下的分数。
@@ -1095,10 +1145,13 @@ async function main() {
           if (first.error) rep.detectorError = first.error;
         }
       }
-      // v0.9.22：低风险输入照常出稿，但把"其实不用去味"说出来。
-      // 不自动跳过——批量场景里静默不产出比多产出一版更难排查。
-      const advice = adviceFor(raw, aiScore(raw).score);
-      if (advice.code !== "ok") console.log(`   ⓘ ${advice.message}`);
+      // v0.9.84：默认路径照常改写、但把「其实不用去味」的警告说出来（文案依据换成独立评委实测）；
+      // 低收益风险再补一条机制说明，告诉用户为什么这篇可能白改。
+      if (advice.code !== "ok" && !didSkip) {
+        console.log(`   ⓘ ${advice.message}`);
+        if (lowYieldRisk)
+          console.log(`   ⓘ 低收益风险：书面套话命中少，规则引擎主要只能动断句和用词，建议先与原文对比再决定要不要用`);
+      }
       if (args.explain) {
         const items = explainChanges(raw, out);
         rep.explain = items;
@@ -1140,7 +1193,11 @@ async function main() {
   const reps = reports.filter((r): r is FileReport => !!r);
 
   console.log("─".repeat(64));
-  console.log(`完成：${ok} 成功 / ${fail} 失败 → ${args.out}`);
+  const skippedLow = reps.filter((r) => r.skippedLowRisk).length;
+  console.log(
+    `完成：${ok} 成功 / ${fail} 失败 → ${args.out}` +
+      (skippedLow ? `（其中 ${skippedLow} 篇按 --skip-low-risk 原样出稿、未改写）` : ""),
+  );
   // v0.9.32：收尾汇总。detect 是**本地代理分**（与引擎同源词表），只作趋势参考——
   // SKILL.md 里"同源指标非外部真值"的边界同样适用于这行。
   const done = reps.filter((r) => r.ok);
@@ -1175,6 +1232,8 @@ async function main() {
             ok,
             fail,
             skippedSuffix: collected.skipped,
+            lowYieldRisk: reps.filter((r) => r.lowYieldRisk).length,
+            skippedLowRisk: reps.filter((r) => r.skippedLowRisk).length,
             charsIn: sum0(reps, (r) => r.charsIn),
             charsOut: sum0(reps, (r) => r.charsOut),
             msTotal: sum0(reps, (r) => r.ms),

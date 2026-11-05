@@ -27,6 +27,7 @@ import {
   type TextSpan,
 } from "./text-shield";
 import { splitSentences } from "./humanize-text";
+import { humanize } from "./humanize";
 
 /** 朴素实现：线性扫描，用来对照二分 */
 function naiveInside(spans: TextSpan[], idx: number): boolean {
@@ -305,6 +306,41 @@ describe("splitParagraphChunks（带偏移与分隔符的切段 · v0.9.54）", 
 
   it("空输入 → 单个空段、sep 为空串", () => {
     expect(splitParagraphChunks("")).toEqual([]);
+  });
+
+  it("v0.9.84 CRLF：\\r\\n\\r\\n 收进同一 sep，段文本不留 \\r", () => {
+    const chunks = splitParagraphChunks("甲。\r\n\r\n乙。\r\n丙。");
+    expect(chunks.map((c) => c.sep)).toEqual(["\r\n\r\n", "\r\n", ""]);
+    expect(chunks.every((c) => !c.text.includes("\r"))).toBe(true);
+  });
+
+  it("v0.9.84 CRLF 与 LF 切出的段文本逐项一致（旧实现会在段尾留 \\r）", () => {
+    const lf = "甲。\n\n乙。\n丙。\n\n丁。";
+    const crlf = lf.replace(/\n/g, "\r\n");
+    expect(splitParagraphChunks(crlf).map((c) => c.text)).toEqual(
+      splitParagraphChunks(lf).map((c) => c.text),
+    );
+  });
+});
+
+describe("v0.9.84 CRLF 结构保真（C22 回归）", () => {
+  it("CRLF 稿与 LF 稿产出换行归一后逐字一致，结构行之间的空行不丢", () => {
+    const lf = [
+      "改造要点如下：",
+      "",
+      "- 首先，需要说明的是，接口层做了全面重构。",
+      "- 其次，需要说明的是，缓存策略也一并调整。",
+      "- 最后，需要说明的是，监控指标已经补齐。",
+      "",
+      "> 此外，需要说明的是，本次方案在成本上具备优势。",
+      "",
+      "总的来说，本次改造风险可控。",
+    ].join("\n");
+    const opts = { intensity: 0.9, seed: 20260905, style: "plain" as const };
+    const a = humanize(lf, opts);
+    const b = humanize(lf.replace(/\n/g, "\r\n"), opts).replace(/\r\n/g, "\n");
+    expect(b).toBe(a);
+    expect(b.split("\n\n")).toHaveLength(lf.split("\n\n").length);
   });
 });
 
