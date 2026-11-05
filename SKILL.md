@@ -8,7 +8,7 @@ description_zh: 去 AI 味（简体中文）——本地离线引擎或可选 LL
 description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
 metadata:
-  version: 0.9.82
+  version: 0.9.83
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 
@@ -77,20 +77,24 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--jobs <n>` | ≥1 | `--api` 模式并发路数（本地引擎单线程，给了也只提示忽略） |
 | `--dry-run` | 开关 | 只列出将处理哪些文件（含跳过原因），不建目录不落盘 |
 
-## 作为 MCP 工具（v0.9.81）
+## 作为 MCP 工具（v0.9.84）
 
 同仓还有一个 MCP 服务端（`dist-cli/quaiwei-mcp.mjs`，bin 名 `quaiwei-mcp`），把同一套本地引擎
-包成三个工具：`humanize_text`（回改后正文）、`detect_ai`（只读自检）、`quality_report`
-（去味 + 逐条改动 + 结构/数字保真）。能接 MCP 的客户端（Claude Code、Claude Desktop、
-Cursor 等）**优先走这条路**——agent 拿到的是改后正文，不必自己按规则复述一遍。
+包成四个工具：`humanize_text`（回改后正文）、`detect_ai`（只读自检）、`quality_report`
+（去味 + 逐条改动 + 结构/数字保真）、`academic_report`（论文硬出口）。能接 MCP 的客户端
+（Claude Code、Claude Desktop、Cursor 等）**优先走这条路**——agent 拿到的是改后正文，
+不必自己按规则复述一遍。
 
-MCP 里只认 `intensity` / `style` / `seed` / `zhuque` 四个字段；`--api`（LLM 深度模式）、
-外部检测器送检、批量目录这些 MCP 都不支持，仍走下面的 CLI。装法与边界见 `docs/mcp-server.md`。
+MCP 字段：`intensity` / `style` / `seed` / `zhuque` / `variant`（zh-TW） / `structural` /
+`protect`（自定义保护术语，字符串数组——论文题目、人名、产品名传进来，引擎一字不动）；
+`detect_ai` 另可选 `detectorUrl`（外部检测器送检，拿真实刻度的分；不传就完全离线）。
+仍不支持的：`--api`（LLM 深度模式）、批量目录，走 CLI。装法与边界见 `docs/mcp-server.md`。
 
 ## 边界（**不要越界承诺**）
 
 1. **不承诺通过任何检测器**。内置评分是本地启发式**代理分**，与朱雀等官方分**无标定关系**；
-   aiScore→官方分的换算线当前 18 个标定点里有 6 个漂移、且凭证认证率为 0/18。
+   v0.9.83 起 aiScore→官方分的换算线已随标定子系统整体移除（18 点人工抄录、凭证认证 0/18，
+   换算不可自证），界面不再给出任何官方分预测。
 2. **不要用"去味前后的分数差"判断安不安全**：本地检测器与去味引擎共用一套词表，
    分数必然变好看——这是同源指标，不是外部真值。要真值只能拿真实检测器跑。
 3. **本地引擎是"换词不换骨"**：不打散段落结构与句序，而结构规律性恰是检测器重点；
@@ -101,7 +105,8 @@ MCP 里只认 `intensity` / `style` / `seed` / `zhuque` 四个字段；`--api`�
    语体变化几乎不影响分数，只有恰好命中词表才影响。
    真人文本本身分布 `8 8 10 11 20 20 29 31 32 32 35 37 38 39 43 51 54 57 59 68 95`（中位 35，
    最高 95）⇒ **低分 ≠ 像人写**，绝对值只在同一篇稿子的前后对比里有意义。
-5. **人写稿别去味**：纯人写文本越去味，实测官方分反而略升——先看分再决定要不要跑。
+5. **人写稿别去味**：确认是纯人写原稿就直接交付——历史送检观察里越去味官方分反而略升；
+   引擎的「纯人写稿」体裁只保留作者结构，不做套话改写。
 6. 需要 100% 过检、或要求保留精确格式（表格/公式/加粗）的，**转人工处理**，别硬跑。
 
 ## 交付前自查

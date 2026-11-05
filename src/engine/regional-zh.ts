@@ -2,7 +2,8 @@
  * src/engine/regional-zh.ts —— 地区用词与标点校正（目前只有 zh-TW 一种）。
  *
  * 为什么单独一个 pass，而不是塞进 humanize()：
- *  humanize() 的产出挂在标定棘轮上（x 轴一动，`npm run test:calib` 的 18 个点就漂）。
+ *  humanize() 的每处改动都会被按字节钉死的回归基线放大镜照一遍
+ *  （scan-bugs / regression-12samples / realcase）。
  *  地区用词不是"去 AI 味"，它是"给台湾读者看"——两件事混在一起，改一个动另一个。
  *  所以这里是**离线的后处理**：humanize() 照旧，调用方显式给 `--variant zh-TW` 才跑。
  *

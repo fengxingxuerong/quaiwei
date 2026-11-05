@@ -12,7 +12,7 @@
 | 文件 | 类型 | 内容 |
 |---|---|---|
 | [key-rotation-status.md](key-rotation-status.md) | 当前口径 | Key 轮换与泄露面处置记录（2026-09-05 → 2026-10-14 多次复测）。涉及凭证时先看这份 |
-| [mcp-server.md](mcp-server.md) | 当前口径 | MCP 服务端（v0.9.81）：三个工具的参数与返回、装法、边界、验法、已知没做的 |
+| [mcp-server.md](mcp-server.md) | 当前口径 | MCP 服务端（v0.9.84）：四个工具的参数与返回、装法、边界、验法、已知没做的 |
 | [structural-shuffle.md](structural-shuffle.md) | 当前口径 | 受限句序重排（v0.9.82）：`--structural` 的五类守卫、三道门槛、默认关的逐字保证、已知边界与验法 |
 | [register-metrics.md](register-metrics.md) | 当前口径 | 语体指数（v0.9.82）：量**书面度**的第二把尺、口径公式与 CAP、21 篇双向注入实测、为什么不并入 aiScore |
 | [check-env.md](check-env.md) | 当前口径 | 环境预检（v0.9.82）：两次平台二进制丢失事故、五个检查项、红灯修法、挂载位置与自证写法 |
@@ -28,14 +28,15 @@
 | 文件 | 类型 | 内容 |
 |---|---|---|
 | [external-judge-findings.md](external-judge-findings.md) | 证据 | 外评证据：本地 aiScore 在论说/叙事上严重低报 AI 味（v0.9.54 起「分数冲突提示」的由来） |
-| [fingerprint-and-zhuque-calibration.md](fingerprint-and-zhuque-calibration.md) | 证据 | AI 指纹检测与朱雀分映射标定（指纹面板与换算线据此实现） |
+| [fingerprint-and-zhuque-calibration.md](fingerprint-and-zhuque-calibration.md) | 证据（历史档案） | AI 指纹检测与朱雀分映射标定的**演进史**。换算线/账本已随标定子系统于 v0.9.83 整体移除，本文只作档案留读；§5 的 PPL 口径仍被 `src/engine/humanize-metrics.ts` 引用 |
 | [judge-anchor-calibration.md](judge-anchor-calibration.md) | 证据 | glm-5.2 严评锚点问题与评判模型的宽严校准 |
 | [model-compare-2026-10-24.md](model-compare-2026-10-24.md) | 证据 | 5 个可用模型的改写效果对比（同一篇稿、真实 CLI 路径）：事实保真 / 套话残留 / 耗时 / 互补性，附各位置选型建议。复现用 `npm run compare:models` |
 | [number-fidelity-2026-10-25.md](number-fidelity-2026-10-25.md) | 证据 | 数字保真这条线的判据演进（0.9.75→0.9.77）：真实丢数据的出处、为什么只查「数量型」、三次自我否定、各路径检查矩阵、已知局限（单位不校验） |
 | [format-fidelity-2026-10-26.md](format-fidelity-2026-10-26.md) | 证据 | 格式保真从「形态正则」升级为**23 条结构不变式**：用户路径 `humanize()` 4080 次运行全绿、两个真缺陷（setext 下划线被拆、结构行续行被拆）的根因与修法、一次自我否定（12 样本棘轮拦回）、机械扰动入口无格式盾的已知边界。复现用 `npm run sweep:format` |
 | [zhuque-gap-analysis.md](zhuque-gap-analysis.md) | 证据 | 趣AI味 vs 真实朱雀的差距分析与补全清单 |
 | [十篇小说测试报告-2026-10-28.md](十篇小说测试报告-2026-10-28.md) | 实测报告 | 10 篇 × 1 万字 AI 小说规模测试（v0.9.81）：本地两档 / LLM 深度 / MCP / 审题 / 学术出口读数，含网关 429 限流导致的分块回退、本地引擎碎句化与两处坏替身。复现命令在文末 |
-| [zhuque-official-resubmit-plan.md](zhuque-official-resubmit-plan.md) | 计划（部分搁置） | 朱雀官方送检分批计划；2026-10-23 起「不再以朱雀为验证主线」，仅作记录 |
+
+> `zhuque-official-resubmit-plan.md` 已随朱雀标定子系统于 v0.9.83 删除（送检分批计划失去了执行载体）。
 
 ## 历史快照（结论已被后续版本覆盖，别照做）
 

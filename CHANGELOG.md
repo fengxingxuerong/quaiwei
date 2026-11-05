@@ -2,6 +2,46 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.83 更新（移除朱雀标定子系统，2026-11-05）
+
+### 一、这一版删了什么
+
+- **aiScore → 朱雀官方分标定子系统整体移除**。这套系统在 v0.8~v0.9.82 期间维护了
+  18 个人工送检锚点、四体裁分层换算线（论说/叙事/对话/纯人写，`src/engine/zhuque-calib.ts`）、
+  `calib-sanity` x 轴漂移棘轮、`zhuque-evidence` 凭证账本（seal/audit，`evidence/zhuque/ledger.jsonl`）
+  与 append-only 门禁。移除原因只有一条且是硬的：**换算无法自证**——18 个点的凭证认证率
+  始终停在 **0/18**（其中 8 点 transcript-only、原始送检文本已物理丢失），换算线的 x 轴
+  每次引擎改动都要重拟合，漂移棘轮长期压在天花板上。维护一条不可验证的换算，
+  只会给界面数字披上它担不起的精确性。完整演进史留档
+  `docs/fingerprint-and-zhuque-calibration.md`（历史档案）。
+- 删除清单：`scripts/calib-sanity.ts`、`scripts/calibration-data.json`、`scripts/zhuque-evidence.ts`
+  （含测试）、`scripts/check-ledger-appendonly.ts`（含测试）、`scripts/zhuque-official-run.ts`
+  （含测试）、`scripts/zhuque-api-score.ts`、`scripts/zhuque-v4-fit.ts`、`scripts/zhuque-v4-pipeline.ts`、
+  `scripts/zhuque-retro-backfill.ts`（含测试）、`scripts/archive/` 下 10 个标定相关文件
+  （9 份 v2/v3 拟合与送检脚本 + 2 份回传记录 + `prepare-submit.ts` + `diagnose-exposition-gap.ts`）、
+  `src/engine/zhuque-calib.ts`、`docs/zhuque-official-resubmit-plan.md`、`evidence/zhuque/` 整目录。
+- 删除命令：`test:calib` / `test:evidence` / `seal:api` / `score:official` / `check:ledger` /
+  `check:publish`；`check:release` 链同步精简（13 → 10 道闸）。
+- CI 摘除三步：Calibration sanity / Evidence audit / Ledger append-only；
+  checkout `fetch-depth` 回 1（全量历史只有账本检查需要）。
+- `.githooks/pre-commit` 摘除账本 append-only 检查块（账本已不存在）。
+
+### 二、界面与文档怎么变
+
+- **BenchmarkPanel**：移除"朱雀分趋势预测（v3 18 点 OLS）/ 40% 参考线 / 建议行动卡"整块。
+  体裁联动保留并收轻：自动识别徽章 + 四选项体裁下拉（论说/叙事/对话/纯人写稿）+
+  「疑似纯人写原稿 → 引擎保留作者结构」快捷按钮——只驱动引擎 knobs，不做任何分数换算。
+  bench-tip 明确：本地套话指数与真实通道返回的分数不是同一把尺子，不要互相换算。
+- **ZhuquePanel / useZhuqueLab / App**：摘除 `genreEstimate`（体裁线预测）prop 与计算链。
+- **README / README_EN / SCORECARD / SKILL.md**：诚实声明重写为"aiScore 与官方分无标定关系、
+  不再预测官方百分比"；标定章节改为移除说明；`docs/README.md` 索引把标定文档降级为历史档案。
+- 保留且不受影响：引擎评分（`aiScore`/`detectAI`）、`regression-12samples` D/E 双棘轮、
+  `scan-bugs` 基线棘轮、`sweep:format` 结构不变式、外部检测器接入（`--detector-url`）、
+  朱雀网页版半自动送检回填、**校准实验室**（用户攒自己的实测点，n≥4 出 officialEstimate——
+  拟合发生在用户本地、以用户真实送检为据，与被移除的"仓库级 18 点换算线"不是一回事）。
+- `scripts/calibration-data-v2-genres.json` 保留：它是 `regression-12samples` D 组的冻结夹具
+  （`V2_JSON_PATH` 指向它），与已删除的 `calibration-data.json` 是两个文件。
+
 ## v0.9.82 更新（受限句序重排 / 语体指数 / 环境预检 / 并发门禁，2026-11-04）
 
 ### 一、这一版加了什么

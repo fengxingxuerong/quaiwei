@@ -150,9 +150,10 @@ measured at 0.40 between "merge on / split off" thresholds).
   the external detector said "definitely AI" (**90**). Four of five deliverables scored ≤13 locally
   and ≥70 externally. Do not use the before/after drop as a safety verdict — the UI shows a banner
   when local and external scores disagree hard.
-- The evidence ledger for Zhuque official scores has **0/18 points with preserved credentials**.
-  That number is stated openly — see `docs/zhuque-official-resubmit-plan.md` and
-  `npm run test:evidence`.
+- The old aiScore → Zhuque official-score calibration (18 hand-transcribed points, a per-genre
+  conversion line, drift ratchet, evidence ledger with **0/18 credential coverage**) was **removed
+  entirely in v0.9.83**: an unverifiable conversion pretends to a precision it cannot back.
+  History lives in `docs/fingerprint-and-zhuque-calibration.md` (archived).
 
 ## Competitor landscape (measured 2026-10-27; scan script: `node scripts/scan-github-sector.mjs --md`)
 
@@ -166,8 +167,9 @@ measured at 0.40 between "merge on / split off" thresholds).
 | **quaiwei** | 3 | ✓ | ✓ | LLM deep mode only | **✓ any HTTP endpoint, multi-vendor** |
 
 Self-reported pass-rates elsewhere (">50% → 11%", "100% human-rate cases") have **not been
-reproduced here**; this repo reports 0/18 credential coverage instead. Both facts are stated so
-the reader can tell them apart.
+reproduced here** — and no forward pass-rate sample exists in this repo either (the credential
+ledger, stuck at 0/18, was removed with the calibration subsystem in v0.9.83). Both facts are
+stated so the reader can tell them apart.
 
 ## Development
 
@@ -175,12 +177,11 @@ the reader can tell them apart.
 npm ci                # install
 npm run check:env     # environment probe (esbuild platform binary present & runnable)
 npm test              # 2,400+ cases, ~15 s
-npm run check:release # the full 13-gate chain CI runs
+npm run check:release # the full gate chain CI runs
 ```
 
 CI runs on every push: type check, lint, format, regex self-check, version-sync across 11 files,
-unit tests with coverage gate, engine regressions, real-corpus matrix, calibration ratchet,
-evidence audit, ledger append-only check.
+unit tests with coverage gate, engine regressions, real-corpus matrix, relative-improvement gate.
 
 ## License
 

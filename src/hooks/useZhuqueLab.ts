@@ -9,10 +9,7 @@
  * pplFeature 只读（检测选项里拼第 13 维）；handleHumanize 需要的写入面通过
  * setZq / setZqText / setZqSem / zqOpts / rerunWithPpl 暴露。
  */
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { classifyGenre } from "../engine/classify-genre";
-import { CALIB, trackForGenre, predictOfficialPct } from "../engine/zhuque-calib";
-import { aiScore } from "../engine/humanize";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import {
   detectZhuque,
   ZHUQUE_URL,
@@ -51,8 +48,6 @@ export interface UseZhuqueLabOptions {
   api: ApiConfig;
   /** 困惑度特征（就绪时并入检测选项作第 13 维），null 表示未就绪 */
   pplFeature: PplFeature | null;
-  /** 体裁线覆盖（BenchmarkPanel 手动选择），null 跟随自动判别 */
-  genreOverride: "main" | "narrative" | "dialogue" | "humanHand" | null;
 }
 
 export interface UseZhuqueLabResult {
@@ -65,7 +60,6 @@ export interface UseZhuqueLabResult {
   zqSem: SemanticLayer | null;
   zqSemLoading: boolean;
   zqWeight: number;
-  zqGenreEstimate: { pct: number; tag: string } | null;
   setZq: (v: ZhuqueReport | null) => void;
   setZqText: (v: string) => void;
   setZqSem: (v: SemanticLayer | null) => void;
@@ -107,7 +101,7 @@ export interface UseZhuqueLabResult {
 const EMPTY_CALIB: Calibration = { a: 1, b: 0, n: 0, points: [] };
 
 export function useZhuqueLab(opts: UseZhuqueLabOptions): UseZhuqueLabResult {
-  const { input, output, api, pplFeature, genreOverride } = opts;
+  const { input, output, api, pplFeature } = opts;
   // ---- 朱雀检测（本地近似 + 官方校准） ----
   const [zq, setZq] = useState<ZhuqueReport | null>(null);
   const [zqText, setZqText] = useState("");
@@ -295,26 +289,6 @@ export function useZhuqueLab(opts: UseZhuqueLabOptions): UseZhuqueLabResult {
     );
   }
 
-  // 朱雀面板的体裁线预测：v3 18 点 OLS（与对标评分面板共用 engine/zhuque-calib 同一把尺子）。
-  // aiScore + classifyGenre 都是全文扫描，用 useMemo 缓存——面板未开（zq 为 null）时直接跳过，
-  // 开着时也只随检测文本/体裁覆盖变化重算，不跟着每次输入键入白跑。
-  //
-  // v0.9.54：依赖里去掉 input/output —— 它们只在 `zqText` 为空时作回退文本，而 zq 非空
-  // 的路径（handleZhuque/rerunWithPpl 等）都保证 zqText 已有值；此前 deps 含 input/output
-  // 导致**面板开着时每次按键**都对全文重跑 classifyGenre+aiScore 两遍，与注释里
-  // 「不跟着每次输入键入白跑」相悖。
-  const zqGenreEstimate = useMemo(() => {
-    if (!zq) return null;
-    const t = zqText || (output.trim() ? output : input).trim();
-    if (!t) return null;
-    const g = genreOverride ?? classifyGenre(t).genre;
-    const track = trackForGenre(g);
-    return {
-      pct: Math.round(predictOfficialPct(aiScore(t).score, track) * 10) / 10,
-      tag: CALIB[track].x40Tag,
-    };
-  }, [zq, zqText, genreOverride]);
-
   return {
     zq,
     zqText,
@@ -325,7 +299,6 @@ export function useZhuqueLab(opts: UseZhuqueLabOptions): UseZhuqueLabResult {
     zqSem,
     zqSemLoading,
     zqWeight,
-    zqGenreEstimate,
     setZq,
     setZqText,
     setZqSem,

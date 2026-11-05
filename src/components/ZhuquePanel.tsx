@@ -48,7 +48,6 @@ export function ZhuquePanel({
   semLoading,
   weight,
   canRunSemantic,
-  genreEstimate,
   onPaste,
   onSaveCalib,
   onClearCalib,
@@ -69,8 +68,6 @@ export function ZhuquePanel({
   semLoading: boolean;
   weight: number;
   canRunSemantic: boolean;
-  /** v3 四体裁 18 点 OLS 体裁线预测（与对标评分面板同一把尺子；无文本时 null） */
-  genreEstimate?: { pct: number; tag: string } | null;
   onPaste: (v: string) => void;
   /** v0.8.6 LLM 主导：记录口径跟随当前展示口径——有语义层时传融合分，否则传表层综合分 */
   onSaveCalib: () => void;
@@ -174,28 +171,6 @@ export function ZhuquePanel({
         <div className="bench-row" style={{ justifyContent: "flex-start" }}>
           <span style={{ color: "var(--muted)", fontSize: 12 }}>
             🧠 困惑度层已融合（权重 {Math.round(PPL_FUSE_WEIGHT * 100)}%）：{rep.pplLayer.note}
-          </span>
-        </div>
-      )}
-
-      {genreEstimate && (
-        <div className="bench-row" style={{ justifyContent: "flex-start" }}>
-          <span style={{ color: "var(--muted)", fontSize: 12 }}>
-            📐 体裁线预测（v3 18 点存档拟合 · 实验性，非官方分）：
-            <b
-              style={{
-                color:
-                  genreEstimate.pct >= 60
-                    ? "#ff5d6c"
-                    : genreEstimate.pct >= 30
-                      ? "#ffb454"
-                      : "#3ddc97",
-              }}
-            >
-              {" "}
-              {genreEstimate.pct}%
-            </b>{" "}
-            · {genreEstimate.tag}
           </span>
         </div>
       )}

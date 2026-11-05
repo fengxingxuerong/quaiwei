@@ -1,4 +1,4 @@
-# 趣AI味 · QuAiWei v0.9.82
+# 趣AI味 · QuAiWei v0.9.83
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
@@ -72,8 +72,7 @@ npx tsx scripts/humanize-cli.ts in.txt --out out.txt --intensity 0.6 --seed 2026
    是 2026-09-19 的实测记录，口径不同，别并成一句话读。
 4. **榜上有人直接报过检率。** `redbaronyyyyy-eng/humanizer-zh-academic`（339★）报"AIGC 检测率 >50% → 11%"，
    `iniwap/AIWriteX`（2,152★）报"测试出现 100% 人工率案例"。本仓不报这类数——
-   `npm run test:evidence` 现测凭证覆盖率 **0/18**，"我们没量到"和"我们量到了 11%"不是同一句话，
-   但不该让读者分不清，所以这里把两边的原话都摆出来。
+   "我们没量到"和"我们量到了 11%"不是同一句话，但不该让读者分不清，所以这里把两边的原话都摆出来。
 5. **名字撞两次，三个仓库不是一回事。** 站内搜 `quaiwei` 会同时出三个，先分清再点：
 
    | 仓库 | ★ | 是什么 | 与本仓关系 |
@@ -85,18 +84,11 @@ npx tsx scripts/humanize-cli.ts in.txt --out out.txt --intensity 0.6 --seed 2026
    三家主张都是"保留事实和作者声口"，差别在形态：那两家是 `npx skills add` 装的规则文件，
    本仓是能离线跑的引擎，外加检测器接入与数字/格式守卫。星数是它们多。
 
-> ⚠️ 诚实声明：本项目**不承诺"通过朱雀检测"**——aiScore → 朱雀官方分的换算**不可靠**：
-> 现有 18 个送检点为人工抄录，且账本启用（`scripts/zhuque-evidence.ts`）**之前**没有留下页面截图等
-> 原始凭证——**凭证覆盖率当前 0/18**，新送检点必须走 `seal` 入账才算数。
-> v0.8+ 重标定 aiScore 之后 `npm run test:calib` 实测报 **6/18 点 x 轴漂移**（此前是 14/18，
-> 其中"数据源x=0 → 当前引擎=60"那一族是标尺错别字项把正常词「大家」当错字罚分所致，v0.9.13 已修）；
-> 该自检现已带退出码棘轮（只许变好）。下方"体裁换算线"只可当粗略参考，不可当官方分预报。
-> **2026-10-27 复跑（当前数字）**：原始漂移 **10/18**，其中 4 点已登记放行
-> （O2v3 +4 / H1 +8 / H2v2 +8 / H2v3 +8），**未登记 6 点被棘轮拦**：
-> O1 +10 / O2v07 −5 / O3v07 −4 / N1 −14 / N2v2 +8 / **D0 −35**；锚点最大误差 7.3pp（阈值 8）。
-> 与 2026-09-19 那次比，同样 6 个未登记点，但 O2v07 从 −9 收窄到 −5、O3v07 从 −8 到 −4（引擎侧在改善），
-> **Δmax 仍是 D0 的 −35，照样压在棘轮天花板 35/35 上**。下一次引擎再动 x 轴这条自检就会红，
-> 届时该做的是拿新官方点位重拟合四条体裁线，**而不是把天花板调高一格把它糊过去**。
+> ⚠️ 诚实声明：本项目**不承诺"通过朱雀检测"**——aiScore 与朱雀官方分之间**没有可用的换算关系**。
+> v0.9.83 把早期搭的标定子系统（18 个人工送检锚点、四体裁换算线、漂移棘轮 `test:calib`、
+> 凭证账本 `test:evidence`）**整体移除**了：那 18 个点是人工抄录的，始终没凑齐可复核的原始凭证
+> （覆盖率停在 0/18），引擎词表每次改动换算线就得重拟合——维护一条不可验证的换算，
+> 只会给界面数字披上它担不起的精确性。演进史留档在 `docs/fingerprint-and-zhuque-calibration.md`（历史档案）。
 > 本地引擎默认是"换词不换骨"：能削掉套话/标点指纹，但**不打散段落结构和句序**，而结构规律性恰是朱雀等重点特征；
 > 真正的结构级去味须走 LLM 深度模式（打散总分总/句序重排/段落重切）。
 > v0.9.82 起可选 `--structural` 做受限句序重排（相邻句至多一次交换、句多重集不变、默认关），见上方短处 2。
@@ -502,7 +494,7 @@ Agent 宿主 / CI 服务 / Session 0 这类会话起不了任何 GUI（实测连
 │  │  ├─ llm-humanize.ts        #   深度闭环：改写 → 质检 → 交叉评判 → 定向修订
 │  │  ├─ llm-quality.ts         #   通顺 / 忠实 / 编造 / 截断 四类质检
 │  │  ├─ llm-prompts.ts         #   提示词铁律与篇章范例
-│  │  └─ zhuque.ts              #   朱雀口径标定与语义层
+│  │  └─ zhuque.ts              #   朱雀送检客户端 / 官方结果解析 / 校准实验室
 │  ├─ components/               # React UI 面板（11 个）
 │  ├─ ppl/                      # 困惑度通道（MLM 伪困惑度，首次需联网下载模型）
 │  ├─ store.ts / store-history.ts   # 配置与历史持久化
@@ -512,9 +504,6 @@ Agent 宿主 / CI 服务 / Session 0 这类会话起不了任何 GUI（实测连
 │  ├─ verify-quality.ts         #   词典泄漏质量门禁
 │  ├─ regression-12samples.ts   #   12 样本回归：D 评分器漂移棘轮 / E 引擎退化棘轮
 │  ├─ regression-12samples.test.ts  #   上面这道门禁的"故意造一次退化"自测
-│  ├─ zhuque-evidence.ts        #   官方送检凭证账本（seal / audit）
-│  ├─ check-ledger-appendonly.ts#   账本历史行不可改（pre-commit 与 CI 都跑）
-│  ├─ calib-sanity.ts           #   标定数据源 / 参数 / 漂移自检
 │  ├─ humanize-cli.ts           #   批量去味 CLI（默认本地引擎；--api 走 LLM 深度模式）
 │  └─ bench.ts                  #   性能基准
 ├─ electron-app/                # Electron 桌面壳（加载 Web 构建）
@@ -555,37 +544,22 @@ npm run test:regress   # 病句签名回归扫描（120+ 种子组合）
 npm run test:realcase  # 23 篇真实语料 × 5 种子 × 2 强度矩阵（有硬缺陷即非 0 退出）
 npm run test:regress12 # 12 样本回归：评分器漂移棘轮 + 引擎退化棘轮（见下节）
 npm run test:quality   # 词典泄漏质量门禁
-npm run test:calib     # 标定数据源自检（参数一致/拟合误差/x 轴漂移棘轮，退出码可拦）
-npm run test:evidence  # 官方送检凭证审计（哈希复算 + 页面原文互证，见下节）
-npm run check:ledger   # 凭证账本 append-only（历史行被删/改/重排即拦；hook 里也跑这条）
 npm run check:version  # 版本号一致性（根/electron-app/README/CHANGELOG/说明文档×2/启动脚本×2 九处比对；产物存在时一并比对）
 npm run check:release  # 上面全部 + 单测，全绿才允许打 tag
 npm run bench          # 性能基准，纯打印给人看；判定在 src/engine/humanize-perf-budget.test.ts
 ```
 
-## 官方 API 自动送检（v0.9.14+）
+## 朱雀官方 API 自动送检（v0.9.14+）
 
 朱雀在腾讯云 EdgeOne Makers 开了官方 API（`@makers/zhuque-text`，50 万 token/月免费），
-送检不再需要人工过滑块。`npm run score:official` 一条命令把整条链路自动化：
+送检不再需要人工过滑块。两条用法：
 
-```bash
-# 1. 去腾讯云 EdgeOne 控制台 → Makers → Models → API Key 建一个 Key（不需要自建网关）
-# 2. 设进环境变量（别贴进对话、别写进仓库文件）：
-ZHUQUE_API_KEY=xxx npm run score:official            # 重新送检已有 18 个标定点 → 升到 api-response 认证
-ZHUQUE_API_KEY=xxx npm run score:official -- --v4    # 额外送检 v4 的 8 个中段点并追加进标定数据
-ZHUQUE_API_KEY=xxx npm run score:official -- --dry-run   # 只列计划，不送检不入账
-```
+- **界面自动送检**：设置 → 对标检测器 → 「填入朱雀默认值」并勾启用——去味后一键把文本发给
+  官方 API，返回分显示在「评分与外部验证」面板。那是真实通道返回的分，不是本地换算。
+- **命令行**：`scripts/humanize-cli.ts --detector-url` 指向 EdgeOne 网关同样可用（见快速开始的 CLI 表）。
 
-- **api-response 级凭证**与页面截图同级算"认证"：可复核载体是官方 API 的原始 JSON
-  （字节归档 + 哈希 + token 用量），审计时从归档 JSON 复算分数比对，改路径只改 `detector.ts` 一处。
-- **幂等**：账本里已有 api-response 记录的 id 直接跳过；重复跑不会重复入账。
-- **不手改数字**：手填的 `--pct` 必须与从 API 响应复算的分数一致，否则 `sealApi` 拒收。
-- **与历史 y 不符只警告不拦**：API 是独立官方通道，模型更新后重测可能与历史网页版 y 不同
-  （那属于"y 已过时、该重拟合"，不是凭证抄错），`audit` 对 api-response 不报 dataset-conflict。
-- `--v4` 会把新中段点追加进 `calibration-data.json`；若这让 `npm run test:calib` 的锚点误差转红，
-  是"旧线拟合不了新数据"的诚实信号——跑 `npx tsx scripts/zhuque-v4-fit.ts` 看重拟合报告，
-  确认可接受后再人工同步 `src/engine/zhuque-calib.ts`（不自动改运行参数，那是需要人判断的一步）。
-- 底层单条入账：`npx tsx scripts/zhuque-evidence.ts sealApi --id O1 --submit-file ... --pct 85 --label ai --api-response ...`
+> v0.9.83：早期基于该 API 的批量重送检脚本（`score:official` / `--v4` 追加标定点）随标定子系统
+> 一起移除；API 本身照常可接（走外部检测器通道）。
 
 去味前后的分数对照不要靠这里背数字，`npm run test:regress12` 每次都会用当前引擎、固定
 `seed=20260826` 现算一遍，四体裁原文 → 朱雀档 0.9 实测 **33 / 46 / 7 / 43 → 全部 0**，
@@ -675,87 +649,26 @@ npx tsx scripts/regression-12samples.ts --rebaseline "<为什么这批数字是�
 
 ---
 
-## aiScore → 朱雀分标定（v3 四体裁分层，单一数据源）
+## aiScore → 朱雀分标定（已移除，v0.9.83）
 
-> 2026-08 起累计 **18 个官方送检点**，按论说/叙事/对话/纯人写四体裁分层拟合，
-> 参数与锚点统一维护在 `scripts/calibration-data.json`（单一数据源），
-> 由 `scripts/calib-sanity.ts` 自检、`zhuque.test.ts` 数据源驱动守卫（18 点 ≤8pp + 参数同步校验）。
-> 详细演进与历史见 `docs/fingerprint-and-zhuque-calibration.md` §3。
->
-> ⚠️ **现状（2026-09-19 复核并纠正）**：`npm run test:calib` 报 **6/18 点漂移**（Δ 最大的是 D0 的 −35）。
-> 此前这里写的"最凶的 6 点是 `x=0 → 60`，属 v0.9.10 清算的 `Number(null)===0` 塌缩锚点污染"
-> **是错的**：真因是标尺的错别字项 `/大这?家/` 把正常词「大家」判成错字（每处 +30、两处 +60），
-> 全仓语料 30 处命中全是真人写法、真错字 0 处。v0.9.13 收紧为 `/大这家/` 后，D/H 两轨的
-> 8 个点从 60 分回到 0 分（与其记录值一致），漂移点 14→6；纯人写稿 H0 也从 37 回到 7（官方 8.33%）。
-> 该自检现在带退出码（【1】【2】硬拦、【3】按基线棘轮拦），不再"只打印不拦"。
-> 但**D/H 两轨的换算线仍需用修好后的 x 重拟合**：它们当初就是拿被污染的 x 拟合的。
-> 最后一次真实送检是 2026-09-13，v0.9.9 之后没有新的官方数据；重拟合需要新的官方送检点，
-> 不要靠重生成基线把当前输出当真值。新送检点请用 `npm run test:evidence` 的 `seal` 留凭证。
+v0.8~v0.9.82 期间本仓维护过一套 aiScore → 朱雀官方分的标定：18 个人工送检锚点、四体裁分层
+换算线（论说/叙事/对话/纯人写）、`calib-sanity` 漂移棘轮、`zhuque-evidence` 凭证账本。
+换算线最终止步于"凭证覆盖率 0/18、锚点漂移压在棘轮天花板上"——一套无法自证的换算，
+只会把界面数字的精确性吹得比实际高。2026-11-05 起整体移除：
 
-| 体裁线 | 公式（官% = a·aiScore + b） | R² | 40% 参考线（仅参考，非过检承诺） |
-|---|---|---|---|
-| 论说/公告/学术 | `2.014x + 19.06` | 0.98 | aiScore ≤ 10.4 |
-| 叙事/散文/小说 | `1.716x + 18.33` | 0.99 | aiScore ≤ 12.6 |
-| 对话/剧本/访谈 | `0.8827x + 26.5` | 0.999 | aiScore ≤ 15.3 |
-| 纯人写稿对照 | `−0.3x + 18.0` | 0.77 | 截距低于 40%（H0 存档官=15%） |
+- 删掉 `src/engine/zhuque-calib.ts`、`scripts/calib-sanity.ts`、`scripts/calibration-data.json`、
+  `scripts/zhuque-evidence.ts`、`scripts/check-ledger-appendonly.ts`、`scripts/zhuque-v4-pipeline.ts`、
+  `scripts/zhuque-v4-fit.ts`、`scripts/zhuque-official-run.ts`、`scripts/zhuque-api-score.ts`、
+  `scripts/zhuque-retro-backfill.ts` 与 `evidence/zhuque/` 账本，以及对应的
+  `test:calib` / `test:evidence` / `check:ledger` / `score:official` / `seal:api` / `check:publish`
+  命令与 CI 的三个步骤（Calibration sanity / Evidence audit / Ledger append-only）；
+- 界面不再显示"朱雀分趋势预测 / 40% 参考线 / 建议行动卡"；
+- **保留**：引擎评分（`aiScore`/`detectAI`）、`regression-12samples` D/E 双棘轮、`scan-bugs`
+  基线棘轮、外部检测器接入、朱雀网页版半自动送检回填与本地校准实验室（攒的是用户自己实测的点）；
+- 完整演进史（拟合过程、漂移体检、账本设计）见 `docs/fingerprint-and-zhuque-calibration.md`（历史档案）。
 
-关键发现与警示：
-
-- **人写稿别跑去味**：纯人写线斜率为负——存档样本里去味后官方分反而略升（H0=15% → H1/H2=17~19%）；确认是人写原稿可考虑直接提交，但这只是 4 个存档点的观察，不是保证；
-- **对话体裁的存档点偏低**：对话线斜率仅 0.88，但只有 3 个点，不能据此承诺任何一篇对话稿都能低于 40%；
-- **论说线已过时（2026-09-08 漂移体检）**：v0.8.x 词表改动导致论说 3 个归档点 aiScore 全部漂移（原文 33→92），论说线刻度不再可信，v4 送检（论说中段 x≈16 / 原文 x≈92）待回传后重拟合；
-- **本地引擎的边界**：本地引擎"换词不换骨"，不打散段落结构与句序；结构级去味需走 LLM 深度模式。
-
-### v4 送检脚手架（`scripts/zhuque-v4-pipeline.ts`）
-
-上面「论说线已过时」那条要靠 v4 送检回传才能重拟合，这个脚本把那条路铺完了：
-
-| 子命令 | 做什么 |
-|---|---|
-| `scan` | 按体裁扫多档强度，打印 (intensity, aiScore, chars) 表，用来挑命中目标区间的档位（论说≈15/22、叙事≈15/30、对话≈15/35） |
-| `prepare` | 按 manifest 指定的 (id, genre, intensity, zhuqueMode, srcText) 生成 >350 字送检文本（不够自动补轮次），同时产出待填官分的 TSV |
-| `report` | 从 `calibration-data-v4-genres.json` 读回填的官分，打拟合报告 |
-
-目标是给每条体裁线补 1~2 个**非饱和中段 x 值**，把自由度从 1 扩到 3+——
-只有这样才能给出带 S.E. 的置信区间。当前 18 个点只有一个人工抄进去的百分比，给不出区间。
-
-### 官方送检凭证账本（`scripts/zhuque-evidence.ts`）
-
-上面那条线之所以只能"粗略参考"，根因是 18 个官方送检点**只有一个人工抄进去的百分比**——
-没有送检原文、没有页面截图、没有时间戳。这类数据出过错是必然的：`5/5 判人类` 那条结论的引文
-「未发现明显的人工创作特征」在仓库里就被反向解释过两次。账本做的事是把一次送检绑成四条互相印证的证据：
-
-```bash
-npx tsx scripts/zhuque-evidence.ts seal \
-  --id O1 --submit-file scripts/zhuque-v4-out/O1.txt --pct 85 \
-  --verdict "AI生成 85.00%" --label ai --screenshot artifacts/zhuque/O1.png
-npm run test:evidence   # 全量复算（历史点无凭证只列软账，不拦日常开发）
-npm run check:publish   # = audit --strict：连"历史点无凭证"一起拦 —— 今天必然红（覆盖率 0/18），
-                        #  补齐带截图的官方送检凭证并重建校准线之前，它就是发布阻断项
-```
-
-- **哈希复算**：`seal` 把送检原文与截图**复制**进 `evidence/zhuque/`（已跟踪）并按字节取 sha256 入账。
-  必须复制：`artifacts/` 和 `scripts/zhuque-v4-out/` 都被 gitignore，哈希指向一个不入库的文件等于没凭证。
-- **页面原文是独立于抄录人的那一路**：`--verdict` 逐字粘页面那行，`seal` 当场用引擎里同一个
-  `parseOfficialResult` 解析，解析出的百分比/档位与手填值不符即**拒绝入账**（只存 pct + label 是不行的，
-  两者同源于同一次手抄，一起抄反就永远自洽）。`audit` 再解析一次，防的是账本被手改之后。
-- **与标定数据源互证**：同一 id 的 `--pct` 必须等于 `calibration-data.json` 的 `y`，否则两边必有一处错。
-- 其余硬伤：坏行（含 git 冲突标记）、文件缺失、id 不在标定集（孤儿凭证）、送检不足 350 字（按文件真实内容判，不信任账本字段）。
-- **账本自身不可篡改（`scripts/check-ledger-appendonly.ts`）**：`seal` 用 `appendFileSync` 写账本，
-  整套外部真值都建立在"历史行不会被动"上——但 `audit` 只查得到**字段对不上**的篡改：
-  整行被删、行被重排、改的是不参与复算的自由文本字段（note 一类），它全都看不见。
-  现在这条由门禁兜住，判据取最强的一条：**HEAD 的每一行必须按原顺序原样出现在新内容的开头**，
-  只许往后追加；删除/改写/重排在这一步一律现形。
-  ```bash
-  npm run check:ledger        # HEAD vs 工作区
-  npx tsx scripts/check-ledger-appendonly.ts --staged   # HEAD vs git 索引（hook 走这条）
-  ```
-  `.githooks/pre-commit` 只在账本被 `git add` 过时才跑它（普通提交不付这份 tsx 启动开销），
-  命中即阻止提交并提示：**要更正一条记录请追加一条新记录**，让 `audit` 的 `pct-conflict` 去暴露矛盾。
-  已在临时仓库端到端验过三种形态：纯追加放行、改写历史行拦下（退出 1，且早于类型检查）、
-  完全不碰账本时这道检查根本不运行。
-- **仍存在的缝隙**（账本管不了，靠人）：粘错窗口的原文、截图拿错页、事后重新生成的送检文本与当时送检的字节不一致
-  ——所以送检前先把要粘的文本落盘，再 `seal`。
+朱雀接入只认两条真实通道：免费网页版半自动送检（复制 → 官方页 → 手动回填）与
+EdgeOne 官方 API（外部检测器预设）。本地分只做前后趋势对照，不做官方分预报。
 
 ---
 
@@ -879,5 +792,5 @@ MIT（见 LICENSE）。
 
 ## 更新日志
 
-完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.82**（以 `package.json` 的 `version` 为准）。
+完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.83**（以 `package.json` 的 `version` 为准）。
 

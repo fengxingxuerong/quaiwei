@@ -1,70 +1,20 @@
 // @vitest-environment happy-dom
 /**
- * BenchmarkPanel 分档建议文案、ZhuquePanel 语义权重滑块（v0.9.16 长尾清扫），
+ * ZhuquePanel 语义权重滑块（v0.9.16 长尾清扫），
  * 以及 ErrorBoundary 兜底分支补测（重载出口点击 / 非 Error 抛出回退文案 /
  * componentDidCatch 日志断言——components.test.tsx 之外的盲区）。
- *  建议文案按官方预测分分五档，用不同 score 的 ScoreBreakdown 驱动各档渲染。
+ * v0.9.83：BenchmarkPanel 分档建议文案随标定子系统移除，对应 describe 一并摘除。
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/react";
-import { BenchmarkPanel } from "./BenchmarkPanel";
 import { ZhuquePanel } from "./ZhuquePanel";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { DEFAULT_API } from "../api/llm-config";
-import { DEFAULT_DETECTOR } from "../api/detector";
 import { detectZhuque } from "../engine/zhuque";
-import type { ScoreBreakdown } from "../engine/humanize";
 
 afterEach(() => cleanup());
 
 const EXPO_TEXT =
   "值得注意的是，随着人工智能技术的快速发展，AI 写作工具应运而生。综上所述，数字化办公不仅极大地提升了工作效率，而且有效地降低了运营成本。然而，技术的变革也带来了一系列值得关注的挑战。与此同时，如何平衡创新与风险，成为至关重要的课题。从长远来看，建立完善的监管体系，推动可持续发展，具有十分重要的意义。";
-
-function bd(score: number): ScoreBreakdown {
-  return { score, formulaicHits: 1, burstiness: 0.5, avgLen: 20, sentenceCount: 5 };
-}
-
-function benchProps(score: number) {
-  return {
-    output: EXPO_TEXT,
-    after: bd(score),
-    roundScores: [] as number[],
-    judging: false,
-    detecting: false,
-    api: { ...DEFAULT_API },
-    detector: { ...DEFAULT_DETECTOR },
-    judgeScore: null,
-    judgeCritique: [] as string[],
-    detectorScore: null,
-    zhuqueManualScore: "",
-    onJudge: vi.fn(),
-    onDetect: vi.fn(),
-    onManualScore: vi.fn(),
-    onGenreChange: vi.fn(),
-    onNote: vi.fn(),
-  };
-}
-
-describe("BenchmarkPanel 分档建议文案", () => {
-  it("高 AI 味产出：渲染高危/饱和区建议（结构级处理指引）", () => {
-    const { container, getByText } = render(<BenchmarkPanel {...benchProps(95)} />);
-    expect(getByText(/评分与外部验证/)).toBeTruthy();
-    const t = container.textContent ?? "";
-    expect(/饱和|重点处理结构|清套话/.test(t)).toBe(true);
-  });
-
-  it("中段产出：渲染中等风险建议（先处理结构再送检）", () => {
-    const { container } = render(<BenchmarkPanel {...benchProps(10)} />);
-    const t = container.textContent ?? "";
-    expect(/本地估计中等偏低|本地估计中等|建议真实送检/.test(t)).toBe(true);
-  });
-
-  it("低分产出：渲染低分区送检建议", () => {
-    const { container } = render(<BenchmarkPanel {...benchProps(3)} />);
-    const t = container.textContent ?? "";
-    expect(/本地估计偏低|本地估计中等偏低|本地估计中等/.test(t)).toBe(true);
-  });
-});
 
 describe("ZhuquePanel 语义权重滑块", () => {
   function zqProps(overrides: Partial<Parameters<typeof ZhuquePanel>[0]> = {}) {
@@ -79,7 +29,6 @@ describe("ZhuquePanel 语义权重滑块", () => {
       semLoading: false,
       weight: 0.8,
       canRunSemantic: false,
-      genreEstimate: { pct: 88.3, tag: "论说参考线 aiScore ≈ 10.4（仅参考）" },
       onPaste: vi.fn(),
       onSaveCalib: vi.fn(),
       onClearCalib: vi.fn(),

@@ -84,9 +84,8 @@ function getPath(obj: unknown, path: string): unknown {
 }
 
 /**
- * 从已归档的原始响应 JSON 里复算 0~100 分。与 classifyViaDetector 共用同一条取数路径，
- * 这样审计（scripts/zhuque-evidence.ts）从入库的 .api.json 重算时和当场送检完全一致——
- * 改路径只改一处，否则审计会和历史入账用两套刻度。
+ * 从已归档的原始响应 JSON 里复算 0~100 分。与 classifyViaDetector 共用同一条取数路径——
+ * 改路径只改一处，否则同一次检测内部会用两套刻度。
  */
 export function extractScore(
   raw: Record<string, unknown>,

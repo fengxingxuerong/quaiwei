@@ -129,6 +129,30 @@ try {
     acad.result?.structuredContent?.verdict === "blocked" && auditText.includes("wang2024"),
     `阻断 ${acad.result?.structuredContent?.blockers?.length ?? 0} 项`,
   );
+
+  // v0.9.84：protect 自定义保护术语——「赋能」在套话词表里，protect 后必须原样保留
+  const prot = await rpc("tools/call", {
+    name: "humanize_text",
+    arguments: { text: AI_ISH, protect: ["赋能"] },
+  });
+  check(
+    "protect 术语保护生效",
+    (prot.result?.content?.[0]?.text ?? "").includes("赋能"),
+    "赋能 原样保留",
+  );
+
+  // v0.9.84：detect_ai 可选外部送检——127.0.0.1:9（discard 端口）立刻拒绝，不依赖外网；
+  // 断言「送检失败只记原因，本地分照常返回」，这是这条路径的契约
+  const detFail = await rpc("tools/call", {
+    name: "detect_ai",
+    arguments: { text: AI_ISH, detectorUrl: "http://127.0.0.1:9/" },
+  });
+  const detSc = detFail.result?.structuredContent ?? {};
+  check(
+    "detect_ai 外部送检失败只记原因",
+    typeof detSc.probability === "number" && !!detSc.detector?.error,
+    `本地分 ${detSc.probability}`,
+  );
 } catch (e) {
   console.error(`✗ ${e.message}`);
   process.exitCode = 1;

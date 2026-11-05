@@ -1,8 +1,9 @@
 /**
  * src/mcp/server.test.ts —— MCP 服务端的契约测试
  *
- * 守的是「一个 MCP 客户端看到的东西」：握手能不能过、工具列表里是不是那三个、
- * 调用能不能拿到改后正文、数字有没有被改掉、坏输入会不会把服务端搞死。
+ * 守的是「一个 MCP 客户端看到的东西」：握手能不能过、工具列表里是不是那四个、
+ * 调用能不能拿到改后正文、数字有没有被改掉、坏输入会不会把服务端搞死、
+ * protect 与外部送检这些可选参数语义是否如文档所说。
  * 不测内部函数调用次数，也不 mock 引擎——引擎跑真的，只有传输层用内存流。
  */
 import { describe, it, expect } from "vitest";
@@ -15,13 +16,14 @@ const AI_ISH = [
   "综上所述，这一系列举措不仅提升了交付效率，更标志着研发体系迈入了新的阶段。",
 ].join("");
 
-function call(id: number, name: string, args: Record<string, unknown>) {
-  return handleMessage({
+/** handleMessage 自 v0.9.84 起是 async（detect_ai 的外部送检要等网络） */
+async function call(id: number, name: string, args: Record<string, unknown>) {
+  return (await handleMessage({
     jsonrpc: "2.0",
     id,
     method: "tools/call",
     params: { name, arguments: args },
-  }) as {
+  })) as {
     result?: {
       content: { type: string; text: string }[];
       structuredContent?: Record<string, unknown>;
@@ -32,8 +34,8 @@ function call(id: number, name: string, args: Record<string, unknown>) {
 }
 
 describe("MCP 握手与工具列表", () => {
-  it("initialize 回自己的身份、工具能力与说明", () => {
-    const res = handleMessage({
+  it("initialize 回自己的身份、工具能力与说明", async () => {
+    const res = (await handleMessage({
       jsonrpc: "2.0",
       id: 1,
       method: "initialize",
@@ -42,25 +44,25 @@ describe("MCP 握手与工具列表", () => {
         capabilities: {},
         clientInfo: { name: "t", version: "0" },
       },
-    }) as any;
+    })) as any;
     expect(res.result.serverInfo.name).toBe("quaiwei");
     expect(res.result.protocolVersion).toBe("2025-06-18");
     expect(res.result.capabilities.tools).toBeDefined();
     expect(String(res.result.instructions)).toContain("不承诺");
   });
 
-  it("客户端给个不认识的协议版本，回我们最新的，而不是空着", () => {
-    const res = handleMessage({
+  it("客户端给个不认识的协议版本，回我们最新的，而不是空着", async () => {
+    const res = (await handleMessage({
       jsonrpc: "2.0",
       id: 1,
       method: "initialize",
       params: { protocolVersion: "1999-01-01" },
-    }) as any;
+    })) as any;
     expect(res.result.protocolVersion).toBe("2025-06-18");
   });
 
-  it("tools/list 给出四个工具，每个都要求 text 参数", () => {
-    const res = handleMessage({ jsonrpc: "2.0", id: 2, method: "tools/list" }) as any;
+  it("tools/list 给出四个工具，每个都要求 text 参数", async () => {
+    const res = (await handleMessage({ jsonrpc: "2.0", id: 2, method: "tools/list" })) as any;
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toEqual(["humanize_text", "detect_ai", "quality_report", "academic_report"]);
     for (const t of res.result.tools) {
@@ -70,19 +72,23 @@ describe("MCP 握手与工具列表", () => {
     expect(TOOLS.length).toBe(4);
   });
 
-  it("通知类消息不回包（回了会让严格客户端报错）", () => {
-    expect(handleMessage({ jsonrpc: "2.0", method: "notifications/initialized" })).toBeNull();
+  it("通知类消息不回包（回了会让严格客户端报错）", async () => {
+    expect(await handleMessage({ jsonrpc: "2.0", method: "notifications/initialized" })).toBeNull();
   });
 
-  it("未知方法回 -32601", () => {
-    const res = handleMessage({ jsonrpc: "2.0", id: 9, method: "resources/list" }) as any;
+  it("未知方法回 -32601", async () => {
+    const res = (await handleMessage({
+      jsonrpc: "2.0",
+      id: 9,
+      method: "resources/list",
+    })) as any;
     expect(res.error.code).toBe(-32601);
   });
 });
 
 describe("humanize_text", () => {
-  it("真的改了文本，且原文的数字一个不少", () => {
-    const r = call(1, "humanize_text", { text: AI_ISH }).result!;
+  it("真的改了文本，且原文的数字一个不少", async () => {
+    const r = (await call(1, "humanize_text", { text: AI_ISH })).result!;
     const out = r.content[0].text;
     expect(out.length).toBeGreaterThan(0);
     expect(out).not.toBe(AI_ISH);
@@ -92,37 +98,42 @@ describe("humanize_text", () => {
     expect(typeof r.structuredContent!.scoreAfter).toBe("number");
   });
 
-  it("固定 seed 时两次产出完全一致（可复现是这个工具的卖点）", () => {
-    const a = call(1, "humanize_text", { text: AI_ISH, seed: 20260905 }).result!.content[0].text;
-    const b = call(2, "humanize_text", { text: AI_ISH, seed: 20260905 }).result!.content[0].text;
+  it("固定 seed 时两次产出完全一致（可复现是这个工具的卖点）", async () => {
+    const a = (await call(1, "humanize_text", { text: AI_ISH, seed: 20260905 })).result!.content[0]
+      .text;
+    const b = (await call(2, "humanize_text", { text: AI_ISH, seed: 20260905 })).result!.content[0]
+      .text;
     expect(a).toBe(b);
   });
 
-  it("不传 seed 时落的是文档里的默认种子（否则跨进程不可复现）", () => {
+  it("不传 seed 时落的是文档里的默认种子（否则跨进程不可复现）", async () => {
     // 引擎的 makeRng 在 seed 为 undefined 时会退回 Date.now()：
     // 这条用例挂掉就说明默认值丢了，同一段文本每次跑出来的结果会不一样。
-    const a = call(1, "humanize_text", { text: AI_ISH }).result!.content[0].text;
-    const b = call(2, "humanize_text", { text: AI_ISH, seed: 20260905 }).result!.content[0].text;
+    const a = (await call(1, "humanize_text", { text: AI_ISH })).result!.content[0].text;
+    const b = (await call(2, "humanize_text", { text: AI_ISH, seed: 20260905 })).result!.content[0]
+      .text;
     expect(a).toBe(b);
   });
 
-  it("参数不合法时走 isError，不是把服务端弄崩", () => {
-    const r = call(3, "humanize_text", { text: "   " }).result!;
+  it("参数不合法时走 isError，不是把服务端弄崩", async () => {
+    const r = (await call(3, "humanize_text", { text: "   " })).result!;
     expect(r.isError).toBe(true);
     expect(r.content[0].text).toContain("text");
   });
 
-  it("超长文本给出可执行的替代方案（CLI），而不是静默截断", () => {
-    const r = call(4, "humanize_text", { text: "字".repeat(200_001) }).result!;
+  it("超长文本给出可执行的替代方案（CLI），而不是静默截断", async () => {
+    const r = (await call(4, "humanize_text", { text: "字".repeat(200_001) })).result!;
     expect(r.isError).toBe(true);
     expect(r.content[0].text).toContain("ai-humanizer");
   });
 
-  it("variant=zh-TW 会把用词换成台湾说法，并在结构化字段里记账", () => {
-    const r = call(5, "humanize_text", {
-      text: "打开软件，在设置里登录账号。",
-      variant: "zh-TW",
-    }).result!;
+  it("variant=zh-TW 会把用词换成台湾说法，并在结构化字段里记账", async () => {
+    const r = (
+      await call(5, "humanize_text", {
+        text: "打开软件，在设置里登录账号。",
+        variant: "zh-TW",
+      })
+    ).result!;
     const out = r.content[0].text;
     expect(out).toContain("软体");
     expect(out).toContain("设定");
@@ -131,24 +142,60 @@ describe("humanize_text", () => {
     expect(regional.terms.length).toBeGreaterThan(0);
   });
 
-  it("不给 variant 时一个字都不动（零漂移）", () => {
-    const r = call(6, "humanize_text", {
-      text: "打开软件，在设置里登录账号。",
-      intensity: 0,
-    }).result!;
+  it("不给 variant 时一个字都不动（零漂移）", async () => {
+    const r = (
+      await call(6, "humanize_text", {
+        text: "打开软件，在设置里登录账号。",
+        intensity: 0,
+      })
+    ).result!;
     expect(r.structuredContent!.regional).toBeUndefined();
   });
 
-  it("variant 给个不认识的值 → isError，而不是静默忽略", () => {
-    const r = call(7, "humanize_text", { text: "打开软件。", variant: "zh-HK" }).result!;
+  it("variant 给个不认识的值 → isError，而不是静默忽略", async () => {
+    const r = (await call(7, "humanize_text", { text: "打开软件。", variant: "zh-HK" })).result!;
     expect(r.isError).toBe(true);
     expect(r.content[0].text).toContain("zh-TW");
   });
 });
 
+describe("protect 自定义保护术语（v0.9.84）", () => {
+  it("protect 里的术语一字不动，调用结束自动清掉（不泄漏到下一次）", async () => {
+    // 「赋能」是本仓套话词表里的高频 AI 词：不带 protect 大概率被替换。
+    const no = await call(1, "humanize_text", { text: AI_ISH });
+    const noText = no.result!.content[0].text;
+    const yes = await call(2, "humanize_text", { text: AI_ISH, protect: ["赋能"] });
+    const yesText = yes.result!.content[0].text;
+    const after = await call(3, "humanize_text", { text: AI_ISH });
+    const afterText = after.result!.content[0].text;
+
+    expect(yesText).toContain("赋能"); // protect 生效：术语被保留
+    if (noText.includes("赋能")) {
+      // 词表这一版没替换它（词表会演进），protect 无从对比；至少不报错即可
+    } else {
+      // 词表替换了它 → 三段对比成立：不带 protect 替换、带 protect 保留、
+      // 再不带 protect 恢复替换（保护用完即清，不许泄漏到长驻进程的下一次调用）
+      expect(noText).not.toContain("赋能");
+      expect(afterText).not.toContain("赋能");
+      expect(afterText === yesText).toBe(false);
+    }
+  });
+
+  it("quality_report 同样吃 protect", async () => {
+    const r = (await call(1, "quality_report", { text: AI_ISH, protect: ["赋能"] })).result!;
+    expect(r.content[0].text).toContain("赋能");
+  });
+
+  it("protect 类型不对 → isError，而不是当没给", async () => {
+    const r = (await call(1, "humanize_text", { text: AI_ISH, protect: "赋能" })).result!;
+    expect(r.isError).toBe(true);
+    expect(r.content[0].text).toContain("protect");
+  });
+});
+
 describe("detect_ai", () => {
-  it("给分数、档位与高风险句，并明说是代理分", () => {
-    const r = call(1, "detect_ai", { text: AI_ISH }).result!;
+  it("给分数、档位与高风险句，并明说是代理分", async () => {
+    const r = (await call(1, "detect_ai", { text: AI_ISH })).result!;
     const text = r.content[0].text;
     expect(text).toContain("代理分");
     expect(text).toContain("不是任何检测器的官方分");
@@ -156,12 +203,36 @@ describe("detect_ai", () => {
     expect(score).toBeGreaterThanOrEqual(0);
     expect(score).toBeLessThanOrEqual(100);
     expect(Array.isArray(r.structuredContent!.topSegments)).toBe(true);
+    // 不传 detectorUrl：完全离线，结构化字段里没有 detector 一节
+    expect(r.structuredContent!.detector).toBeUndefined();
+  });
+});
+
+describe("detect_ai 外部送检（v0.9.84）", () => {
+  it("detectorUrl 非 http(s) → isError，而不是当没给", async () => {
+    const r = (await call(1, "detect_ai", { text: AI_ISH, detectorUrl: "ftp://example" })).result!;
+    expect(r.isError).toBe(true);
+    expect(r.content[0].text).toContain("detectorUrl");
+  });
+
+  it("detectorUrl 连不上时只记原因，本地分照常（送检失败不让整个工具失败）", async () => {
+    // 127.0.0.1:9（discard 端口）上没有监听，fetch 立刻 ECONNREFUSED——不依赖外网
+    const r = (await call(2, "detect_ai", { text: AI_ISH, detectorUrl: "http://127.0.0.1:9/" }))
+      .result!;
+    expect(r.isError).toBeUndefined(); // 工具本身成功
+    const sc = r.structuredContent!;
+    expect(typeof sc.probability).toBe("number"); // 本地结果照常返回
+    expect(r.content[0].text).toContain("送检失败");
+    const det = sc.detector as { url: string; score: number | null; error: string | null };
+    expect(det.url).toBe("http://127.0.0.1:9/");
+    expect(det.score).toBeNull();
+    expect(det.error).toBeTruthy();
   });
 });
 
 describe("quality_report", () => {
-  it("报告里同时有改动清单与保真检查两节", () => {
-    const r = call(1, "quality_report", { text: AI_ISH }).result!;
+  it("报告里同时有改动清单与保真检查两节", async () => {
+    const r = (await call(1, "quality_report", { text: AI_ISH })).result!;
     const text = r.content[0].text;
     expect(text).toContain("## 改了什么");
     expect(text).toContain("## 保真检查");
@@ -169,9 +240,9 @@ describe("quality_report", () => {
     expect(r.structuredContent!.changes as number).toBeGreaterThan(0);
   });
 
-  it("数字被改掉时会在保真一节里报出来（守的是用户最怕的那种改坏）", () => {
+  it("数字被改掉时会在保真一节里报出来（守的是用户最怕的那种改坏）", async () => {
     // 直接给一段原文/产出不同的场景：引擎本身不丢数字，但报告要能看见"丢")
-    const r = call(1, "quality_report", { text: AI_ISH }).result!;
+    const r = (await call(1, "quality_report", { text: AI_ISH })).result!;
     const report = r.content[0].text;
     // 无失真时明写"一致"，不写含糊话
     expect(report).toMatch(/与原文一致|数字保真/);
@@ -181,25 +252,27 @@ describe("quality_report", () => {
 describe("academic_report", () => {
   const PAPER = "本文在 3 个数据集上做了消融实验，准确率提升 4.2 个百分点~\\cite{wang2024}。";
 
-  it("审现成改写稿：丢了引用键与数字 → NOT READY，并点名", () => {
-    const r = call(1, "academic_report", {
-      text: PAPER,
-      rewritten: "我们在多个数据集上做了消融实验，效果有明显提升。",
-    }).result!;
+  it("审现成改写稿：丢了引用键与数字 → NOT READY，并点名", async () => {
+    const r = (
+      await call(1, "academic_report", {
+        text: PAPER,
+        rewritten: "我们在多个数据集上做了消融实验，效果有明显提升。",
+      })
+    ).result!;
     expect(r.structuredContent!.verdict).toBe("blocked");
     const blockers = (r.structuredContent!.blockers as string[]).join();
     expect(blockers).toContain("wang2024");
     expect(r.content[0].text).toContain("NOT READY TO SUBMIT");
   });
 
-  it("不给 rewritten 时由引擎按 academic 跑一遍再审", () => {
-    const r = call(1, "academic_report", { text: PAPER }).result!;
+  it("不给 rewritten 时由引擎按 academic 跑一遍再审", async () => {
+    const r = (await call(1, "academic_report", { text: PAPER })).result!;
     expect(["ready", "blocked"]).toContain(r.structuredContent!.verdict);
     expect(r.content[0].text).toContain("引擎按 academic 文风改写后自检");
   });
 
-  it("rewritten 类型不对 → isError，而不是当没给", () => {
-    const r = call(1, "academic_report", { text: PAPER, rewritten: 42 }).result!;
+  it("rewritten 类型不对 → isError，而不是当没给", async () => {
+    const r = (await call(1, "academic_report", { text: PAPER, rewritten: 42 })).result!;
     expect(r.isError).toBe(true);
   });
 });

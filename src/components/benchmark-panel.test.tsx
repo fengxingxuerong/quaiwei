@@ -1,14 +1,14 @@
 // @vitest-environment happy-dom
 /**
- * BenchmarkPanel 渲染级测试：对标评分面板的双通道按钮、v3 体裁轨道联动
+ * BenchmarkPanel 渲染级测试：对标评分面板的双通道按钮、引擎体裁联动
  * （自动识别 / 手动 override / 回到自动 / 引擎上抛）、朱雀送检回填行。
+ * v0.9.83：官方分预测（v3 18 点 OLS）已随标定子系统移除，预测类用例一并摘除。
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/react";
 import { BenchmarkPanel } from "./BenchmarkPanel";
 import { DEFAULT_API } from "../api/llm-config";
 import { DEFAULT_DETECTOR } from "../api/detector";
-import { CALIB } from "../engine/zhuque-calib";
 import type { ScoreBreakdown } from "../engine/humanize";
 
 afterEach(() => cleanup());
@@ -117,75 +117,16 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(getByText(/目标 ≤10/)).toBeTruthy();
   });
 
-  it("预测区：显示实验性换算、40% 参考线徽章与建议行动卡", () => {
+  it("不渲染任何官方分预测（标定子系统已移除）", () => {
     const { container } = render(<BenchmarkPanel {...base()} />);
-    expect(container.textContent).toContain("实验性换算");
-    expect(container.textContent).toContain("不能作为是否过检的依据");
-    // main 线：2.014 × 20 + 19.06 ≈ 59.3% → 高于 40% 参考线
-    expect(container.textContent).toContain("高于 40% 参考线 19.3 pp");
-    expect(container.textContent).toContain("💡 建议行动");
-    expect(container.textContent).toContain("非过检承诺");
+    const t = container.textContent ?? "";
+    expect(t).not.toContain("朱雀分趋势预测");
+    expect(t).not.toContain("参考线");
+    expect(t).not.toContain("建议行动");
+    expect(t).not.toContain("实验性换算");
   });
 
-  /* ---- v3 建议行动卡的三档预测分支（pct ≤20 / 20~40 / >80 + 饱和区） ---- */
-
-  it("预测 ≤20%：只给低分区提示与送检建议，不再写「已稳过」", () => {
-    // aiScore=0 → main 线 2.014×0+19.06=19.06% ≤20
-    const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 0 } })} />);
-    expect(container.textContent).toContain("本地估计偏低。建议先用朱雀网页/API 实测一次");
-    expect(container.textContent).toContain("🔵 19.1%");
-    expect(container.textContent).toContain("低于 40% 参考线 20.9 pp（仅参考）");
-  });
-
-  it("预测 20~40%：🟢 图标 + 参考线提示，要求真实送检", () => {
-    // aiScore=10 → main 线 2.014×10+19.06≈39.2%
-    const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 10 } })} />);
-    expect(container.textContent).toContain("本地估计中等偏低。建议真实送检一次");
-    expect(container.textContent).toContain("🟢 39.2%");
-    expect(container.textContent).toContain("论说参考线 aiScore ≈ 10.4（仅参考）");
-    expect(container.textContent).toContain("低于 40% 参考线 0.8 pp（仅参考）");
-  });
-
-  it("预测恰好落在 40% 参考线：徽章显示边界文案（仅参考）", () => {
-    // score 取 (40-b)/a 使预测浮点恰为 40 → referenceGap === 0 的边界分支
-    const edge = (40 - CALIB.main.b) / CALIB.main.a;
-    const { container } = render(
-      <BenchmarkPanel {...base({ after: { ...after, score: edge } })} />,
-    );
-    expect(container.textContent).toContain("🟢 40.0%");
-    expect(container.textContent).toContain("在 40% 参考线上（仅参考）");
-  });
-
-  it("预测进入饱和区（aiScore ≥ satX）：饱和 tip + 60pp 差距徽章", () => {
-    // aiScore=50 ≥ main 线 satX=40.2 → 预测 clamp 到 100%
-    const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 50 } })} />);
-    expect(container.textContent).toContain("🔴 100.0%");
-    expect(container.textContent).toContain(
-      "本地估计已饱和（aiScore≥40）；官方分无法由本地分可靠推算",
-    );
-    expect(container.textContent).toContain("本地估计很高。先清套话连接词");
-    expect(container.textContent).toContain("⚠️ 高于 40% 参考线 60.0 pp");
-  });
-
-  it("预测 80~98% 区间：保持红色图标与「本地估计很高」", () => {
-    // aiScore=35 → main 线 ≈89.5%：既不 ≤80（🟠 档）也未到 98/饱和
-    const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 35 } })} />);
-    expect(container.textContent).not.toContain("🟠");
-    expect(container.textContent).toContain("本地估计很高（非官方结论）");
-    expect(container.textContent).toMatch(/🔴 89\.[0-9]%/);
-    expect(container.textContent).toMatch(/高于 40% 参考线 49\.[0-9] pp/);
-  });
-
-  it("副线 concat 低分落在 40~60%：中档走副线不推算阈值的文案", () => {
-    // concat 截距 57.441、x40 为负：score=0 → pct 57.4 ∈ (40,60]
-    const { container } = render(<BenchmarkPanel {...base({ after: { ...after, score: 0 } })} />);
-    const select = container.querySelector("select") as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "concat" } });
-    expect(container.textContent).toContain("🟡 57.4%");
-    expect(container.textContent).toContain("本地估计中等（副线不用于阈值推算）");
-  });
-
-  it("自动识别徽章显示体裁（论说文）且默认轨道为 main", () => {
+  it("自动识别徽章显示体裁（论说文）且默认体裁为 main", () => {
     const { container } = render(<BenchmarkPanel {...base()} />);
     expect(container.textContent).toContain("🤖 自动识别");
     expect(container.textContent).toContain("论说文");
@@ -193,34 +134,34 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(select.value).toBe("main");
   });
 
-  it("手动切到对话线：轨道上抛引擎、显示「手动轨道」与「回到自动」", () => {
+  it("手动切到对话体裁：上抛引擎、显示「手动体裁」与「回到自动」", () => {
     const onGenreChange = vi.fn();
     const { container } = render(<BenchmarkPanel {...base({ onGenreChange })} />);
     const select = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "dialogue" } });
     expect(onGenreChange).toHaveBeenCalledWith("dialogue");
-    expect(container.textContent).toContain("⚙️ 手动轨道");
+    expect(container.textContent).toContain("⚙️ 手动体裁");
     const reset = Array.from(container.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("回到自动"),
     ) as HTMLButtonElement;
     expect(reset).toBeTruthy();
   });
 
-  it("手动切回与自动识别一致的轨道：override 被解除、徽章回到「自动识别」", () => {
+  it("手动切回与自动识别一致的体裁：override 被解除、徽章回到「自动识别」", () => {
     const onGenreChange = vi.fn();
     const { container } = render(<BenchmarkPanel {...base({ onGenreChange })} />);
     const select = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "dialogue" } });
-    expect(container.textContent).toContain("⚙️ 手动轨道");
+    expect(container.textContent).toContain("⚙️ 手动体裁");
     // 再选回 auto.genre（main）→ next === auto.genre，走 else-if 把 override 清掉
     fireEvent.change(select, { target: { value: "main" } });
     expect(onGenreChange).toHaveBeenCalledWith("main");
     expect(select.value).toBe("main");
     expect(container.textContent).toContain("🤖 自动识别");
-    expect(container.textContent).not.toContain("⚙️ 手动轨道");
+    expect(container.textContent).not.toContain("⚙️ 手动体裁");
   });
 
-  it("「回到自动」按钮：清 override、轨道按 auto 重切并上抛 null 给引擎", () => {
+  it("「回到自动」按钮：清 override、体裁按 auto 重切并上抛 null 给引擎", () => {
     const onGenreChange = vi.fn();
     const { container, getByText, queryByText } = render(
       <BenchmarkPanel {...base({ onGenreChange })} />,
@@ -232,62 +173,48 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(onGenreChange).toHaveBeenLastCalledWith(null);
     expect(select.value).toBe("main");
     expect(container.textContent).toContain("🤖 自动识别");
-    expect(container.textContent).not.toContain("⚙️ 手动轨道");
+    expect(container.textContent).not.toContain("⚙️ 手动体裁");
     // override 解除后「回到自动」按钮不再渲染
     expect(queryByText("回到自动")).toBeNull();
   });
 
-  it("未传可选的 onGenreChange：切轨与「回到自动」照常工作且不抛错", () => {
+  it("未传可选的 onGenreChange：切体裁与「回到自动」照常工作且不抛错", () => {
     const { container, getByText } = render(
       <BenchmarkPanel {...base({ onGenreChange: undefined })} />,
     );
     const select = container.querySelector("select") as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "dialogue" } });
     expect(select.value).toBe("dialogue");
-    expect(container.textContent).toContain("⚙️ 手动轨道");
+    expect(container.textContent).toContain("⚙️ 手动体裁");
     // 回到自动走 onGenreChange?.(null) 可选链：缺省时安全跳过
     fireEvent.click(getByText("回到自动"));
     expect(select.value).toBe("main");
     expect(container.textContent).toContain("🤖 自动识别");
   });
 
-  it("预测值随体裁轨道切换重算（对话线截距不同）", () => {
-    const { container } = render(<BenchmarkPanel {...base()} />);
-    const before = container.querySelector(".zq-big, .bench")!.textContent!;
-    const select = container.querySelector("select") as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "dialogue" } });
-    // 对话线：0.8827 × 20 + 26.5 ≈ 44.2%；与 main 的 59.3% 不同
-    const pct = CALIB.dialogue.a * 20 + CALIB.dialogue.b;
-    expect(container.textContent).toContain(pct.toFixed(1) + "%");
-    expect(before).toBeTruthy();
-  });
-
-  it("人写线：切换后触发引擎上抛 humanHand；纯人写稿文案触发警示横幅", () => {
+  it("手动切到人写对照：引擎上抛 humanHand（该体裁不在自动识别输出里，必为 override）", () => {
     const onGenreChange = vi.fn();
     const { container } = render(<BenchmarkPanel {...base({ onGenreChange })} />);
     const select = container.querySelector("select") as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "human" } });
+    fireEvent.change(select, { target: { value: "humanHand" } });
     expect(onGenreChange).toHaveBeenCalledWith("humanHand");
-    // 副线 concat 属高级分组：直接切换也应上抛 null
-    fireEvent.change(select, { target: { value: "concat" } });
-    expect(onGenreChange).toHaveBeenCalledWith(null);
+    expect(container.textContent).toContain("⚙️ 手动体裁");
+    expect(container.textContent).toContain("回到三分自动识别");
   });
 
-  it("疑似纯人写原稿快捷按钮：点击切人写对照轨道并显示警示横幅", () => {
+  it("疑似纯人写原稿快捷按钮：点击把引擎体裁切到人写对照", () => {
     const onGenreChange = vi.fn();
     const { container, getByText, queryByText } = render(
       <BenchmarkPanel {...base({ output: NARR_TEXT, onGenreChange })} />,
     );
     const select = container.querySelector("select") as HTMLSelectElement;
-    expect(select.value).toBe("narrative"); // 自动识别命中叙事线（rule 3）
-    fireEvent.click(getByText("🚩 疑似纯人写原稿 → 切人写对照轨道（H0=15%）"));
-    // 上抛 humanHand + 轨道切到 human：-0.3×20+18 = 12.0%
+    expect(select.value).toBe("narrative"); // 自动识别命中叙事（rule 3）
+    fireEvent.click(getByText("🚩 疑似纯人写原稿 → 引擎保留作者结构"));
+    // 上抛 humanHand：只影响引擎行为（保留作者结构），不做任何分数换算
     expect(onGenreChange).toHaveBeenLastCalledWith("humanHand");
-    expect(select.value).toBe("human");
-    expect(container.textContent).toContain("⚙️ 手动轨道");
-    expect(container.textContent).toContain("🔵 12.0%");
-    expect(container.textContent).toContain("不建议再去味"); // humanWarn 警示横幅
-    expect(queryByText(/切人写对照轨道/)).toBeNull(); // 切走后快捷按钮消失
+    expect(select.value).toBe("humanHand");
+    expect(container.textContent).toContain("⚙️ 手动体裁");
+    expect(queryByText(/疑似纯人写原稿/)).toBeNull(); // 切走后快捷按钮消失
     expect(getByText(/回到三分自动识别/)).toBeTruthy(); // 换成「回到三分」按钮
   });
 

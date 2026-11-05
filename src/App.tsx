@@ -235,7 +235,6 @@ export default function App({
     zqSem,
     zqSemLoading,
     zqWeight,
-    zqGenreEstimate,
     setZq,
     setZqText,
     setZqSem,
@@ -268,7 +267,7 @@ export default function App({
     showLab,
     setLabPaste,
     rerunWithPpl,
-  } = useZhuqueLab({ input, output, api, pplFeature, genreOverride });
+  } = useZhuqueLab({ input, output, api, pplFeature });
   rerunPplRef.current = rerunWithPpl;
 
   function handleFingerprint() {
@@ -1157,7 +1156,6 @@ export default function App({
           semLoading={zqSemLoading}
           weight={zqWeight}
           canRunSemantic={semanticAvailable(api)}
-          genreEstimate={zqGenreEstimate}
           onPaste={setZqPaste}
           onSaveCalib={handleZqSaveCalib}
           onClearCalib={handleZqClearCalib}

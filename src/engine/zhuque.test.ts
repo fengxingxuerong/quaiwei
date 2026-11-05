@@ -11,11 +11,7 @@ import {
   DEFAULT_SEMANTIC_WEIGHT,
   type CalibPoint,
 } from "./zhuque";
-import { predictOfficialPct, trackForGenre, CALIB } from "./zhuque-calib";
 import { parseOfficialResult, buildSubmission } from "../api/zhuque";
-// 标定单一数据源：锚点守卫与参数一致性都以它为唯一真值
-// （scripts/calibration-data.json，含全部官方送检点与体裁线参数）
-import calibrationData from "../../scripts/calibration-data.json";
 
 /** 典型 AI 议论文（朱雀官方实测 99.99% 的样本 D 节选，特征密集） */
 const AI_TEXT = `随着信息技术的不断发展，数字化阅读逐渐走进人们的日常生活。值得注意的是，数字化阅读不仅改变了人们获取知识的方式，还显著提升了阅读的便捷性。然而，数字化阅读也面临着一系列挑战，诸如注意力分散、深度思考能力下降等问题。因此，我们需要在享受技术便利的同时，保持对阅读质量的关注。
@@ -290,63 +286,6 @@ describe("detectZhuque × 困惑度层融合", () => {
       ppl: { meanNll: 1.2, winStd: 0.25, scoredChars: 500, windowCount: 5 },
     });
     expect(fused.composite).toBeLessThanOrEqual(base.composite);
-  });
-});
-
-describe("zhuque-calib（v3 四体裁 18 点 OLS 体裁线）", () => {
-  it("论说参考线：aiScore 10.4 → 官方约 40%", () => {
-    expect(predictOfficialPct(10.4, "main")).toBeCloseTo(40.0, 1);
-  });
-
-  it("预测截断在 0~100", () => {
-    expect(predictOfficialPct(100, "main")).toBe(100);
-    expect(predictOfficialPct(0, "concat")).toBeGreaterThanOrEqual(0);
-  });
-
-  it("引擎体裁 → 校准轨道映射", () => {
-    expect(trackForGenre("main")).toBe("main");
-    expect(trackForGenre("narrative")).toBe("narrative");
-    expect(trackForGenre("dialogue")).toBe("dialogue");
-    expect(trackForGenre("humanHand")).toBe("human");
-    expect(trackForGenre(null)).toBe("main");
-  });
-
-  it("校准锚点完整性：18 个官方真值点的预测误差 ≤ 8pp（数据源驱动）", () => {
-    // 锚点来自 scripts/calibration-data.json（v2 12 点 + v3 6 点）
-    // y = 官方朱雀% 是文本真值，不受引擎改动影响；x 漂移 = 校准线过期信号
-    // （漂移检测见 scripts/calib-sanity.ts：当前引擎重建文本重算 x 对比）
-    const genreTrack: Record<string, "main" | "narrative" | "dialogue" | "human"> = {
-      expository: "main",
-      narrative: "narrative",
-      dialogue: "dialogue",
-      humanHand: "human",
-    };
-    const failures: string[] = [];
-    for (const a of calibrationData.points) {
-      const pred = predictOfficialPct(a.x, genreTrack[a.genre]);
-      const err = Math.abs(pred - a.y);
-      if (err > 8)
-        failures.push(`${a.id}: 官方=${a.y}% 预测=${pred.toFixed(1)}% 误差=${err.toFixed(1)}pp`);
-    }
-    expect(failures).toEqual([]);
-  });
-
-  it("标定参数一致性：数据源 tracks 与 zhuque-calib.ts 参数必须同步", () => {
-    // 防止改了一处忘同步：数据源是唯一真值，代码参数必须与它一致
-    const failures: string[] = [];
-    for (const [tk, tr] of Object.entries(calibrationData.tracks) as [string, any][]) {
-      const cur = CALIB[tk as keyof typeof CALIB];
-      if (!cur) {
-        failures.push(`${tk}: 代码缺少该 track`);
-        continue;
-      }
-      const da = Math.abs(cur.a - tr.a);
-      const db = Math.abs(cur.b - tr.b);
-      if (da > 0.001 || db > 0.01) {
-        failures.push(`${tk}: 数据源(a=${tr.a},b=${tr.b}) ≠ 代码(a=${cur.a},b=${cur.b})`);
-      }
-    }
-    expect(failures).toEqual([]);
   });
 });
 

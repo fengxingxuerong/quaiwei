@@ -28,6 +28,8 @@ import { formatIssues } from "../engine/format-integrity";
 import { numericFidelityWarning } from "../engine/number-fidelity";
 import { applyRegionalVariant, formatRegionalSummary } from "../engine/regional-zh";
 import { academicAudit, formatAcademicReport } from "../engine/academic-check";
+import { setProtectedTerms } from "../engine/term-protect";
+import { scoreViaDetector, type DetectorConfig } from "../api/detector";
 import type { HumanizeOptions, RewriteStyle } from "../engine/humanize-primitives";
 
 /* ------------------------------- 协议类型 ------------------------------- */
@@ -78,11 +80,12 @@ export const SERVER_INFO = { name: "quaiwei", version: readVersion() };
 const INSTRUCTIONS = [
   "趣AI味 QuAiWei：简体中文去 AI 味的本地引擎。",
   "humanize_text 只做换词/断句/删套话，不新增事实，不编数字；结果可复现（固定 seed）。",
+  "论文题目、人名、产品名请用 protect 参数传进来（字符串数组），引擎不会动它们。",
   "academic_report 是论文场景的硬出口：判 READY / NOT READY，查数字、引用键与结构，",
   "但它不判论证对不对——READY 不等于审稿人会收。",
   "detect_ai 与 humanize_text 共用一套词表，所以「去味后分数变好看」是共用词表的必然结果，",
   "不等于通过了任何检测器；本工具不承诺通过任何检测。",
-  "要判断能不能交付，请用真实检测器的结果，别用这里的降幅。",
+  "要真实刻度可给 detect_ai 传 detectorUrl 送外部检测器（不传 URL 就完全离线、不出网）。",
   "超长文本（>20 万字）请用 CLI：npx ai-humanizer <目录> --out <目录>。",
 ].join("");
 
@@ -133,6 +136,12 @@ const OPTION_PROPS = {
     description:
       "受限句序重排，默认 false。开启后（强度 ≥0.55 且论说/公文/学术体裁）对守卫全过的相邻句做至多一次交换：产出是原句排列，不新增任何内容；叙事/人写体裁不受影响",
   },
+  protect: {
+    type: "array",
+    items: { type: "string", minLength: 2 },
+    description:
+      "自定义保护术语（论文题目/人名/产品名，每项 ≥2 字）。这些词的保护优先于替换词表，一字不动；不传只用内置 58 项。只作用于本次调用",
+  },
 };
 
 export const TOOLS: ToolDef[] = [
@@ -158,6 +167,24 @@ export const TOOLS: ToolDef[] = [
       properties: {
         text: TEXT_PROP,
         top: { type: "integer", minimum: 1, maximum: 8, description: "列出几条高风险句，默认 5" },
+        detectorUrl: {
+          type: "string",
+          description:
+            '可选：外部检测器 URL（POST {"text": ...}，按 detectorPath 从响应 JSON 取分）。给了就额外送检一次拿真实刻度的分；不传则完全离线、不出网',
+        },
+        detectorKey: {
+          type: "string",
+          description: "外部检测器的 Bearer 凭证（EdgeOne Makers 的 Key 只在 EdgeOne 控制台建）",
+        },
+        detectorPath: {
+          type: "string",
+          description: '分数在响应 JSON 里的点路径，如 "score" 或 "data.prob"；默认 "score"',
+        },
+        detectorScale: {
+          type: "string",
+          enum: ["0-100", "0-1"],
+          description: '外部分数刻度，默认 "0-100"；"0-1" 会自动乘 100（朱雀官方 API 用这个）',
+        },
       },
       required: ["text"],
       additionalProperties: false,
@@ -242,12 +269,61 @@ function asVariant(args: Record<string, unknown>): "zh-TW" | undefined {
   throw new ToolError(`variant 只认 "zh-TW"（不传 = 不动），收到：${String(v)}`);
 }
 
+/**
+ * 自定义保护术语：setProtectedTerms 是**进程级全局状态**，MCP server 是长驻进程，
+ * 所以这里只解析不设置——设置/恢复由调用方包在 try/finally 里，用完即清，
+ * 上一次调用的术语不许泄漏到下一次（否则 agent 连续处理两篇不同论文会互相污染）。
+ */
+function asProtect(args: Record<string, unknown>): string[] | null {
+  const v = args.protect;
+  if (v === undefined || v === null) return null;
+  if (!Array.isArray(v) || v.some((t) => typeof t !== "string"))
+    throw new ToolError("protect 必须是字符串数组（自定义保护术语，每项 ≥2 字）");
+  const terms = (v as string[]).map((t) => t.trim()).filter((t) => t.length >= 2);
+  return terms.length ? terms : null;
+}
+
+/**
+ * 外部检测器配置：给了 detectorUrl 才启用。凭证/路径/刻度不校验语义——
+ * 错了会在送检时拿到明确的报错（401 原因、路径取不到分），比在这里猜更诚实。
+ */
+function asDetectorConfig(args: Record<string, unknown>): DetectorConfig | null {
+  const url = args.detectorUrl;
+  if (url === undefined || url === null || url === "") return null;
+  if (typeof url !== "string" || !/^https?:\/\//i.test(url.trim()))
+    throw new ToolError(`detectorUrl 必须是 http(s) URL，收到：${String(url)}`);
+  const key = args.detectorKey;
+  const p = args.detectorPath;
+  const scale = args.detectorScale;
+  return {
+    enabled: true,
+    url: url.trim(),
+    apiKey: typeof key === "string" ? key : "",
+    scorePath: typeof p === "string" && p.trim() ? p.trim() : "score",
+    scale: scale === "0-1" ? "0-1" : "0-100",
+  };
+}
+
 /* -------------------------------- 工具实现 ------------------------------- */
 
 function toolHumanize(args: Record<string, unknown>): ToolResult {
   const text = asText(args);
   const opts = asOptions(args);
   const variant = asVariant(args);
+  const protect = asProtect(args);
+  if (protect) setProtectedTerms(protect);
+  try {
+    return runHumanize(text, opts, variant);
+  } finally {
+    if (protect) setProtectedTerms([]); // 进程级状态用完即清，不许泄漏到下一次调用
+  }
+}
+
+function runHumanize(
+  text: string,
+  opts: HumanizeOptions,
+  variant: "zh-TW" | undefined,
+): ToolResult {
   const before = aiScore(text).score;
   const base = humanize(text, opts);
   // v0.9.81：地区校正排在引擎之后——它是后处理，不进去味管线，也不动标定
@@ -292,7 +368,7 @@ function toolHumanize(args: Record<string, unknown>): ToolResult {
   };
 }
 
-function toolDetect(args: Record<string, unknown>): ToolResult {
+async function toolDetect(args: Record<string, unknown>): Promise<ToolResult> {
   const text = asText(args);
   const rawTop = typeof args.top === "number" ? Math.trunc(args.top) : 5;
   const top = Math.min(8, Math.max(1, rawTop));
@@ -300,6 +376,18 @@ function toolDetect(args: Record<string, unknown>): ToolResult {
   // v0.9.82 语体维度：aiScore/detectAI 对「书面↔口语」替换是盲区（实测 2/21，见
   // artifacts/human-corpus/probe-inject.ts），registerIndex 是为此并列的第二把尺。
   const reg = registerIndex(text);
+  // v0.9.84：可选外部送检（本工具唯一的出网路径；不传 detectorUrl 就完全离线）。
+  // 送检失败只记原因，不让本地结果整个失败——与 CLI --detector-url 的哲学一致。
+  const detector = asDetectorConfig(args);
+  let detectorScore: number | null = null;
+  let detectorError: string | null = null;
+  if (detector) {
+    try {
+      detectorScore = await scoreViaDetector(text, detector);
+    } catch (e) {
+      detectorError = e instanceof Error ? e.message : String(e);
+    }
+  }
 
   const lines: string[] = [];
   lines.push(`本地 AI 味代理分 ${r.probability} / 100（${r.levelText}）· 置信度 ${r.confidence}`);
@@ -316,6 +404,17 @@ function toolDetect(args: Record<string, unknown>): ToolResult {
       lines.push(`${i + 1}. [${s.risk}] ${clip(s.text, 80)}`);
       lines.push(`   命中：${s.reason}`);
     });
+  }
+  if (detector) {
+    lines.push("");
+    if (detectorScore !== null) {
+      lines.push(
+        `外部检测器 ${detectorScore} / 100（${detector.url}）——真实通道刻度，与本地代理分不是同一把尺子，不要互相换算`,
+      );
+    } else {
+      lines.push(`外部检测器送检失败：${detectorError}`);
+      lines.push("本地结果不受影响；排查 URL 与凭证后可重试。");
+    }
   }
   if (r.warnings.length) {
     lines.push("");
@@ -336,6 +435,9 @@ function toolDetect(args: Record<string, unknown>): ToolResult {
       registerLabel: reg.label,
       topSegments: r.topSegments.slice(0, top),
       warnings: r.warnings,
+      detector: detector
+        ? { url: detector.url, score: detectorScore, error: detectorError }
+        : undefined,
     },
   };
 }
@@ -344,6 +446,16 @@ function toolReport(args: Record<string, unknown>): ToolResult {
   const text = asText(args);
   const opts = asOptions(args);
   const variant = asVariant(args);
+  const protect = asProtect(args);
+  if (protect) setProtectedTerms(protect);
+  try {
+    return runReport(text, opts, variant);
+  } finally {
+    if (protect) setProtectedTerms([]);
+  }
+}
+
+function runReport(text: string, opts: HumanizeOptions, variant: "zh-TW" | undefined): ToolResult {
   const before = aiScore(text).score;
   const base = humanize(text, opts);
   const regional = applyRegionalVariant(base, variant);
@@ -477,7 +589,10 @@ function toolAcademic(args: Record<string, unknown>): ToolResult {
   };
 }
 
-const HANDLERS: Record<string, (args: Record<string, unknown>) => ToolResult> = {
+const HANDLERS: Record<
+  string,
+  (args: Record<string, unknown>) => ToolResult | Promise<ToolResult>
+> = {
   humanize_text: toolHumanize,
   detect_ai: toolDetect,
   quality_report: toolReport,
@@ -493,8 +608,10 @@ function rpcError(id: JsonRpcId, code: number, message: string): JsonRpcResponse
 /**
  * 处理一条 JSON-RPC 消息。返回 null 表示「这条不该有回应」（通知类消息）。
  * 抽成纯函数是为了让测试能直接喂消息、不必起进程。
+ * v0.9.84 起 async：detect_ai 的外部送检要等网络返回；不发 detectorUrl 的调用
+ * 照旧同步完成（await 一个已落地的 Promise 没有额外开销可感知）。
  */
-export function handleMessage(msg: unknown): JsonRpcResponse | null {
+export async function handleMessage(msg: unknown): Promise<JsonRpcResponse | null> {
   if (!msg || typeof msg !== "object" || Array.isArray(msg)) {
     return rpcError(null, -32600, "Invalid Request：需要一个 JSON 对象");
   }
@@ -553,7 +670,7 @@ export function handleMessage(msg: unknown): JsonRpcResponse | null {
         `未知工具：${name || "(空)"}；可用：${Object.keys(HANDLERS).join(" / ")}`,
       );
     try {
-      return { jsonrpc: "2.0", id, result: handler(args) };
+      return { jsonrpc: "2.0", id, result: await handler(args) };
     } catch (e) {
       // 工具自己失败（参数不合法、文本过长）按 MCP 约定走 isError，而不是 JSON-RPC error
       const message = e instanceof Error ? e.message : String(e);
@@ -571,6 +688,8 @@ export function handleMessage(msg: unknown): JsonRpcResponse | null {
 /**
  * 把服务端接到一对流上（生产是 stdin/stdout，测试是内存流）。
  * 返回一个关闭函数。行分隔 JSON；坏 JSON 回 -32700 而不是直接崩。
+ * 消息按**到达顺序串行处理**（promise 链）：handleMessage 变 async 后（外部送检要等网络），
+ * 不能让两行并发乱序回包——严格客户端按 id 配对，乱序虽不至于错配，但批量行内保序是便宜的自证。
  */
 export function attachStdio(
   input: NodeJS.ReadableStream,
@@ -580,25 +699,30 @@ export function attachStdio(
     output.write(JSON.stringify(obj) + "\n");
   };
   const rl = readline.createInterface({ input, crlfDelay: Infinity });
+  let queue: Promise<void> = Promise.resolve();
   rl.on("line", (line) => {
-    const t = line.trim();
-    if (!t) return;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(t);
-    } catch {
-      write(rpcError(null, -32700, "Parse error：这一行不是合法 JSON"));
-      return;
-    }
-    if (Array.isArray(parsed)) {
-      const out = parsed
-        .map((p) => handleMessage(p))
-        .filter((r): r is JsonRpcResponse => r !== null);
-      if (out.length) write(out);
-      return;
-    }
-    const res = handleMessage(parsed);
-    if (res) write(res);
+    queue = queue.then(async () => {
+      const t = line.trim();
+      if (!t) return;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(t);
+      } catch {
+        write(rpcError(null, -32700, "Parse error：这一行不是合法 JSON"));
+        return;
+      }
+      if (Array.isArray(parsed)) {
+        const out: JsonRpcResponse[] = [];
+        for (const p of parsed) {
+          const r = await handleMessage(p);
+          if (r !== null) out.push(r);
+        }
+        if (out.length) write(out);
+        return;
+      }
+      const res = await handleMessage(parsed);
+      if (res) write(res);
+    });
   });
   // 客户端先走一步是常态（编辑器重启、管道结束）：别让它冒成未捕获异常
   output.on?.("error", () => rl.close());

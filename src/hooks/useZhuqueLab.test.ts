@@ -11,7 +11,6 @@ import { useZhuqueLab } from "./useZhuqueLab";
 import { loadFuseWeight } from "../store";
 import { DEFAULT_API } from "../api/llm";
 import { detectZhuque, ZHUQUE_URL } from "../engine/zhuque";
-import { CALIB, trackForGenre } from "../engine/zhuque-calib";
 
 const { detectSemanticStableMock, labGenEmpty } = vi.hoisted(() => ({
   detectSemanticStableMock: vi.fn(),
@@ -43,7 +42,6 @@ function opts(over: Partial<Parameters<typeof useZhuqueLab>[0]> = {}) {
     output: "",
     api: { ...DEFAULT_API, enabled: false },
     pplFeature: null,
-    genreOverride: null,
     ...over,
   } as Parameters<typeof useZhuqueLab>[0];
 }
@@ -86,10 +84,9 @@ describe("useZhuqueLab：朱雀检测", () => {
     expect(result.current.zq).toBeNull();
     expect(result.current.zqText).toBe("");
     expect(result.current.zqWeight).toBe(loadFuseWeight());
-    expect(result.current.zqGenreEstimate).toBeNull();
   });
 
-  it("handleZhuque：文本进 zqText，本地检测报告落位，体裁线预测给出", () => {
+  it("handleZhuque：文本进 zqText，本地检测报告落位", () => {
     const { result } = renderHook(() => useZhuqueLab(opts()));
     act(() => {
       result.current.handleZhuque();
@@ -98,10 +95,6 @@ describe("useZhuqueLab：朱雀检测", () => {
     expect(result.current.zq).not.toBeNull();
     expect(result.current.zqMsg).toBe("");
     expect(result.current.zqSem).toBeNull(); // 换文本作废旧语义层
-    const est = result.current.zqGenreEstimate;
-    expect(est).not.toBeNull();
-    expect(typeof est!.pct).toBe("number");
-    expect(typeof est!.tag).toBe("string");
   });
 
   it("handleZhuque：无任何文本时 no-op", () => {
@@ -495,7 +488,7 @@ describe("useZhuqueLab：语义层调用细节（补盲）", () => {
   });
 });
 
-describe("useZhuqueLab：检测选项与体裁预测（补盲）", () => {
+describe("useZhuqueLab：检测选项（补盲）", () => {
   it("zqOpts：pplFeature 为 null 不出 ppl 层；就绪时并入第 13 维", () => {
     const { result } = renderHook(() => useZhuqueLab(opts()));
     const noPpl = result.current.zqOpts(null);
@@ -528,39 +521,6 @@ describe("useZhuqueLab：检测选项与体裁预测（补盲）", () => {
       r2.current.handleZhuque();
     });
     expect(r2.current.zq).not.toBeNull();
-  });
-
-  it("zqGenreEstimate：体裁覆盖生效，tag 与 CALIB/trackForGenre 同源", () => {
-    const { result } = renderHook(() => useZhuqueLab(opts({ genreOverride: "dialogue" })));
-    act(() => {
-      result.current.handleZhuque();
-    });
-    const est = result.current.zqGenreEstimate;
-    expect(est).not.toBeNull();
-    expect(est!.tag).toBe(CALIB[trackForGenre("dialogue")].x40Tag);
-    expect(typeof est!.pct).toBe("number");
-  });
-
-  it("zqGenreEstimate：有报告但检测文本为空 → 跳过预测", () => {
-    const { result } = renderHook(() => useZhuqueLab(opts({ input: "", output: "" })));
-    act(() => {
-      result.current.setZq(detectZhuque("占位文本"));
-    });
-    expect(result.current.zq).not.toBeNull(); // 报告在，但没有可算的文本
-    expect(result.current.zqGenreEstimate).toBeNull();
-  });
-
-  it("zqGenreEstimate：zqText 为空时取去味稿 output 兜底（而非空 input）", () => {
-    const { result } = renderHook(() =>
-      useZhuqueLab(opts({ input: "", output: "去味稿内容，用来验证体裁预测的兜底取文分支。" })),
-    );
-    act(() => {
-      result.current.setZq(detectZhuque("占位文本"));
-    });
-    // 取文三元：zqText 空 → output.trim() 非空必须走 output；若错走 input（空）预测会是 null
-    expect(result.current.zq).not.toBeNull();
-    expect(result.current.zqGenreEstimate).not.toBeNull();
-    expect(typeof result.current.zqGenreEstimate!.pct).toBe("number");
   });
 });
 

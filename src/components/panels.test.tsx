@@ -90,7 +90,6 @@ describe("ZhuquePanel（朱雀检测本地近似）", () => {
       semLoading: false,
       weight: 0.8,
       canRunSemantic: false,
-      genreEstimate: { pct: 88.3, tag: "论说参考线 aiScore ≈ 10.4（仅参考）" },
       onPaste: vi.fn(),
       onSaveCalib: vi.fn(),
       onClearCalib: vi.fn(),
@@ -104,12 +103,10 @@ describe("ZhuquePanel（朱雀检测本地近似）", () => {
     };
   }
 
-  it("渲染标题、三档占比与体裁线预测", () => {
+  it("渲染标题与三档占比", () => {
     const { getByText } = render(<ZhuquePanel {...panelProps()} />);
     expect(getByText(/朱雀检测（本地近似/)).toBeTruthy();
     expect(getByText(/🔴 AI特征/, { exact: false })).toBeTruthy();
-    expect(getByText(/体裁线预测/)).toBeTruthy();
-    expect(getByText(/88.3%/)).toBeTruthy();
   });
 
   it("AI 文本应落 AI特征 档并给出官方口径提示", () => {
@@ -348,25 +345,6 @@ describe("ZhuquePanel（朱雀检测本地近似）", () => {
     // 展开态按钮文案为「收起特征」，点击触发回调
     fireEvent.click(getByText("收起特征"));
     expect(onToggleFeatures).toHaveBeenCalledTimes(1);
-  });
-
-  it("体裁线预测按 60/30 分档配色，传 null 时整块隐藏", () => {
-    const { container, rerender } = render(
-      <ZhuquePanel {...panelProps({ genreEstimate: { pct: 70, tag: "高危线" } })} />,
-    );
-    const genreColor = (): string => {
-      const row = [...container.querySelectorAll(".bench-row")].find((r) =>
-        r.textContent!.includes("体裁线预测"),
-      )!;
-      return (row.querySelector("b") as HTMLElement).style.color;
-    };
-    expect(genreColor()).toBe("#ff5d6c"); // ≥60 红
-    rerender(<ZhuquePanel {...panelProps({ genreEstimate: { pct: 45, tag: "过渡线" } })} />);
-    expect(genreColor()).toBe("#ffb454"); // 30~60 橙
-    rerender(<ZhuquePanel {...panelProps({ genreEstimate: { pct: 20, tag: "安全线" } })} />);
-    expect(genreColor()).toBe("#3ddc97"); // <30 绿
-    rerender(<ZhuquePanel {...panelProps({ genreEstimate: null })} />);
-    expect(container.textContent).not.toContain("体裁线预测");
   });
 
   it("已校准且粘贴可解析：官方估计、负截距映射、解析提示与可用按钮（三回调）", () => {
