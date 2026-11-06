@@ -16,6 +16,7 @@
 const fs = require("fs");
 const path = require("path");
 const net = require("net");
+const crypto = require("crypto");
 const { spawn } = require("child_process");
 
 const REPO = "fengxingxuerong/quaiwei";
@@ -297,8 +298,9 @@ const probeTcp = (host, port, ms = 8000) =>
     log(`  已创建 id=${release.id}`);
   }
 
-  /* ---------- 6. 上传 zip ---------- */
+  /* ---------- 6. 上传 zip + sha256 ---------- */
   const name = path.basename(ZIP);
+  const buf = fs.readFileSync(ZIP); // 一次读取：上传与算校验码共用，避免 200MB 读两遍
   const assets = await apiCall(
     "GET",
     `https://api.github.com/repos/${REPO}/releases/${release.id}/assets`,
@@ -308,7 +310,6 @@ const probeTcp = (host, port, ms = 8000) =>
     log(`\n== [5] 资源 ${name} 已存在（${(dup.size / 1048576).toFixed(1)} MB），跳过上传`);
   } else {
     log(`\n== [5] 上传 ${name}（${zipMB} MB）==`);
-    const buf = fs.readFileSync(ZIP); // 实测一次性 Buffer 上传可行
     const upRes = await fetch(
       `https://uploads.github.com/repos/${REPO}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
       {
@@ -324,6 +325,34 @@ const probeTcp = (host, port, ms = 8000) =>
     );
     const upText = await upRes.text();
     if (!upRes.ok) die(`上传失败 → ${upRes.status} ${upText.slice(0, 300)}`);
+    log(`  ✅ 上传完成：${JSON.parse(upText).browser_download_url}`);
+  }
+
+  /* v0.9.84 起：校验码随包上传。此前发布器只传 zip，而 SCORECARD 写「zip + sha256」，
+   * 用户拿不到校验文件、没法验文件真假。格式兼容 sha256sum -c：<hex>␠␠<filename>\n，
+   * 同时在 electron-dist/ 落盘一份，便于打完 zip 连校验码一起复制到仓库外。 */
+  const shaName = `${name}.sha256`;
+  const shaText = `${crypto.createHash("sha256").update(buf).digest("hex")}  ${name}\n`;
+  fs.writeFileSync(`${ZIP}.sha256`, shaText, "ascii");
+  log(`\n== [6] 校验码 ${shaName} ==\n  ${shaText.trim()}`);
+  if (assets.find((a) => a.name === shaName)) {
+    log("  已存在，跳过上传");
+  } else {
+    const upRes = await fetch(
+      `https://uploads.github.com/repos/${REPO}/releases/${release.id}/assets?name=${encodeURIComponent(shaName)}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "quaiwei-publish",
+          "Content-Type": "text/plain",
+        },
+        body: Buffer.from(shaText, "ascii"),
+      },
+    );
+    const upText = await upRes.text();
+    if (!upRes.ok) die(`校验码上传失败 → ${upRes.status} ${upText.slice(0, 300)}`);
     log(`  ✅ 上传完成：${JSON.parse(upText).browser_download_url}`);
   }
 
