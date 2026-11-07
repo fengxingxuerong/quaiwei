@@ -53,6 +53,8 @@ def parse_args():
     p.add_argument("--out", type=Path, default=repo / "eval-out" / "ab-accept")
     p.add_argument("--results", type=Path, default=None, help="复核已有归档时指定其 JSONL")
     p.add_argument("--model", default=MODEL_DEFAULT)
+    p.add_argument("--model-a", default=None, help="A 席模型（默认取 --model）。真双席应异源，如 qodercn/dfmodel")
+    p.add_argument("--model-b", default=None, help="B 席模型（默认取 --model）。真双席应异源，如 glm-5.3-flash")
     p.add_argument("--seats", default="AB", help="A / B / AB")
     p.add_argument("--url-a", default=os.environ.get("QUAIWEI_EVAL_URL_A", "http://127.0.0.1:8080"))
     p.add_argument("--url-b", default=os.environ.get("QUAIWEI_EVAL_URL_B", "http://192.168.151.151:18080"))
@@ -85,6 +87,9 @@ def binom_sf(k: int, n: int) -> float:
 class Runner:
     def __init__(self, args):
         self.args = args
+        # 每席实际模型（--model-a / --model-b 覆盖 --model）；summary 与打印都必须用它，
+        # 否则报告会写成默认模型名，与真实跑的两席不符。
+        self.models_by_seat = {"A": args.model_a or args.model, "B": args.model_b or args.model}
         if args.corpus:
             self.ids = sorted(
                 f[:-4] for f in os.listdir(args.corpus)
@@ -120,9 +125,9 @@ class Runner:
             if self.count[0] % 10 == 0:
                 print(f"  ... {self.count[0]} 条新结果 | {round(time.time() - self.t0)}s", flush=True)
 
-    def call(self, up, system, user, max_tokens=16):
+    def call(self, up, system, user, max_tokens=96):
         payload = {
-            "model": self.args.model,
+            "model": up["model"],
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
             "temperature": 0,
             "max_tokens": max_tokens,
@@ -137,7 +142,13 @@ class Runner:
             try:
                 with self.opener.open(req, timeout=200) as r:
                     d = json.load(r)
-                return (d["choices"][0]["message"].get("content") or "").strip(), None
+                msg = d["choices"][0]["message"]
+                text = (msg.get("content") or "").strip()
+                if not text:
+                    # 有的模型（如 raccoon/sn-deepseek-v4-1-flash-1017）先吐 reasoning，
+                    # max_tokens 不够时 content 为 null，答案只落在 reasoning_content 里
+                    text = (msg.get("reasoning_content") or "").strip()
+                return text, None
             except urllib.error.HTTPError as e:
                 last = "HTTP " + str(e.code)
                 time.sleep(4 * (attempt + 1) if e.code == 429 else 2 * (attempt + 1))
@@ -148,9 +159,12 @@ class Runner:
 
     @staticmethod
     def parse_pair(c):
-        for ch in (c or ""):
+        s = (c or "").strip()
+        # 取**最后一个**「甲/乙」：带推理的模型会先复述「甲…乙…」，结论在末尾
+        for ch in reversed(s):
             if ch in "甲乙":
                 return ch
+        for ch in s:
             if ch in "AB":
                 return "甲" if ch == "A" else "乙"
         s = c or ""
@@ -205,8 +219,13 @@ class Runner:
             missing = [f"QUAIWEI_EVAL_KEY_{s}" for s in seats if not avail[s][1]]
             if missing:
                 sys.exit("缺少凭证：" + " / ".join(missing) + "（只走环境变量，不落盘）")
-            upstreams = [{"seat": s, "url": avail[s][0].rstrip("/"), "key": avail[s][1]} for s in seats]
-            print(f"臂 A={self.args.arm_a}  臂 B={self.args.arm_b}  模型 {self.args.model}  席位 {seats}", flush=True)
+            upstreams = [
+                {"seat": s, "url": avail[s][0].rstrip("/"), "key": avail[s][1],
+                 "model": self.models_by_seat[s]}
+                for s in seats
+            ]
+            desc = " · ".join(f"{u['seat']}={u['model']}" for u in upstreams)
+            print(f"臂 A={self.args.arm_a}  臂 B={self.args.arm_b}  {desc}  席位 {seats}", flush=True)
             ths = [threading.Thread(target=self.worker, args=(u,), daemon=True) for u in upstreams]
             for t in ths:
                 t.start()
@@ -237,7 +256,8 @@ class Runner:
                              "winner": "b" if sum(1 for x in v if x) * 2 > len(v) else
                                        ("a" if sum(1 for x in v if x) * 2 < len(v) else "split")})
         summary = {
-            "model": self.args.model,
+            "model": " / ".join(sorted(set(self.models_by_seat.values()))),
+            "modelsBySeat": self.models_by_seat,
             "seats": "".join(sorted({r["seat"] for r in ok})),
             "cases": len(self.ids), "pairs": n, "bWin": b_win,
             "bWinRate": round(b_win / n, 3) if n else None,
