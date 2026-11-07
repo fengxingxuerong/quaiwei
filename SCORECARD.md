@@ -3,9 +3,11 @@
 > 这一页只回答一个问题：**你凭什么信这个工具**。
 > 不是"效果多好"，是——每条结论你自己都能跑出来，跑不出来算我写错。
 >
-> 数据截止 **2026-11-06**，版本 **v0.9.84**（含 11-06 工作区修订）。
+> 数据截止 **2026-11-06**，版本 **v0.9.84**（2026-11-07 全量核验）。
 > 11-06 增量：双网关 glm-5.3-flash 独立评委全量 23 篇评测，第 4 节补入
 > 「配对强制选择为主判据、绝对分仅参考」的口径与复现路径；同时撤下此前单席绝对分口径的能力数字。
+> 11-07 增量：把该轮 154 条逐次记录、复现脚本与完整报告归档进仓库，第 4 节数字改由测试自证；
+> 同步修正全文实测数字（123 文件 / 2329 用例、MCP 冒烟 11/11、线上 release v0.9.84）。
 > 11-05 增量：朱雀标定子系统（18 点换算线 / 漂移棘轮 / 凭证账本）整体移除，
 > 第 3 节两行标定记录改为移除说明，第 5 节复现表摘除 `test:calib` / `test:evidence`；
 > 其余各节沿用 10-27 复跑结论。
@@ -18,13 +20,13 @@
 
 | 能力 | 证据 | 自己怎么跑 |
 |---|---|---|
-| 本地确定性去味（离线、不需要 Key、不联网） | 今日复跑（2026-11-05，v0.9.83）：全量 **2275 用例 / 122 文件全绿**（10-27 复跑时为 2405/123，标定子系统测试摘除后减少）。注意两种入口的可复现性不同：CLI/MCP 默认固定种子（同输入同产出），**网页版每次随机挑种子**并在提示里报出中选种子（可回填复现） | `npm test`（约 20 秒） |
+| 本地确定性去味（离线、不需要 Key、不联网） | 复跑 2026-11-07（v0.9.84）：全量 **2334 用例 / 124 文件全绿**。注意两种入口的可复现性不同：CLI/MCP 默认固定种子（同输入同产出），**网页版每次随机挑种子**并在提示里报出中选种子（可回填复现） | `npm test`（约 20 秒） |
 | 换词/断句/删套话，不新增事实 | 今日复跑：23 篇真实案例矩阵 **硬缺陷 0 / 软提示 0**；记录 2026-09-19：21 篇真人文本（中文维基正文 17.2 万字）逐篇 diff，无一处新增原文没有的事实、数字或专名 | `npm run test:realcase`（1.7 秒） |
 | 数字保真守卫（丢数字会说出来，严格模式回退） | 记录 2026-10-25 ~ 2026-10-27（v0.9.75 → v0.9.79：数字 → 单位 → 中文数字互认） | `npx vitest run src/engine/number-fidelity.test.ts` |
 | 结构保真：代码块/表格/标题/引用不许被破坏 | 今日复跑：23 条结构不变式、**4080 次全量运行，退出码 0**（两个真缺陷已于 v0.9.81 前修：setext 下划线被拆、结构行续行被拆） | `npm run sweep:format`（2.4 秒） |
 | 批量：目录 / 多文件 / `.docx` 进出 | 记录 v0.9.64 ~ v0.9.72 | `npx ai-humanizer ./稿箱 --out ./out` |
 | 外部检测器闭环（任意 HTTP 接口，可多档横向对比） | 记录 v0.9.66 ~ v0.9.72 | `npx ai-humanizer ./稿箱 --detector-url <url> --report rep.json` |
-| MCP 通道（Claude Code / Desktop / Cursor 直接调用） | 今日复跑（2026-10-27）：**打包产物冒烟 9/9**；另外把 `npm pack` 出来的 tarball 装进干净目录再冒烟，同样 **9/9**（协议 2025-06-18、四个工具齐、数字没被吃、zh-TW 生效、学术硬出口判 NOT READY） | `npm run build:cli && npm run smoke:mcp`；验已装包用 `QUAIWEI_MCP_BIN=<装出来的 quaiwei-mcp.mjs> node scripts/smoke-mcp.mjs` |
+| MCP 通道（Claude Code / Desktop / Cursor 直接调用） | 复跑 2026-11-07：**打包产物冒烟 11/11**；另外把 `npm pack` 出来的 tarball 装进干净目录再冒烟，同样 **11/11**（协议 2025-06-18、四个工具齐、数字没被吃、zh-TW 生效、学术硬出口判 NOT READY、protect 生效、外部送检失败只记原因） | `npm run build:cli && npm run smoke:mcp`；验已装包用 `QUAIWEI_MCP_BIN=<装出来的 quaiwei-mcp.mjs> node scripts/smoke-mcp.mjs` |
 | 地区用词校正（`--variant zh-TW`） | 今日复跑：16 例对照测试；默认路径逐字不变；网页版开关 6/6 浏览器验收 | `npx vitest run src/engine/regional-zh.test.ts` |
 | 学术硬出口（`--academic-check`，判 READY / NOT READY） | 今日复跑：11 例引擎测试 + 两条端到端（坏改写稿 exit 2 / 守规矩的 exit 0）+ 网页版「学术自检」面板 8/8 浏览器验收 | `npx vitest run src/engine/academic-check.test.ts` |
 | 语体指数（registerIndex，独立维度不并入 aiScore） | 复跑 2026-11-03：21 篇真人语料上书面→口语替换 **15/21 方向正确（Δ −3.9）**——同一替换 aiScore 只有 2/21（盲区修复）；维基基线中位 88（偏书面，符合语料常识）。`tsc -b` 级环境二进制（esbuild.exe / tsc.exe / lib.dom.d.ts 同批丢失事故）已由环境预检兜住 | `npx tsx artifacts/human-corpus/probe-inject.ts`（语体段）；`npx vitest run src/engine/register-metrics.test.ts`；`npm run check:env` |
@@ -65,11 +67,11 @@
 10. **npm 上没有包。** `ai-humanizer` / `quaiwei` / `@fengxingxuerong/quaiwei` 三个名字
    2026-10-27 查仍是 404。现在装本仓 skill 要"仓库在本地 + Node ≥22.12"，
    同类 skill 是 `npx skills add <repo>` 一行。这条差距不是能力问题，是没执行。
-   **包本身是好的**（2026-11-06 验证）：`npm pack` 出 317.6 kB / 10 个文件的 tarball，
-   装进干净目录后 `ai-humanizer` 跑样例 49→25 退出码 0，`quaiwei-mcp` 冒烟 9/9。
-   差的只有一步 `npm login` 加 `npm publish`。
-   桌面端已在 2026-11-06 补上：**v0.9.83 Release 已发布**（zip 211.3 MB + sha256，
-   产物章 head=c9e6517 / dirty=false / 指纹 199 文件），此前线上停在 0.9.81 的问题已解决。
+   **包本身是好的**（2026-11-06 干净目录验证）：`npm pack` 出 **336.8 kB / 10 个文件**的 tarball，
+   装进全新目录后 `--help` / 批量改写 / `--audit-structure` / `lowYieldRisk` / MCP 冒烟 **11/11** 全过。
+   差的只有一步 `npm login` 加 `npm publish`（令牌不在本机，不由仓库代填）。
+   桌面端：**v0.9.84 Release 已发布**（zip 221,548,536 B ≈ 211.3 MB + sha256；
+   产物章 head=10b9026 / dirty=false / 201 文件），v0.9.83 的历史 sha256 亦已补传。
 
 ---
 
@@ -116,8 +118,36 @@
 README / 宣传 / 本页第 1 节。`aiScore` 与评委分 Pearson 0.353、`detectAI` 降幅 0.257，两把自家尺
 都只是相对指标。语料全是模拟 AI 稿、**无真人基线**，量的是相对改善，不是「距真人多远」。
 
-复现：`cd /d/projects/_quaiwei-tmp && python -u eval_dual.py`；逐次原始记录 `eval_dual_results.jsonl`，
-报告 `eval-dual-report.md`（临时目录，不入库；凭证不落仓）。
+证据归档（2026-11-07 入库）：154 条逐次记录
+[`evidence/eval-dual-2026-11-06/`](evidence/eval-dual-2026-11-06/)、
+方法/结论/局限 [`docs/eval-dual-2026-11-06.md`](docs/eval-dual-2026-11-06.md)、
+复现脚本 [`scripts/eval-dual/`](scripts/eval-dual/)。`scripts/eval-dual-consistency.test.ts`
+从 JSONL 重算上述数字并核对本页——记录变了、或页面没跟着改，测试会红。
+复核（无需凭证 / 网络）：`python scripts/eval-dual/eval_dual.py --summarize --results evidence/eval-dual-2026-11-06/eval_dual_results.jsonl --out eval-work/verify`。
+⚠️ 数据由 **v0.9.83** 当日 CLI 产出；v0.9.84 只加两个开关并修 CRLF 段分隔，**未重跑本评测**
+（CRLF 修复会让 6 篇 CRLF 语料空行还原差 1 个空行，非空行内容不变）。引用须连同版本标注。
+
+**2026-11-07 追加：换一个模型谱系，结论还在吗**
+
+用 QoderCN `qodercn/dfmodel`（DeepSeek-Flash，**不同模型谱系**）单席重跑 23 篇双判据，
+77 次调用 0 错误；被测引擎换成 **v0.9.84 当前 CLI 实产**（不复用 11-06 产物）。
+逐次记录 [`evidence/eval-dfmodel-2026-11-07/`](evidence/eval-dfmodel-2026-11-07/)，
+对比表与局限见 [`docs/eval-qodercn-dfmodel-2026-11-07.md`](docs/eval-qodercn-dfmodel-2026-11-07.md)。
+
+- 主判据**方向复现**：0.9 档 **19/23 = 82.6%**、0.6 档 **7/8 = 87.5%** 判改后更像人
+  （基线 87.0% / 81.2%）⇒ 「方向有效」不是 glm 单评委的偏好。
+- 绝对分**更彻底地失效**：原文 83.7 → 0.9 档 83.7，**降幅 0.0**；分布并未塌缩
+  （orig 10~100、local09 25~98），而同一批调用的配对题仍 82.6% 判改后更像人。
+  ⇒ 本轮**不产生任何新的「降了 X 分」能力数字**，「别拿绝对分当能力刻度」从单轮观察
+  升级为跨模型证据。
+- 聚合稳、逐篇不稳：逐篇降幅方向与基线仅 **14/23** 一致，别拿单篇调规则或做拦截门槛。
+- 保真：数字 / URL / 代码围栏 **23/23** 无失败。
+
+⚠️ **单席 23 票不可与双席 46 票比大小**：没有 B 席反序，0.9 档甲被选率 0.391
+（基线 0.500）⇒ 位置偏置只部分抵消。**引用能力数字仍以 11-06 双席口径为准**，本轮只作
+方向性佐证。且两件事同时变（评委模型 + 引擎 v0.9.83→v0.9.84，含 CRLF 段分隔修复），
+差异不能单独归因给评委。复现：`scripts/eval-dual/` 第 3 节 +
+`python scripts/eval-dual/compare.py <base> <new> --md`。
 
 **2026-11-06 追加：能不能用本地指标预判「改后反而更 AI」**
 
@@ -162,7 +192,7 @@ README / 宣传 / 本页第 1 节。`aiScore` 与评委分 Pearson 0.353、`dete
 | 命令 | 耗时 | 覆盖 |
 |---|---|---|
 | `npm install` | 未计时（取决于网络与镜像） | 依赖 |
-| `npm test` | 约 20 秒（今日实测 20.29 秒） | 2275 用例 / 122 文件（v0.9.83 摘除标定子系统测试后） |
+| `npm test` | 约 24 秒（2026-11-07 实测 23.80 秒） | 2334 用例 / 124 文件（含双网关证据一致性自证） |
 | `npm run build:cli && npm run smoke:mcp` | 约 1.5 秒（0.9 + 0.6） | 打包产物 + 真协议 8 项 |
 | `npm run sweep:format` | 2.4 秒 | 4080 次结构保真运行 |
 | `npm run test:realcase` | 1.7 秒 | 23 篇真实案例矩阵 |

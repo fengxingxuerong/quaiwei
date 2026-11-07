@@ -27,6 +27,8 @@
 
 | 文件 | 类型 | 内容 |
 |---|---|---|
+| [eval-dual-2026-11-06.md](eval-dual-2026-11-06.md) | **证据·唯一可引用口径** | 双网关独立评委 23 篇全量配对盲测（v0.9.83）：配对强制选择 **40/46 = 87.0%**、绝对分 76.2→68.9、旧单席结论作废清单、局限与版本边界。154 条原始记录在 `evidence/eval-dual-2026-11-06/`，复现脚本 `scripts/eval-dual/`，数字由 `scripts/eval-dual-consistency.test.ts` 从 JSONL 重算自证 |
+| [eval-qodercn-dfmodel-2026-11-07.md](eval-qodercn-dfmodel-2026-11-07.md) | 证据（跨模型谱系复核） | 用 QoderCN `qodercn/dfmodel` 单席重跑 23 篇双判据：配对胜率 **82.6% / 87.5%** 复现「方向有效」，绝对分降幅 **0.0** 再证伪；含与 11-06 基线对比表、单席口径局限与网关桩警告。原始记录 `evidence/eval-dfmodel-2026-11-07/`，复现脚本 `scripts/eval-dual/` |
 | [external-judge-findings.md](external-judge-findings.md) | 证据 | 外评证据：本地 aiScore 在论说/叙事上严重低报 AI 味（v0.9.54 起「分数冲突提示」的由来） |
 | [fingerprint-and-zhuque-calibration.md](fingerprint-and-zhuque-calibration.md) | 证据（历史档案） | AI 指纹检测与朱雀分映射标定的**演进史**。换算线/账本已随标定子系统于 v0.9.83 整体移除，本文只作档案留读；§5 的 PPL 口径仍被 `src/engine/humanize-metrics.ts` 引用 |
 | [judge-anchor-calibration.md](judge-anchor-calibration.md) | 证据 | glm-5.2 严评锚点问题与评判模型的宽严校准 |

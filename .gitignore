@@ -104,3 +104,7 @@ electron-app/preset-keys.txt
 .box-agent-scratch/
 *.artifact.json
 
+# Python 复现脚本（scripts/eval-dual/）的字节码缓存：py_compile / import 会生成，
+# 不是源，也不该让 `git add -A` 捎带进仓库
+scripts/eval-dual/__pycache__/
+

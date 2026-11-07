@@ -1,0 +1,224 @@
+{
+ "model": "qodercn/dfmodel",
+ "cases": 23,
+ "seats": "A",
+ "elapsedSec": 474.0,
+ "absCalls": 46,
+ "pairCalls": 31,
+ "judgeByArm": {
+  "orig/A": {
+   "n": 23,
+   "mean": 83.7
+  },
+  "orig/B": {
+   "n": 0,
+   "mean": null
+  },
+  "orig": {
+   "n": 23,
+   "mean": 83.7
+  },
+  "local09/A": {
+   "n": 23,
+   "mean": 83.7
+  },
+  "local09/B": {
+   "n": 0,
+   "mean": null
+  },
+  "local09": {
+   "n": 23,
+   "mean": 83.7
+  }
+ },
+ "seatAgreement": {
+  "pairs": 0,
+  "pearson": null,
+  "mae": null,
+  "within10": null
+ },
+ "pairStats": {
+  "local09": {
+   "n": 23,
+   "engineWin": 19,
+   "winRate": 0.826,
+   "bySeat": {
+    "A": {
+     "n": 23,
+     "win": 19
+    },
+    "B": {
+     "n": 0,
+     "win": 0
+    }
+   },
+   "firstArmChosen": 0.391,
+   "seatAgreement": {
+    "pairs": 0,
+    "rate": null
+   }
+  },
+  "local06": {
+   "n": 8,
+   "engineWin": 7,
+   "winRate": 0.875,
+   "bySeat": {
+    "A": {
+     "n": 8,
+     "win": 7
+    },
+    "B": {
+     "n": 0,
+     "win": 0
+    }
+   },
+   "firstArmChosen": 0.5,
+   "seatAgreement": {
+    "pairs": 0,
+    "rate": null
+   }
+  }
+ },
+ "localRulers": {},
+ "fidelityFailures": [],
+ "perCase": [
+  {
+   "id": "C1-work-summary",
+   "orig": 92,
+   "local09": 78,
+   "drop": 14
+  },
+  {
+   "id": "C2-opinion-wechat",
+   "orig": 98,
+   "local09": 98,
+   "drop": 0
+  },
+  {
+   "id": "C3-tech-popular",
+   "orig": 92,
+   "local09": 88,
+   "drop": 4
+  },
+  {
+   "id": "C4-product-copy",
+   "orig": 87,
+   "local09": 88,
+   "drop": -1
+  },
+  {
+   "id": "C5-news-release",
+   "orig": 92,
+   "local09": 88,
+   "drop": 4
+  },
+  {
+   "id": "C6-academic-abstract",
+   "orig": 95,
+   "local09": 92,
+   "drop": 3
+  },
+  {
+   "id": "C7-story-dialogue",
+   "orig": 92,
+   "local09": 92,
+   "drop": 0
+  },
+  {
+   "id": "C8-social-post",
+   "orig": 78,
+   "local09": 25,
+   "drop": 53
+  },
+  {
+   "id": "C9-mixed-links",
+   "orig": 78,
+   "local09": 80,
+   "drop": -2
+  },
+  {
+   "id": "C10-tiny-input",
+   "orig": 92,
+   "local09": 95,
+   "drop": -3
+  },
+  {
+   "id": "C11-admin-notice",
+   "orig": 85,
+   "local09": 80,
+   "drop": 5
+  },
+  {
+   "id": "C12-paper-abstract",
+   "orig": 92,
+   "local09": 93,
+   "drop": -1
+  },
+  {
+   "id": "C13-manual-steps",
+   "orig": 85,
+   "local09": 86,
+   "drop": -1
+  },
+  {
+   "id": "C14-finance-flash",
+   "orig": 85,
+   "local09": 82,
+   "drop": 3
+  },
+  {
+   "id": "C15-policy-qa",
+   "orig": 43,
+   "local09": 90,
+   "drop": -47
+  },
+  {
+   "id": "C16-prospectus-risk",
+   "orig": 78,
+   "local09": 25,
+   "drop": 53
+  },
+  {
+   "id": "C17-verdict-labor",
+   "orig": 94,
+   "local09": 96,
+   "drop": -2
+  },
+  {
+   "id": "C18-tender-spec",
+   "orig": 10,
+   "local09": 72,
+   "drop": -62
+  },
+  {
+   "id": "C19-kids-essay",
+   "orig": 68,
+   "local09": 88,
+   "drop": -20
+  },
+  {
+   "id": "C20-speech-opening",
+   "orig": 95,
+   "local09": 97,
+   "drop": -2
+  },
+  {
+   "id": "C21-fenced-code-doc",
+   "orig": 95,
+   "local09": 98,
+   "drop": -3
+  },
+  {
+   "id": "C22-markdown-struct",
+   "orig": 100,
+   "local09": 97,
+   "drop": 3
+  },
+  {
+   "id": "C23-frontmatter-indent",
+   "orig": 98,
+   "local09": 98,
+   "drop": 0
+  }
+ ]
+}

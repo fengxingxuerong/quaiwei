@@ -4,9 +4,17 @@
 
 **Local-first. No API key required. Works offline. Deterministic (fixed seed).**
 
-Rewrites machine-polished Chinese prose so it reads like a person wrote it. Unlike most projects
-in this space (a list of rules handed to an LLM), this is a **compiled TypeScript engine with a
-2,400-case regression suite** — every rule is anchored to a real text sample and locked by a test.
+Strips stock phrases and formulaic phrasing from AI-written Chinese prose **without inventing facts**.
+
+**Capability boundary, up front:** in a two-seat paired blind test, **87%** of votes judged the
+rewrite more human — but the absolute AI-likeness score only moved **76.2 → 68.9**, and 17 of 23
+samples still scored ≥60. It does **not** claim "reads just like a human" and does **not** promise
+passing any detector. See [the full evaluation](docs/eval-dual-2026-11-06.md) and
+[SCORECARD](SCORECARD.md) §4.
+
+Unlike most projects in this space (a list of rules handed to an LLM), this is a compiled
+TypeScript engine with a **2,334-case regression suite** — every rule is anchored to a real text
+sample and locked by a test.
 
 > 中文完整文档：[README.md](README.md) · [成绩页 SCORECARD](SCORECARD.md) · [CHANGELOG](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
@@ -39,7 +47,7 @@ useful for before/after trend on the same text, **not** calibrated to any vendor
 
 | | Rule-list skills (blader/humanizer, Humanizer-zh, stop-slop…) | QuAiWei |
 |---|---|---|
-| Engine | A markdown file the LLM reads | TypeScript engine, **2,400+ test cases**, CI on every push |
+| Engine | A markdown file the LLM reads | TypeScript engine, **2,334 test cases**, CI on every push |
 | Runs offline | No (needs an LLM) | **Yes** — default path is local, costs nothing, sends nothing |
 | Reproducible | No | **Yes** — fixed seed; same input + same seed → same output (CLI / MCP) |
 | Built-in scoring | No | Yes — heuristic proxy score + explainable per-item trace (`--explain`) |
@@ -63,7 +71,7 @@ trade-offs are stated; pick per job.
 
 **Try it in your browser** — no install needed: **[online demo](https://fengxingxuerong.github.io/quaiwei/)** (live)
 
-**Desktop (Windows, no install, ~203 MB zip / ~513 MB extracted):**
+**Desktop (Windows, no install, ~211 MB zip for v0.9.84):**
 [latest release](https://github.com/fengxingxuerong/quaiwei/releases/latest) — unzip, double-click
 `QuAiWei.exe`. The published desktop build can lag behind the repo version; check the release page.
 
@@ -88,11 +96,10 @@ npm run build:cli && node dist-cli/quaiwei-mcp.mjs
 Tools: `humanize_text`, `detect_ai`, `quality_report`, `academic_report` — stdio JSON-RPC,
 protocol versions `2025-06-18` / `2025-03-26` / `2024-11-05`, zero dependencies.
 
-**As an Agent Skill:**
-
-```bash
-npx skills add fengxingxuerong/quaiwei
-```
+**As an Agent Skill:** the rule file is [`SKILL.md`](SKILL.md); copy it into your agent's skills
+directory. A one-line `npx skills add <repo>` install is **not shipped yet** — see
+[SCORECARD](SCORECARD.md) §2 item 10. This line was previously listed here as if it worked; it
+had never been verified on this machine, so it was removed.
 
 ---
 

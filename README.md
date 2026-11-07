@@ -2,12 +2,18 @@
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
-把 AI 写的文章改得更像人写的。**默认不配置任何 API 也能用**（本地引擎离线运行、零成本），
+把 AI 稿里成片的套话和公式化表达改掉，**不新增事实、不联网也能跑**。
+
+**能力边界先说清**：双席配对盲测 **87%** 的票判改后稿更像人，但绝对分只从 76.2 降到 68.9，
+23 篇里 17 篇仍被判像 AI——**不是「改完就像真人」，也不承诺通过任何检测器**。
+数据与局限见 [评测原文](docs/eval-dual-2026-11-06.md) 和 [成绩页](SCORECARD.md) 第 4 节。
+
+默认不配置任何 API 也能用（本地引擎离线、零成本、固定 seed 可复现），
 想更强就接一个 OpenAI 兼容的 LLM（各家通吃，实测支持 OpenRouter / SenseNova / OpenAI）。
 定位：中文 AI 文本**去味预处理工具 + 送检前自检清单**——可接入朱雀（网页版半自动 / EdgeOne API 全自动）等真实检测器做闭环验证。
 
 **在线试玩**（无需安装，浏览器直接跑，✅ 已上线）：<https://fengxingxuerong.github.io/quaiwei/> ｜
-**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（约 203MB zip / 解压 513MB；已发布桌面包可能落后于仓库版本，以 release 页为准）——解压双击 `QuAiWei.exe` 即用 ｜
+**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（v0.9.84 实测约 211MB zip；已发布桌面包可能落后于仓库版本，以 release 页为准）——解压双击 `QuAiWei.exe` 即用 ｜
 [English](README_EN.md) ｜ [贡献指南](CONTRIBUTING.md) ｜ [Discussions](https://github.com/fengxingxuerong/quaiwei/discussions)
 
 **先看 [成绩页（SCORECARD）](SCORECARD.md)**：能做什么 / 不能做什么 / 已知失败 / 怎么复现——每条都附命令，跑不出来算我写错。
@@ -67,6 +73,9 @@ npx tsx scripts/humanize-cli.ts in.txt --out out.txt --intensity 0.6 --seed 2026
    v0.9.82 起可选 `--structural` 做**受限句序重排**——只对守卫全过的相邻句做至多一次交换，
    产出是原句排列（句多重集逐字不变），"不新增事实"在构造上成立；
    叙事/人写体裁一律保留作者结构。自由的结构级重写仍要走 LLM 深度模式。
+   ⚠️ **它是概率门控，不是「开了必然换」**：30 种子实测 14/30 触发交换，
+   分档约 0.7 → 45% / 1.0 → 78%。守卫没放行或没抽中时产出与默认路径逐字相同，
+   「开了却看不出变化」属设计内，不是坏了。
    同表里 sgaofen 用 12B 本地权重做到了结构级重写，代价是 4GB 权重和逐台机器的算力。
 3. **sgaofen 的中文保真率是它自己量的**（149/204 无事实问题），本仓"21 篇真人文本无一新增事实"
    是 2026-09-19 的实测记录，口径不同，别并成一句话读。
