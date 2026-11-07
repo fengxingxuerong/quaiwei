@@ -70,6 +70,13 @@ import { readDocxText, writeDocxText } from "../src/docx-io";
 import { applyRegionalVariant, formatRegionalSummary, type RegionalHit } from "../src/engine/regional-zh";
 import { academicAudit, formatAcademicReport } from "../src/engine/academic-check";
 import { auditStructure, formatStructureReport } from "../src/engine/structure-audit";
+import {
+  structureMetrics,
+  formatMetrics,
+  compareMetrics,
+  type StructureMetrics,
+  type MetricDelta,
+} from "../src/engine/structure-metrics";
 
 /** Buffer → 独立 ArrayBuffer（Buffer 可能是共享内存池上的视图，直接给 .buffer 会串） */
 function toArrayBuffer(b: Buffer): ArrayBuffer {
@@ -204,6 +211,8 @@ interface Args {
    * 无人称解说腔、编号步骤化、段落均匀度。有 high 项退出码 2。
    */
   auditStructure: boolean;
+  /** v0.9.85：结构指标（`--metrics`）。**不落盘、不改一个字**，只输出句法统计。 */
+  metrics: boolean;
   /**
    * v0.9.81：`--against <文件>`。给学术自检用：拿这份**外部改写稿**去比原文，
    * 引擎不参与改写（审的是 LLM 深度模式产出 / 外部改写 / 合作者改的版本）。
@@ -243,6 +252,7 @@ const USAGE =
   " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
   " [--academic-check [--against <改后稿>]]" +
   " [--audit-structure [--against <改后稿>]]" +
+  " [--metrics [--against <对比稿>]]" +
   " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]..." +
   " [--recursive] [--jobs <n>] [--dry-run] [--skip-low-risk]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
@@ -297,6 +307,7 @@ function parseArgs(argv: string[]): Args {
     variant: "none",
     academicCheck: false,
     auditStructure: false,
+    metrics: false,
     against: "",
     styleExplicit: false,
     suffix: ".humanized",
@@ -417,6 +428,9 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--audit-structure":
         args.auditStructure = true;
+        break;
+      case "--metrics":
+        args.metrics = true;
         break;
       case "--against":
         args.against = a[++i] ?? "";
@@ -953,6 +967,73 @@ async function runStructureAudit(args: Args): Promise<void> {
   process.exitCode = high > 0 ? 2 : 0;
 }
 
+/**
+ * v0.9.85：结构指标（`--metrics`）。**不落盘、不改一个字**，只输出句法统计。
+ *
+ * 用途：裁决「这次改动到底动了什么」。`aiScore` 与引擎共用词表（自证），
+ * 配对盲测在「长文本 + 细微改动」上四次都测不出（0.478/0.457/0.433/0.517），
+ * 这里给第三把纯句法尺子：同输入同输出、可 diff、可进证据链。
+ *
+ * 输出 JSON（`--against` 时附逐项 delta），便于脚本化与归档。
+ */
+async function runMetrics(args: Args): Promise<void> {
+  const targets: { label: string; text: string }[] = [];
+  try {
+    if (args.stdin) {
+      const raw = fs.readFileSync(0, "utf8");
+      if (!raw.trim()) {
+        console.error("✗ 标准输入为空（用法示例：cat 稿.txt | ai-humanizer --metrics）");
+        process.exitCode = 1;
+        return;
+      }
+      targets.push({ label: "stdin", text: raw });
+    } else {
+      const collected = collectInputFiles(args.input, {
+        recursive: args.recursive,
+        skipSuffix: args.suffix,
+      });
+      if (!collected.files.length) {
+        console.error(`未找到可统计的文件（支持 ${INPUT_EXTS_LABEL}）: ${args.input}`);
+        process.exitCode = 1;
+        return;
+      }
+      for (const f of collected.files) {
+        targets.push({ label: path.basename(f), text: await readInputText(f) });
+      }
+    }
+  } catch (e) {
+    console.error(`✗ 读输入失败：${(e as Error).message}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const rows = targets.map((t) => {
+    const m = structureMetrics(t.text);
+    return { label: t.label, summary: formatMetrics(m), metrics: m };
+  });
+
+  let against:
+    | { label: string; summary: string; metrics: StructureMetrics; deltaVsFirst: MetricDelta[] }
+    | undefined;
+  if (args.against) {
+    try {
+      const m = structureMetrics(await readInputText(args.against));
+      against = {
+        label: path.basename(args.against),
+        summary: formatMetrics(m),
+        metrics: m,
+        deltaVsFirst: compareMetrics(rows[0].metrics, m),
+      };
+    } catch (e) {
+      console.error(`✗ 读对比稿失败：${(e as Error).message}`);
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  process.stdout.write(JSON.stringify({ targets: rows, against }, null, 2) + "\n");
+}
+
 async function main() {
   const args = parseArgs(process.argv);
   // v0.9.40：--help / -h → 用法走 stdout + 退出 0（诊断才走 stderr，帮助不是错误）
@@ -991,6 +1072,12 @@ async function main() {
   // v0.9.84：结构审计同理——不落盘、不改字，读输入出报告（支持 stdin 与目录）
   if (args.auditStructure) {
     await runStructureAudit(args);
+    return;
+  }
+
+  // v0.9.85：结构指标同理——不落盘、不改字，只出句法统计（支持 stdin / 文件 / 目录 / --against）
+  if (args.metrics) {
+    await runMetrics(args);
     return;
   }
 
