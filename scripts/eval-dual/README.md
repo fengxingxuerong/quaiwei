@@ -91,6 +91,36 @@ python scripts/eval-dual/eval_dual.py --summarize \
 CI 拿不到。门禁守的是「归档证据 ↔ 页面数字一致」，不是「重新跑一遍评委」。
 要重新验证能力，按第 2 节手动跑、跨批次复测并归档新证据。
 
+## 6. A/B 能力验收（`ab_accept.py`）
+
+`eval_dual.py` 评的是「引擎有没有效果」（固定 orig vs local09）；
+`ab_accept.py` 评的是「**这次改动是不是更好**」——输入任意两臂产物目录。
+
+为什么需要另一把尺：`aiScore` 与独立评委只有 0.353 相关，且它的构成奖励短句，
+任何「少切句」的改动都会被判成「更像机器」。2026-11-07 三次切句收敛尝试全被它挡回，
+详见 [`evidence/split-scale-2026-11-07/`](../../evidence/split-scale-2026-11-07/)。
+
+```bash
+export QUAIWEI_EVAL_KEY_A=...
+python scripts/eval-dual/ab_accept.py \
+  --arm-a arms/before --arm-b arms/after \
+  --out out-ab --seats A --model qodercn/dfmodel
+```
+
+| 项 | 说明 |
+|---|---|
+| 臂目录 | `<id>.humanized.txt`（回退 `<id>.txt`），id 取 `scripts/realcase/cases.json` |
+| 输出 | B 臂胜率、双席一致率、甲被选率（位置偏置）、二项单尾 p、逐篇 winner |
+| 判定 | B 胜率显著 > 0.5（p < 0.05）才算「B 更好」；不显著只能说「测不出差别」 |
+| 单席 | `firstArmChosen` 应接近 0.5。**实测单席 0.826**（2026-11-07，`qodercn/dfmodel`，23 票）⇒ 单席配对结果不可用，必须 `--mirror`（同一网关跑正反两遍）或真双席 |
+| `--mirror` | 只有一个网关时用同一上游充当两席，B 席只负责反序呈现；调用量翻倍 |
+| 离线复算 | `--summarize --results <jsonl>`，不需要凭证/网络 |
+
+⚠️ 不接门禁：需要网关与凭证、每臂 23 次调用。门禁只守「归档证据 ↔ 页面数字一致」。
+
+公共逻辑（call / parse / flip_for）刻意与 `eval_dual.py` 重复而不抽取——
+后者已归档并被 `eval-dual-consistency.test.ts` 守着，不该为了 DRY 动它。
+
 ## 改动时别踩的坑
 
 1. **`flip_for` 与 `SUB8` 是复现基线的一部分。** 改了呈现顺序或 0.6 档篇目，胜率就不能与归档比。

@@ -1,0 +1,168 @@
+{
+ "model": "qodercn/dfmodel",
+ "seats": "A",
+ "cases": 23,
+ "pairs": 23,
+ "bWin": 11,
+ "bWinRate": 0.478,
+ "bySeat": {
+  "A": {
+   "n": 23,
+   "bWin": 11
+  },
+  "B": {
+   "n": 0,
+   "bWin": 0
+  }
+ },
+ "firstArmChosen": 0.826,
+ "seatAgreement": {
+  "pairs": 0,
+  "rate": null
+ },
+ "pValue": 0.6611802577972412,
+ "errors": 0,
+ "perCase": [
+  {
+   "id": "C1-work-summary",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C2-opinion-wechat",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C3-tech-popular",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C4-product-copy",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C5-news-release",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C6-academic-abstract",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C7-story-dialogue",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C8-social-post",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C9-mixed-links",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C10-tiny-input",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C11-admin-notice",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C12-paper-abstract",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C13-manual-steps",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C14-finance-flash",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C15-policy-qa",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C16-prospectus-risk",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C17-verdict-labor",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C18-tender-spec",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C19-kids-essay",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C20-speech-opening",
+   "bWinVotes": 1,
+   "votes": 1,
+   "winner": "b"
+  },
+  {
+   "id": "C21-fenced-code-doc",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C22-markdown-struct",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  },
+  {
+   "id": "C23-frontmatter-indent",
+   "bWinVotes": 0,
+   "votes": 1,
+   "winner": "a"
+  }
+ ],
+ "armA": "D:\\projects\\_quaiwei-tmp\\ab-run\\arms\\a",
+ "armB": "D:\\projects\\_quaiwei-tmp\\ab-run\\arms\\b",
+ "elapsedSec": 243.4
+}
