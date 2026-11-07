@@ -1,0 +1,124 @@
+{
+ "model": "glm-5.3-flash / qodercn/dfmodel",
+ "modelsBySeat": {
+  "A": "glm-5.3-flash",
+  "B": "qodercn/dfmodel"
+ },
+ "seats": "AB",
+ "cases": 15,
+ "pairs": 30,
+ "bWin": 8,
+ "bWinRate": 0.267,
+ "bySeat": {
+  "A": {
+   "n": 15,
+   "bWin": 3
+  },
+  "B": {
+   "n": 15,
+   "bWin": 5
+  }
+ },
+ "firstArmChosen": 0.367,
+ "seatAgreement": {
+  "pairs": 15,
+  "rate": 0.733
+ },
+ "pValue": 0.9973885603249073,
+ "errors": 0,
+ "perCase": [
+  {
+   "id": "人物-历史-诸葛亮",
+   "bWinVotes": 2,
+   "votes": 2,
+   "winner": "b"
+  },
+  {
+   "id": "人物-现代作家-鲁迅",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "人物-科学家-钱学森",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "医学-公共卫生-疫苗",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "历史-文字-甲骨文",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "历史-朝代-明朝",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "历史-贸易-丝绸之路",
+   "bWinVotes": 2,
+   "votes": 2,
+   "winner": "b"
+  },
+  {
+   "id": "地理-城市-北京市",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "地理-水体-长江",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "文学-古典-红楼梦",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "法律-中华人民共和国民法典",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "生物-生命科学-光合作用",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "生物-细胞-细胞",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "科技-物理-量子力学",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "科技-通信-5G",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  }
+ ],
+ "armA": "D:\\projects\\_quaiwei-tmp\\split-run\\arms\\conv-a",
+ "armB": "D:\\projects\\_quaiwei-tmp\\split-run\\arms\\conv-b",
+ "elapsedSec": 787.0
+}

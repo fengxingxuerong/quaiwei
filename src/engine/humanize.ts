@@ -53,6 +53,8 @@ import {
   clampAvgSentenceLenUnder25,
 } from "./humanize-shuffle.ts";
 
+import { convergeSentenceDensity } from "./structure-convergence.ts";
+
 import {
   countPadHeads,
   emitStage,
@@ -881,6 +883,17 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
       (_m: string, lead: string, word: string) => lead + word + "，",
     ),
   );
+  // v0.9.85 结构目标收敛（**实验性，默认关**）：只把引擎自己造出来的句号还原成逗号。
+  // 放在清尾之后、最终 trace 之前，保证 onStage 看到的是真正返回的文本。
+  //
+  // ⚠️ 不设成默认的理由（2026-11-08）：结构指标上 15 篇真人长文
+  // 37.35 → 24.26 句号/千字确实达标，但双席异源配对裁决 30 票里收敛稿只赢 8 票
+  // （0.267，双席一致 0.733）——评委明显更偏好碎句版。按「能力验收必须双席配对」
+  // 的既有口径，不能把一个被判退化的行为推给所有用户。需要实验时显式传
+  // opts.convergence: true，复现与数据见 evidence/structure-convergence-2026-11-08/。
+  if (opts.convergence === true) {
+    result = convergeSentenceDensity(text, result).text;
+  }
   if (onStage)
     emitStage(
       onStage,
