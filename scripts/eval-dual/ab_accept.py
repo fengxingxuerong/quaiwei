@@ -47,6 +47,9 @@ def parse_args():
     p.add_argument("--repo", type=Path, default=repo)
     p.add_argument("--arm-a", type=Path, required=False, help="A 臂产物目录")
     p.add_argument("--arm-b", type=Path, required=False, help="B 臂产物目录")
+    p.add_argument("--corpus", type=Path, default=None,
+                   help="语料目录（*.txt，排除 .humanized.txt）。默认用 scripts/realcase/cases.json；"
+                        "改切句强度这类只在长文生效的改动必须换长文语料，否则两臂产物会相同")
     p.add_argument("--out", type=Path, default=repo / "eval-out" / "ab-accept")
     p.add_argument("--results", type=Path, default=None, help="复核已有归档时指定其 JSONL")
     p.add_argument("--model", default=MODEL_DEFAULT)
@@ -82,8 +85,14 @@ def binom_sf(k: int, n: int) -> float:
 class Runner:
     def __init__(self, args):
         self.args = args
-        cases = json.loads((args.repo / "scripts/realcase/cases.json").read_text(encoding="utf-8"))["cases"]
-        self.ids = [c["id"] for c in cases]
+        if args.corpus:
+            self.ids = sorted(
+                f[:-4] for f in os.listdir(args.corpus)
+                if f.endswith(".txt") and not f.endswith(".humanized.txt")
+            )
+        else:
+            cases = json.loads((args.repo / "scripts/realcase/cases.json").read_text(encoding="utf-8"))["cases"]
+            self.ids = [c["id"] for c in cases]
         args.out.mkdir(parents=True, exist_ok=True)
         self.jsonl = args.results or (args.out / "ab_results.jsonl")
         self.report = args.out / "ab_report.json"

@@ -110,6 +110,7 @@ python scripts/eval-dual/ab_accept.py \
 | 项 | 说明 |
 |---|---|
 | 臂目录 | `<id>.humanized.txt`（回退 `<id>.txt`），id 取 `scripts/realcase/cases.json` |
+| `--corpus` | 改用任意语料目录（`*.txt`，排除 `.humanized.txt`）。**只在长文生效的改动必须换长文语料**：realcase 23 篇最长 453 字，实测切句收敛版两臂只有 1/23 篇不同，配对会退化成瞎猜 |
 | 输出 | B 臂胜率、双席一致率、甲被选率（位置偏置）、二项单尾 p、逐篇 winner |
 | 判定 | B 胜率显著 > 0.5（p < 0.05）才算「B 更好」；不显著只能说「测不出差别」 |
 | 单席 | `firstArmChosen` 应接近 0.5。**实测单席 0.826**（2026-11-07，`qodercn/dfmodel`，23 票）⇒ 单席配对结果不可用，必须 `--mirror`（同一网关跑正反两遍）或真双席 |
