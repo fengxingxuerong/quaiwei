@@ -585,7 +585,11 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     // 补上"换词不换骨"里最后一块骨——句序——同时守住"不新增事实"。
     // 守卫（回指/序列因果/引语/数字/首句锚定）见 structural-shuffle.ts。
     if (opts.structural) {
+      const beforeSwap = result;
       result = structuralSentenceShuffle(result, structRng, intensity);
+      // v0.9.85：把「是否真的换了」回报给调用方（--report.structuralApplied）。
+      // 只读回调，不参与改写；比较的是结构层这一阶段的前后文本，不受后续注入影响。
+      opts.onStructuralApplied?.(result !== beforeSwap);
     }
     // P7-D：humanHand 跳过错别字注入
     if (!knobs.disableTyposAnchor) {

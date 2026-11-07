@@ -26,6 +26,9 @@
  *   · 调用方（humanize.ts 结构层）已做体裁与强度门控（≥0.55）；本模块再做
  *     段级防线（围栏/结构行/事实密集段/剧本行），双层保险。
  *   · 固定 seed 可复现；同输入同产出。
+ *   · v0.9.85 起「开启即尝试」：不再用随机概率跳过。达到强度门槛就找守卫全过的
+ *     相邻对；确实没有可换对时原样返回，调用方通过 `onStructuralApplied` 把
+ *     「本轮是否真的换了」写进 --report，避免静默不生效。
  */
 import { splitSentences, makeRng } from "./humanize-data.ts";
 import { isProtectedBlock, isFactDenseParagraph, splitParasOutsideFences } from "./text-shield.ts";
@@ -53,8 +56,17 @@ const MIN_SENT_CHARS = 8;
 /** 每段最多交换次数：最小干预原则 */
 const MAX_SWAPS_PER_PARA = 1;
 
-/** 交换尝试的概率基数（乘 intensity 与调用方开关；rng 驱动，确定性） */
-const SWAP_PROB = 0.55;
+/**
+ * 结构层强度门槛，与 humanize.ts 的 `intensity >= 0.55` 同口径。
+ *
+ * v0.9.85 之前这里是概率门控 `SWAP_PROB = 0.55`：`rng() > 0.55 * intensity`
+ * 就整段跳过。30 种子实测只有 14/30 触发交换（0.7 档约 45% / 1.0 档约 78%），
+ * 用户开了开关却看不出变化会被当成功能坏了，且没有任何字段能查「到底换没换」。
+ * ⇒ 改为「开启即尝试」：低于门槛恒不动，达到门槛就找守卫全过的相邻对；
+ *   确实没有可换对时原样返回，并由 `onStructuralApplied` 把结果报出去。
+ * rng 仍用于选候选对，同 seed 同产出不变。
+ */
+const MIN_STRUCTURAL_INTENSITY = 0.55;
 
 function sentenceStartsDangerously(s: string): boolean {
   return ANAPHORA_START_RE.test(s) || SEQ_CAUSAL_START_RE.test(s);
@@ -81,13 +93,13 @@ function findSwapIndex(sents: string[], rng: () => number): number {
 }
 
 /**
- * 单段受限句序重排。守卫不过或 rng 不中时原样返回。
+ * 单段受限句序重排。低于强度门槛、守卫不过或找不到可换对时原样返回。
  * 产出是原句排列——句多重集与原文逐字相同（测试锁定这一性质）。
  */
 export function sentenceShuffleParagraph(p: string, rng: () => number, intensity: number): string {
   const sents = splitSentences(p);
   if (sents.length < 3) return p; // 至少 3 句才有（i≥1, i+1）的交换空间
-  if (rng() > SWAP_PROB * Math.max(0, Math.min(1, intensity))) return p;
+  if (intensity < MIN_STRUCTURAL_INTENSITY) return p;
   const idx = findSwapIndex(sents, rng);
   if (idx < 0) return p;
   const out = [...sents];
@@ -124,6 +136,7 @@ export const STRUCTURAL_GUARDS = {
   NUM_RE,
   MIN_SENT_CHARS,
   MAX_SWAPS_PER_PARA,
+  MIN_STRUCTURAL_INTENSITY,
   swappable,
 };
 

@@ -81,6 +81,16 @@ python scripts/eval-dual/eval_dual.py --summarize \
 双席 `Pearson 0.666 / MAE 11.9`。`npm test` 里的
 `scripts/eval-dual-consistency.test.ts` 会自动做同一套重算并核对 SCORECARD。
 
+## 5. 门禁边界（2026-11-07 更正）
+
+`check:release` 链含 `test:cov`（全量 vitest），所以
+`scripts/eval-dual-consistency.test.ts` **已经在门禁里**：归档记录变了、或 SCORECARD 的能力数字
+没跟着改，`npm run check:release` 会红。此前把这个测试说成「没接进门禁」是错的，已更正。
+
+但**完整的双席配对盲测不能进门禁**：它需要两个 LLM 网关与凭证、154 次调用、约 6 分钟，
+CI 拿不到。门禁守的是「归档证据 ↔ 页面数字一致」，不是「重新跑一遍评委」。
+要重新验证能力，按第 2 节手动跑、跨批次复测并归档新证据。
+
 ## 改动时别踩的坑
 
 1. **`flip_for` 与 `SUB8` 是复现基线的一部分。** 改了呈现顺序或 0.6 档篇目，胜率就不能与归档比。

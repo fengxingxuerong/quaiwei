@@ -30,7 +30,7 @@
 | 地区用词校正（`--variant zh-TW`） | 今日复跑：16 例对照测试；默认路径逐字不变；网页版开关 6/6 浏览器验收 | `npx vitest run src/engine/regional-zh.test.ts` |
 | 学术硬出口（`--academic-check`，判 READY / NOT READY） | 今日复跑：11 例引擎测试 + 两条端到端（坏改写稿 exit 2 / 守规矩的 exit 0）+ 网页版「学术自检」面板 8/8 浏览器验收 | `npx vitest run src/engine/academic-check.test.ts` |
 | 语体指数（registerIndex，独立维度不并入 aiScore） | 复跑 2026-11-03：21 篇真人语料上书面→口语替换 **15/21 方向正确（Δ −3.9）**——同一替换 aiScore 只有 2/21（盲区修复）；维基基线中位 88（偏书面，符合语料常识）。`tsc -b` 级环境二进制（esbuild.exe / tsc.exe / lib.dom.d.ts 同批丢失事故）已由环境预检兜住 | `npx tsx artifacts/human-corpus/probe-inject.ts`（语体段）；`npx vitest run src/engine/register-metrics.test.ts`；`npm run check:env` |
-| 受限句序重排（`--structural`，默认关） | 复跑 2026-11-03：14 条守卫/不变式用例全绿——**产出是原句排列，句多重集逐字不变**；回指/序列因果/引语/数字/首句五类守卫 60 种子 × 5 场景零穿透；30 种子实测 14/30 触发交换（概率门控）；CLI 端到端确定性复现。叙事/人写体裁不受影响 | `npx vitest run src/engine/structural-shuffle.test.ts` |
+| 受限句序重排（`--structural`，默认关） | 复跑 2026-11-03：14 条守卫/不变式用例全绿——**产出是原句排列，句多重集逐字不变**；回指/序列因果/引语/数字/首句五类守卫 60 种子 × 5 场景零穿透；v0.9.85 起去掉概率门控改为「开启即尝试」，23 篇真实语料 0.9 档实测 **2/23 真换成功**（其余被五类守卫否决，瓶颈是守卫密度不是概率），`--report` 记 `structuralApplied`；CLI 端到端确定性复现。叙事/人写体裁不受影响 | `npx vitest run src/engine/structural-shuffle.test.ts` |
 | 分数打脸横幅：本地低分而外部分高时会明说 | 记录 2026-09-22 外评事故后加（v0.9.15） | `npx vitest run src/engine/score-conflict.test.ts` |
 
 ---
@@ -86,6 +86,7 @@
 | 标定子系统（已移除） | 18 个送检点凭证认证 **0/18**；换算线漂移最高压在棘轮天花板 **35/35**——一套无法自证的换算于 v0.9.83 整体删除，演进史见 [fingerprint-and-zhuque-calibration.md](docs/fingerprint-and-zhuque-calibration.md) | 记录 2026-10-27，`docs/fingerprint-and-zhuque-calibration.md` |
 | 内置判别力不对称 | 注入 AI 套话：**19/21 方向正确**（Δ +14.6）；把书面体改成口语体：**2/21**（Δ −0.6） | 记录 2026-10-14，README |
 | MCP 通道跨进程不可复现（已修） | 同一段 114 字在三个进程跑出 101/106/101 字——不传 seed 时引擎退回 `Date.now()` | 2026-10-26 自查，[evidence/mcp-smoke-2026-10-26.txt](evidence/mcp-smoke-2026-10-26.txt) |
+| 真人书面长文被碎句化（未修） | 21 篇维基正文 17.5 万字默认档实跑：事实/格式保真 **0 失败**，但 `collapseIssues` 命中 **12/21**——破折号/省略号处被切成无谓语悬空片段（「形式灵活的新文体」）、光杆连接词句（「正因为这样。」）；与 10 万字小说测试「50% 句子被重切」同向 | 2026-11-07 自查，[evidence/human-corpus-fidelity-2026-11-07/](evidence/human-corpus-fidelity-2026-11-07/) |
 
 最后一行留着，是因为它最能说明这一页该怎么用：**缺陷先写进来，再修**。
 修完不删记录，改成"已修 + 日期 + 守卫用例名"。

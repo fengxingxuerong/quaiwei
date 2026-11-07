@@ -42,12 +42,24 @@ describe("sentenceShuffleParagraph：保真不变式", () => {
     );
   });
 
-  it("弱强度下基本不动（概率门控）", () => {
-    let moved = 0;
-    for (let seed = 0; seed < 40; seed++) {
-      if (sentenceShuffleParagraph(CLEAN, rng(seed), 0.2) !== CLEAN) moved++;
+  it("低于强度门槛时恒不动（强度门是唯一的跳过理由）", () => {
+    for (const intensity of [0, 0.2, 0.54]) {
+      for (let seed = 0; seed < 40; seed++) {
+        expect(sentenceShuffleParagraph(CLEAN, rng(seed), intensity)).toBe(CLEAN);
+      }
     }
-    expect(moved).toBeLessThan(8); // 0.55*0.2=0.11 命中率，40 次里显著少数
+  });
+
+  it("开启即尝试：达到门槛且守卫全过时，每个种子都发生交换", () => {
+    for (let seed = 0; seed < 40; seed++) {
+      const out = sentenceShuffleParagraph(CLEAN, rng(seed), 0.9);
+      expect(out).not.toBe(CLEAN);
+      expect(multiset(out).sort()).toEqual(multiset(CLEAN).sort());
+    }
+  });
+
+  it("门槛常量与 humanize.ts 结构层同口径", () => {
+    expect(STRUCTURAL_GUARDS.MIN_STRUCTURAL_INTENSITY).toBe(0.55);
   });
 });
 
@@ -108,11 +120,9 @@ describe("structuralSentenceShuffle：段级防线", () => {
     }
   });
 
-  it("可换段落在足量种子下确实动过（不是恒等函数）", () => {
-    let moved = 0;
+  it("可换段落在每个种子下都动过（不再有概率跳过）", () => {
     for (let seed = 0; seed < 40; seed++) {
-      if (structuralSentenceShuffle(CLEAN, rng(seed), 1) !== CLEAN) moved++;
+      expect(structuralSentenceShuffle(CLEAN, rng(seed), 1)).not.toBe(CLEAN);
     }
-    expect(moved).toBeGreaterThan(5);
   });
 });

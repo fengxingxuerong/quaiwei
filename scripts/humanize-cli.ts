@@ -265,6 +265,7 @@ const USAGE =
   "\n  --structural 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，" +
   "对守卫全过的相邻句做至多一次交换——产出是原句排列，句多重集逐字不变，" +
   "\"不新增事实\"构造上成立；叙事/人写体裁不受影响（保留作者结构）。" +
+  "开启即尝试（不再随机跳过），守卫全过才换；--report 的 structuralApplied 可查本轮是否真的换了。" +
   "**不做简繁转换**——字形请自己过 OpenCC，这里只换词与标点，输入简体、输出简体。" +
   "词表只收无歧义的词（`程序`/`质量`/`文件` 这类一词两义的不换）。" +
   "\n  --academic-check：学术自检。**不落盘**，只打一份带判定的报告（数字/单位、引用键、" +
@@ -683,6 +684,9 @@ interface FileReport {
   lowYieldRisk?: boolean;
   /** v0.9.84：仅 --skip-low-risk 生效时置位：低收益稿原样出稿（未改写） */
   skippedLowRisk?: boolean;
+  /** v0.9.85：仅 --structural 时有意义——本轮是否真的发生了相邻句交换。
+   *  守卫全过才为 true；没有可换对、或走 --api 深度模式（不接结构层）时为 false。 */
+  structuralApplied?: boolean;
   /* 以下仅 --api 模式有 */
   engine?: string;
   usedApi?: boolean;
@@ -1139,6 +1143,9 @@ async function main() {
         registerBefore: briefRegister(registerIndex(raw)),
         ok: true,
       };
+      // v0.9.85：--structural 时先记 false，由 onStructuralApplied 回调置 true。
+      // 默认 false 也覆盖「守卫全过但没有可换对」与「--api 深度模式不接结构层」两种情形。
+      if (args.structural) rep.structuralApplied = false;
       // v0.9.84：人写带**可选**原样出稿（--skip-low-risk，默认关）。
       // 判定只放 CLI 入口层——引擎层 adviceFor 仍「只提示不改行为」，
       // regression-12samples 的 H1/H2 基线、Web/MCP/API 消费者行为都不受影响。
@@ -1187,6 +1194,9 @@ async function main() {
           zhuqueMode: args.zhuque,
           style: args.style,
           structural: args.structural,
+          onStructuralApplied: (applied) => {
+            rep.structuralApplied = applied;
+          },
         });
       }
       rep.ms = Date.now() - t0;
@@ -1327,6 +1337,7 @@ async function main() {
             skippedSuffix: collected.skipped,
             lowYieldRisk: reps.filter((r) => r.lowYieldRisk).length,
             skippedLowRisk: reps.filter((r) => r.skippedLowRisk).length,
+            structuralApplied: reps.filter((r) => r.structuralApplied).length,
             charsIn: sum0(reps, (r) => r.charsIn),
             charsOut: sum0(reps, (r) => r.charsOut),
             msTotal: sum0(reps, (r) => r.ms),

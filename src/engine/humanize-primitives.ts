@@ -32,6 +32,16 @@ export interface HumanizeOptions {
    */
   structural?: boolean;
   /**
+   * v0.9.85：受限句序重排的生效回报（只读回调，不改变产出）。
+   *
+   * 只在 `structural: true` 且确实走完结构层时调用一次，参数表示
+   * 「本轮是否真的发生了相邻句交换」。守卫全过才为 true；没有可换对
+   * （回指/序列/引语/数字/首句/短句任一否决）时为 false。
+   * 供 CLI `--report` 的 `structuralApplied` 字段使用，解决「开了开关却看不出变化」
+   * 无法自查的问题。不传 = 零开销，且不影响随机序列。
+   */
+  onStructuralApplied?: (applied: boolean) => void;
+  /**
    * v3 P7 引擎级体裁联动：
    *  · main/narrative/dialogue：引擎自动/显式识别后，对应调 avgLen/burst 阈值、P3 结构门控强度
    *  · humanHand：纯人写原稿，强制强度 ≤0.48、关闭朱雀增强、跳过自问自答/错别字等（负斜率，越去味越升官%）

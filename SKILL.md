@@ -69,7 +69,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--llm-timeout <sec>` | 请求超时 | 单次 LLM 请求超时，默认 90 秒（上限 600）；慢思考型网关可调到 180~300，避免被误报成「模型返回空内容」 |
 | `--target <1~100>` | 默认 10 | 深度模式达标线：LLM 评判 ≤ 此分即收手。调低=多压几轮更彻底也更慢，调高=更快收手；不给则沿用默认 |
 | `--strict` | 开关 | 严格保真：发现编造事实即拒绝交付并回退 |
-| `--structural` | 开关 | 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，对守卫全过的相邻句做**至多一次交换**——产出是原句排列，不新增任何内容；叙事/人写体裁不受影响 |
+| `--structural` | 开关 | 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，对守卫全过的相邻句做**至多一次交换**——产出是原句排列，不新增任何内容；叙事/人写体裁不受影响。v0.9.85 起开启即尝试（不再随机跳过），`--report` 记 `structuralApplied`；23 篇真实语料实测仅 2 篇真换成功，其余被守卫否决，别为提高生效率放宽守卫 |
 | `--persona` | `default` \| `netgen` \| `classic` | 人味人格分档 |
 | `--detector-url <url>` | 任意 HTTP 接口，**可重复** | 接**外部检测器**（不绑定厂商）：把 `{text}` POST 过去，按 `--detector-path` 取分；原文与产出各送一次，前后分写进 `--report` 的 `detectorBefore` / `detectorAfter`（多档时另有 `detectorScores` 数组）。给多个 URL 就逐档送检、横向对比 |
 | `--detector-key <key>` | — | 检测器凭证，作用在**最近一档** `--detector-url` 上；更建议走环境变量 `QUAIWEI_DETECTOR_KEY`（命令行会进 shell 历史） |

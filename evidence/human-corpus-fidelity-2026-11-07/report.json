@@ -1,0 +1,345 @@
+{
+  "at": "2026-11-07T13:38:01.218Z",
+  "corpus": "artifacts/human-corpus/*.txt（中文维基正文，未入库）",
+  "engine": {
+    "intensity": 0.6,
+    "seed": 20260905,
+    "structural": false,
+    "api": false
+  },
+  "files": 21,
+  "charsIn": 175239,
+  "charsOut": 175103,
+  "aiScoreMeanIn": 36.7,
+  "aiScoreMeanOut": 12.9,
+  "hardFailureFiles": [],
+  "collapseIssueFiles": [
+    "人物-历史-诸葛亮.txt",
+    "人物-现代作家-鲁迅.txt",
+    "人物-科学家-屠呦呦.txt",
+    "历史-文字-甲骨文.txt",
+    "历史-贸易-丝绸之路.txt",
+    "地理-城市-北京市.txt",
+    "地理-山川-黄山.txt",
+    "文学-古典-红楼梦.txt",
+    "生物-细胞-细胞.txt",
+    "科技-工程-集成电路.txt",
+    "科技-物理-量子力学.txt",
+    "科技-通信-5G.txt"
+  ],
+  "danglingConnectiveFiles": [],
+  "rows": [
+    {
+      "file": "人物-历史-诸葛亮.txt",
+      "charsIn": 14279,
+      "charsOut": 14295,
+      "aiScoreIn": 35,
+      "aiScoreOut": 12,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「死而後已”」是原文「死而後已”成為无数仁人志士的座右铭」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "人物-现代作家-老舍.txt",
+      "charsIn": 2178,
+      "charsOut": 2178,
+      "aiScoreIn": 9,
+      "aiScoreOut": 0,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "人物-现代作家-鲁迅.txt",
+      "charsIn": 12930,
+      "charsOut": 12916,
+      "aiScoreIn": 39,
+      "aiScoreOut": 24,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「形式灵活的新文体」是原文「形式灵活的新文体——“杂文”」被截断后的残留，谓语已丢失",
+        "「他始终没有研究清楚」是原文「他始终没有研究清楚……正因为这样」被截断后的残留，谓语已丢失",
+        "「即使是发挥得淋漓尽致」是原文「即使是发挥得淋漓尽致——所以他15本杂文给人的总」被截断后的残留，谓语已丢失",
+        "「“我看鲁迅在世还会写杂文」是原文「“我看鲁迅在世还会写杂文……真正的马克思主义者是」被截断后的残留，谓语已丢失",
+        "「”秋石在《追寻历史的真相」是原文「”秋石在《追寻历史的真相——毛泽东与鲁迅》一书中」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "人物-科学家-屠呦呦.txt",
+      "charsIn": 2160,
+      "charsOut": 2162,
+      "aiScoreIn": 31,
+      "aiScoreOut": 12,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「食野之蒿」是原文「食野之蒿……呦呦鹿鸣」被截断后的残留，谓语已丢失",
+        "「食野之芩」是原文「食野之芩……」」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "人物-科学家-钱学森.txt",
+      "charsIn": 4276,
+      "charsOut": 4270,
+      "aiScoreIn": 43,
+      "aiScoreOut": 13,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "医学-公共卫生-疫苗.txt",
+      "charsIn": 3798,
+      "charsOut": 3794,
+      "aiScoreIn": 20,
+      "aiScoreOut": 7,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "历史-文字-甲骨文.txt",
+      "charsIn": 5027,
+      "charsOut": 5027,
+      "aiScoreIn": 31,
+      "aiScoreOut": 0,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「可见孙氏意在以金文和甲骨文」是原文「可见孙氏意在以金文和甲骨文——尤其是包含较多象形」被截断后的残留，谓语已丢失",
+        "「並依此把甲骨文分为五期」是原文「並依此把甲骨文分为五期——第一期」被截断后的残留，谓语已丢失",
+        "「陈梦家在《甲骨断代与坑位」是原文「陈梦家在《甲骨断代与坑位——甲骨断代学丁篇》一文」被截断后的残留，谓语已丢失",
+        "「黃奇逸在《商周研究之批判」是原文「黃奇逸在《商周研究之批判——中國古文字的產生與發」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "历史-朝代-明朝.txt",
+      "charsIn": 27267,
+      "charsOut": 27279,
+      "aiScoreIn": 67,
+      "aiScoreOut": 32,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "历史-贸易-丝绸之路.txt",
+      "charsIn": 9529,
+      "charsOut": 9503,
+      "aiScoreIn": 57,
+      "aiScoreOut": 25,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「丝绸之路」是原文「丝绸之路并非是一条 “路”」被截断后的残留，谓语已丢失",
+        "「設立了漢朝對西域的直接管轄機構」是原文「設立了漢朝對西域的直接管轄機構——西域都護府」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "地理-城市-北京市.txt",
+      "charsIn": 22364,
+      "charsOut": 22335,
+      "aiScoreIn": 95,
+      "aiScoreOut": 60,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「安徽的四大地方戏班」是原文「安徽的四大地方戏班——三庆班」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "地理-山川-黄山.txt",
+      "charsIn": 2619,
+      "charsOut": 2626,
+      "aiScoreIn": 8,
+      "aiScoreOut": 0,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「瑰丽高峰」是原文「瑰丽高峰——莲花峰」被截断后的残留，谓语已丢失",
+        "「险峻高峰」是原文「险峻高峰——天都峰」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "地理-水体-长江.txt",
+      "charsIn": 9867,
+      "charsOut": 9862,
+      "aiScoreIn": 51,
+      "aiScoreOut": 18,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "文学-古典-红楼梦.txt",
+      "charsIn": 18829,
+      "charsOut": 18793,
+      "aiScoreIn": 59,
+      "aiScoreOut": 0,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「“专为和《水浒》唱对台戏」是原文「“专为和《水浒》唱对台戏——你写108条绿林好汉」被截断后的残留，谓语已丢失",
+        "「未就而没……」是原文「未就而没……                  」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "文学-现当代-骆驼祥子.txt",
+      "charsIn": 2488,
+      "charsOut": 2489,
+      "aiScoreIn": 20,
+      "aiScoreOut": 14,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "法律-中华人民共和国民法典.txt",
+      "charsIn": 4198,
+      "charsOut": 4177,
+      "aiScoreIn": 32,
+      "aiScoreOut": 9,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "生物-生命科学-光合作用.txt",
+      "charsIn": 4592,
+      "charsOut": 4583,
+      "aiScoreIn": 37,
+      "aiScoreOut": 13,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    },
+    {
+      "file": "生物-细胞-细胞.txt",
+      "charsIn": 6954,
+      "charsOut": 6925,
+      "aiScoreIn": 36,
+      "aiScoreOut": 6,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「包围着细胞的是」是原文「包围着细胞的是——通常包括细胞壁及其下层的细胞膜」被截断后的残留，谓语已丢失",
+        "「核仁（nucleolus）」是原文「核仁（nucleolus）——是真核细胞的細胞核」被截断后的残留，谓语已丢失",
+        "「核糖體（ribosomes）」是原文「核糖體（ribosomes）——負責合成蛋白質的」被截断后的残留，谓语已丢失",
+        "「高尔基体」是原文「高尔基体—— 是好幾粒扁平的囊袋相疊而成」被截断后的残留，谓语已丢失",
+        "「液泡（液胞）」是原文「液泡（液胞） ——是另一種囊狀的單層膜胞器」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "科技-工程-集成电路.txt",
+      "charsIn": 3432,
+      "charsOut": 3441,
+      "aiScoreIn": 11,
+      "aiScoreOut": 0,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「这些电路的小尺寸」是原文「这些电路的小尺寸使得与板级集成相比」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "科技-物理-量子力学.txt",
+      "charsIn": 11913,
+      "charsOut": 11921,
+      "aiScoreIn": 54,
+      "aiScoreOut": 24,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「则这光子可以给予足够能量来」是原文「则这光子可以给予足够能量来使得金属表面的一个电子」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "科技-通信-5G.txt",
+      "charsIn": 3999,
+      "charsOut": 3979,
+      "aiScoreIn": 28,
+      "aiScoreOut": 1,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [
+        "「更多的蜂窝」是原文「更多的蜂窝使得5G网络基础设施比以前的蜂窝网络每」被截断后的残留，谓语已丢失"
+      ],
+      "danglingConnective": []
+    },
+    {
+      "file": "艺术-书法-书法.txt",
+      "charsIn": 2540,
+      "charsOut": 2548,
+      "aiScoreIn": 7,
+      "aiScoreOut": 0,
+      "missingNumbers": [],
+      "changedUnits": [],
+      "urlFidelity": true,
+      "fenceFidelity": true,
+      "collapse": [],
+      "danglingConnective": []
+    }
+  ]
+}
