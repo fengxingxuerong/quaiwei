@@ -19,8 +19,19 @@ const ALL_SENT_STARTERS = [...SENT_STARTERS, ...EXTRA_SENT_STARTERS];
    标点规则（与 v0.7 保持一致，不重写但保留入口）
    ========================================================= */
 
+/**
+ * v0.9.85：破折号是**句内**标点（插入 / 解释 / 转折），绝不能松弛成句末句号。
+ *
+ * 21 篇真人语料误伤探针（evidence/human-corpus-fidelity-2026-11-07/）的 27 条
+ * 截断残留里有 17 条原文带 ——；流水线快照定位到 punct 阶段把
+ * 「形式灵活的新文体——“杂文”」改成「形式灵活的新文体。“杂文”」，
+ * 一句话被劈成无谓语悬空片段。
+ *
+ * 保留 3 个槽位与 rng 消耗次数不变，只把中间槽的「。」换成「，」：
+ * 原 index0 / index2 分支逐字不变，多种子验收基线的漂移面最小。
+ */
 export function relaxEmDash(text: string, rng: () => number, p: number): string {
-  return text.replace(/——/g, () => (rng() < p ? pick(rng, ["，", "。", "——"]) : "——"));
+  return text.replace(/——/g, () => (rng() < p ? pick(rng, ["，", "，", "——"]) : "——"));
 }
 
 export function relaxDunhao(text: string, rng: () => number, p: number): string {

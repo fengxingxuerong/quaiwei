@@ -12,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import {
   relaxColon,
   relaxDunhao,
+  relaxEmDash,
   relaxQuotes,
   splitOnConnectors,
   varyParagraphs,
@@ -19,6 +20,25 @@ import {
 
 /** 全 0：门限必过、下标必取 0 */
 const rng0 = (): number => 0;
+
+describe("relaxEmDash（破折号松弛）：绝不产出句末句号", () => {
+  // v0.9.85：破折号是句内标点，原先候选含「。」，会把
+  // 「形式灵活的新文体——“杂文”」劈成「形式灵活的新文体。“杂文”」无谓语悬空片段。
+  // 21 篇真人语料误伤探针 27 条截断残留里 17 条原文带 ——，见
+  // evidence/human-corpus-fidelity-2026-11-07/。
+  const src = "形式灵活的新文体——“杂文”，并将之发扬光大";
+  it("p=0 原样保留破折号", () => {
+    expect(relaxEmDash(src, rng0, 0)).toBe(src);
+  });
+  it("三个候选分支都不产生「。」", () => {
+    for (const r of [() => 0, () => 0.5, () => 0.99]) {
+      expect(relaxEmDash(src, r, 1)).not.toContain("。");
+    }
+  });
+  it("中间槽（原「。」）现在给「，」，句子不被劈开", () => {
+    expect(relaxEmDash(src, () => 0.5, 1)).toBe("形式灵活的新文体，“杂文”，并将之发扬光大");
+  });
+});
 
 describe("relaxColon（冒号放松）", () => {
   it("全角冒号：p=1 替换为「，」，p=0 原样", () => {

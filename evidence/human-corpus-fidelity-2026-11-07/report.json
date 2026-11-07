@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-07T13:38:01.218Z",
+  "at": "2026-11-07T14:04:56.605Z",
   "corpus": "artifacts/human-corpus/*.txt（中文维基正文，未入库）",
   "engine": {
     "intensity": 0.6,
@@ -9,7 +9,7 @@
   },
   "files": 21,
   "charsIn": 175239,
-  "charsOut": 175103,
+  "charsOut": 175106,
   "aiScoreMeanIn": 36.7,
   "aiScoreMeanOut": 12.9,
   "hardFailureFiles": [],
@@ -267,7 +267,7 @@
     {
       "file": "生物-细胞-细胞.txt",
       "charsIn": 6954,
-      "charsOut": 6925,
+      "charsOut": 6928,
       "aiScoreIn": 36,
       "aiScoreOut": 6,
       "missingNumbers": [],
