@@ -1,0 +1,354 @@
+{
+  "comment": "误伤基准集（P1-1）标签清单：no-touch=不该误杀的真人稿，should-change=该改的 AI 味稿。判定口径见 scripts/collateral-bench.ts 头注释。",
+  "rulers": "保真(数字/单位/URL/围栏) + 成句性(collapseIssues/悬空连接词) + 结构指标尺(structureMetrics) + 语体尺(registerIndex)；禁止用 aiScore 降幅作能力判定（SCORECARD §4）。",
+  "labelingRules": {
+    "no-touch": "真人书面长文；改写后事实/格式保真必须 0 失败，碎句化与改动率需在报告里可见（是否可接受由人判定，不写死门禁）",
+    "should-change": "含成片套话/公式化表达的 AI 味稿；改写应显著减少 AI 味痕迹且保真 0 失败"
+  },
+  "current": {
+    "noTouch": 21,
+    "shouldChange": 23
+  },
+  "target": {
+    "noTouch": 30,
+    "shouldChange": 40
+  },
+  "gap": "真人侧 21/30：补公开误伤集（竞品约 70 条）与政务/论说体裁；该改侧 23/40：补政务稿等书面体裁（本仓已知盲区）。标签目前为来源语义标签，非逐条人工裁决——人工复核是后续工作。",
+  "panels": {
+    "noTouch": [
+      {
+        "id": "人物-历史-诸葛亮",
+        "source": "artifacts/human-corpus/人物-历史-诸葛亮.txt",
+        "genre": "人物",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "人物-现代作家-老舍",
+        "source": "artifacts/human-corpus/人物-现代作家-老舍.txt",
+        "genre": "人物",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "人物-现代作家-鲁迅",
+        "source": "artifacts/human-corpus/人物-现代作家-鲁迅.txt",
+        "genre": "人物",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "人物-科学家-屠呦呦",
+        "source": "artifacts/human-corpus/人物-科学家-屠呦呦.txt",
+        "genre": "人物",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "人物-科学家-钱学森",
+        "source": "artifacts/human-corpus/人物-科学家-钱学森.txt",
+        "genre": "人物",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "医学-公共卫生-疫苗",
+        "source": "artifacts/human-corpus/医学-公共卫生-疫苗.txt",
+        "genre": "医学",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "历史-文字-甲骨文",
+        "source": "artifacts/human-corpus/历史-文字-甲骨文.txt",
+        "genre": "历史",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "历史-朝代-明朝",
+        "source": "artifacts/human-corpus/历史-朝代-明朝.txt",
+        "genre": "历史",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "历史-贸易-丝绸之路",
+        "source": "artifacts/human-corpus/历史-贸易-丝绸之路.txt",
+        "genre": "历史",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "地理-城市-北京市",
+        "source": "artifacts/human-corpus/地理-城市-北京市.txt",
+        "genre": "地理",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "地理-山川-黄山",
+        "source": "artifacts/human-corpus/地理-山川-黄山.txt",
+        "genre": "地理",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "地理-水体-长江",
+        "source": "artifacts/human-corpus/地理-水体-长江.txt",
+        "genre": "地理",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "文学-古典-红楼梦",
+        "source": "artifacts/human-corpus/文学-古典-红楼梦.txt",
+        "genre": "文学",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "文学-现当代-骆驼祥子",
+        "source": "artifacts/human-corpus/文学-现当代-骆驼祥子.txt",
+        "genre": "文学",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "法律-中华人民共和国民法典",
+        "source": "artifacts/human-corpus/法律-中华人民共和国民法典.txt",
+        "genre": "法律",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "生物-生命科学-光合作用",
+        "source": "artifacts/human-corpus/生物-生命科学-光合作用.txt",
+        "genre": "生物",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "生物-细胞-细胞",
+        "source": "artifacts/human-corpus/生物-细胞-细胞.txt",
+        "genre": "生物",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "科技-工程-集成电路",
+        "source": "artifacts/human-corpus/科技-工程-集成电路.txt",
+        "genre": "科技",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "科技-物理-量子力学",
+        "source": "artifacts/human-corpus/科技-物理-量子力学.txt",
+        "genre": "科技",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "科技-通信-5G",
+        "source": "artifacts/human-corpus/科技-通信-5G.txt",
+        "genre": "科技",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      },
+      {
+        "id": "艺术-书法-书法",
+        "source": "artifacts/human-corpus/艺术-书法-书法.txt",
+        "genre": "艺术",
+        "label": "no-touch",
+        "note": "中文维基正文·真人书面长文（语料在 .gitignore，本机运行）"
+      }
+    ],
+    "shouldChange": [
+      {
+        "id": "C1-work-summary",
+        "title": "季度工作总结（公文体·弱标点陷阱）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C1-work-summary",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C2-opinion-wechat",
+        "title": "公众号观点文（营销腔·套话密集）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C2-opinion-wechat",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C3-tech-popular",
+        "title": "技术科普（英中混排·版本号·专名）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C3-tech-popular",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C4-product-copy",
+        "title": "产品介绍（数字·货币·规格）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C4-product-copy",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C5-news-release",
+        "title": "新闻通稿（机构名·日期·引语）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C5-news-release",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C6-academic-abstract",
+        "title": "学术论文摘要（术语密集·不宜动）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C6-academic-abstract",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C7-story-dialogue",
+        "title": "叙事短文（对话体·引号）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C7-story-dialogue",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C8-social-post",
+        "title": "社媒短贴（口语·网络体·极短句）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C8-social-post",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C9-mixed-links",
+        "title": "混合文本（URL·邮箱·代码块·极易被误伤）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C9-mixed-links",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C10-tiny-input",
+        "title": "极短输入（边界·少于 100 字）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C10-tiny-input",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C11-admin-notice",
+        "title": "行政通知（条编号·发文字号·成文日期）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C11-admin-notice",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C12-paper-abstract",
+        "title": "论文摘要（引用标记·英文缩写· LaTeX 残迹）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C12-paper-abstract",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C13-manual-steps",
+        "title": "产品使用说明（步骤序号·按钮名·键盘符号）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C13-manual-steps",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C14-finance-flash",
+        "title": "业绩快报（金额·同比·百分点）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C14-finance-flash",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C15-policy-qa",
+        "title": "政策问答（法规体·条号引用）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C15-policy-qa",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C16-prospectus-risk",
+        "title": "招股书风险因素（密集金额·百分点·同比）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C16-prospectus-risk",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C17-verdict-labor",
+        "title": "民事判决书（案号·法条·判项·极易误判对话体）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C17-verdict-labor",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C18-tender-spec",
+        "title": "招标参数表（条目冒号·技术规格·易误判对话体）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C18-tender-spec",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C19-kids-essay",
+        "title": "小学作文（童趣·叠词·简单句·低置信叙事）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C19-kids-essay",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C20-speech-opening",
+        "title": "大会致辞（开场套话·短句·极高频 AI 场景）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C20-speech-opening",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C21-fenced-code-doc",
+        "title": "技术文档（Markdown 围栏代码块 · 中文注释）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C21-fenced-code-doc",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C22-markdown-struct",
+        "title": "技术文档（GFM 表格 + 紧凑列表 + 引用块）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C22-markdown-struct",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      },
+      {
+        "id": "C23-frontmatter-indent",
+        "title": "技术文档（YAML frontmatter + 列表续行 + 缩进代码块）",
+        "genre": "auto",
+        "label": "should-change",
+        "source": "scripts/realcase/cases.json#C23-frontmatter-indent",
+        "note": "仓内维护的模拟 AI 味真实案例"
+      }
+    ]
+  }
+}

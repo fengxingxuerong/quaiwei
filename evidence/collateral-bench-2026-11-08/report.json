@@ -1,0 +1,2063 @@
+{
+  "at": "2026-11-08T16:55:43.887Z",
+  "engine": {
+    "intensity": 0.6,
+    "seed": 20260905,
+    "structural": false,
+    "api": false
+  },
+  "labels": {
+    "file": "scripts/collateral-labels.json",
+    "noTouch": 21,
+    "shouldChange": 23
+  },
+  "thresholds": {
+    "editRatioRedline": 30,
+    "editRatioFloor": 10
+  },
+  "noTouchPanel": {
+    "count": 21,
+    "fidelityHardFail": [],
+    "collapseIssues": [
+      "人物-历史-诸葛亮(1)",
+      "人物-现代作家-鲁迅(5)",
+      "人物-科学家-屠呦呦(2)",
+      "历史-文字-甲骨文(4)",
+      "历史-贸易-丝绸之路(2)",
+      "地理-城市-北京市(1)",
+      "地理-山川-黄山(2)",
+      "文学-古典-红楼梦(2)",
+      "生物-细胞-细胞(5)",
+      "科技-工程-集成电路(1)",
+      "科技-物理-量子力学(1)",
+      "科技-通信-5G(1)"
+    ],
+    "danglingConnective": [],
+    "overEditRedline": [
+      "生物-细胞-细胞(editRatio=66)"
+    ],
+    "hurtIds": [
+      "人物-历史-诸葛亮",
+      "人物-现代作家-鲁迅",
+      "人物-科学家-屠呦呦",
+      "历史-文字-甲骨文",
+      "历史-贸易-丝绸之路",
+      "地理-城市-北京市",
+      "地理-山川-黄山",
+      "文学-古典-红楼梦",
+      "生物-细胞-细胞",
+      "科技-工程-集成电路",
+      "科技-物理-量子力学",
+      "科技-通信-5G"
+    ],
+    "hurtRate": 57,
+    "lowRiskShare": 0,
+    "editRatioMean": 15.5,
+    "aiScoreMeanIn": 36.7,
+    "aiScoreMeanOut": 12.9
+  },
+  "shouldChangePanel": {
+    "count": 23,
+    "changedRatio": 17,
+    "unchanged": [
+      "C3-tech-popular",
+      "C4-product-copy",
+      "C5-news-release",
+      "C7-story-dialogue",
+      "C8-social-post",
+      "C9-mixed-links",
+      "C10-tiny-input",
+      "C11-admin-notice",
+      "C12-paper-abstract",
+      "C13-manual-steps",
+      "C14-finance-flash",
+      "C15-policy-qa",
+      "C16-prospectus-risk",
+      "C17-verdict-labor",
+      "C18-tender-spec",
+      "C19-kids-essay",
+      "C20-speech-opening",
+      "C21-fenced-code-doc",
+      "C23-frontmatter-indent"
+    ],
+    "fidelityHardFailAmongChanged": [],
+    "editRatioMean": 5.9
+  },
+  "rows": [
+    {
+      "id": "人物-历史-诸葛亮",
+      "label": "no-touch",
+      "charsIn": 14279,
+      "charsOut": 14295,
+      "editRatio": 8,
+      "aiScoreIn": 35,
+      "aiScoreOut": 12,
+      "registerIn": 88,
+      "registerOut": 82,
+      "formalHitsIn": 73,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「死而後已”」是原文「死而後已”成為无数仁人志士的座右铭」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 25.32,
+          "after": 42.33,
+          "deltaPct": 67.18
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.96,
+          "after": 0.9,
+          "deltaPct": -54.08
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 62,
+          "after": 32,
+          "deltaPct": -48.39
+        }
+      ]
+    },
+    {
+      "id": "人物-现代作家-老舍",
+      "label": "no-touch",
+      "charsIn": 2178,
+      "charsOut": 2178,
+      "editRatio": 17,
+      "aiScoreIn": 9,
+      "aiScoreOut": 0,
+      "registerIn": 61,
+      "registerOut": 61,
+      "formalHitsIn": 3,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.02,
+          "after": 0.04,
+          "deltaPct": 100
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 22.82,
+          "after": 39.7,
+          "deltaPct": 73.97
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.72,
+          "after": 0.62,
+          "deltaPct": -63.95
+        }
+      ]
+    },
+    {
+      "id": "人物-现代作家-鲁迅",
+      "label": "no-touch",
+      "charsIn": 12930,
+      "charsOut": 12916,
+      "editRatio": 9,
+      "aiScoreIn": 39,
+      "aiScoreOut": 24,
+      "registerIn": 83,
+      "registerOut": 81,
+      "formalHitsIn": 63,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「形式灵活的新文体」是原文「形式灵活的新文体——“杂文”」被截断后的残留，谓语已丢失",
+        "「他始终没有研究清楚」是原文「他始终没有研究清楚……正因为这样」被截断后的残留，谓语已丢失",
+        "「即使是发挥得淋漓尽致」是原文「即使是发挥得淋漓尽致——所以他15本杂文给人的总」被截断后的残留，谓语已丢失",
+        "「“我看鲁迅在世还会写杂文」是原文「“我看鲁迅在世还会写杂文……真正的马克思主义者是」被截断后的残留，谓语已丢失",
+        "「”秋石在《追寻历史的真相」是原文「”秋石在《追寻历史的真相——毛泽东与鲁迅》一书中」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "ellipsisPerKChar",
+          "label": "省略号/千字",
+          "before": 1.25,
+          "after": 0.08,
+          "deltaPct": -93.6
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 21.97,
+          "after": 39.46,
+          "deltaPct": 79.61
+        },
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 0.39,
+          "after": 0.08,
+          "deltaPct": -79.49
+        }
+      ]
+    },
+    {
+      "id": "人物-科学家-屠呦呦",
+      "label": "no-touch",
+      "charsIn": 2160,
+      "charsOut": 2162,
+      "editRatio": 12,
+      "aiScoreIn": 31,
+      "aiScoreOut": 12,
+      "registerIn": 65,
+      "registerOut": 61,
+      "formalHitsIn": 4,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「食野之蒿」是原文「食野之蒿……呦呦鹿鸣」被截断后的残留，谓语已丢失",
+        "「食野之芩」是原文「食野之芩……」」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.02,
+          "after": 0.07,
+          "deltaPct": 250
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 18.35,
+          "after": 37.21,
+          "deltaPct": 102.78
+        },
+        {
+          "key": "ultraShortRatio",
+          "label": "超短句占比",
+          "before": 0.02,
+          "after": 0.04,
+          "deltaPct": 100
+        }
+      ]
+    },
+    {
+      "id": "人物-科学家-钱学森",
+      "label": "no-touch",
+      "charsIn": 4276,
+      "charsOut": 4270,
+      "editRatio": 7,
+      "aiScoreIn": 43,
+      "aiScoreOut": 13,
+      "registerIn": 69,
+      "registerOut": 67,
+      "formalHitsIn": 11,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.02,
+          "after": 0.04,
+          "deltaPct": 100
+        },
+        {
+          "key": "ultraShortRatio",
+          "label": "超短句占比",
+          "before": 0.01,
+          "after": 0.02,
+          "deltaPct": 100
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 19.24,
+          "after": 34.79,
+          "deltaPct": 80.82
+        }
+      ]
+    },
+    {
+      "id": "医学-公共卫生-疫苗",
+      "label": "no-touch",
+      "charsIn": 3798,
+      "charsOut": 3794,
+      "editRatio": 19,
+      "aiScoreIn": 20,
+      "aiScoreOut": 7,
+      "registerIn": 100,
+      "registerOut": 88,
+      "formalHitsIn": 22,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 16.47,
+          "after": 32.75,
+          "deltaPct": 98.85
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.12,
+          "after": 0.22,
+          "deltaPct": -80.36
+        },
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 0.54,
+          "after": 0.2,
+          "deltaPct": -62.96
+        }
+      ]
+    },
+    {
+      "id": "历史-文字-甲骨文",
+      "label": "no-touch",
+      "charsIn": 5027,
+      "charsOut": 5027,
+      "editRatio": 12,
+      "aiScoreIn": 31,
+      "aiScoreOut": 0,
+      "registerIn": 94,
+      "registerOut": 88,
+      "formalHitsIn": 29,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「可见孙氏意在以金文和甲骨文」是原文「可见孙氏意在以金文和甲骨文——尤其是包含较多象形」被截断后的残留，谓语已丢失",
+        "「並依此把甲骨文分为五期」是原文「並依此把甲骨文分为五期——第一期」被截断后的残留，谓语已丢失",
+        "「陈梦家在《甲骨断代与坑位」是原文「陈梦家在《甲骨断代与坑位——甲骨断代学丁篇》一文」被截断后的残留，谓语已丢失",
+        "「黃奇逸在《商周研究之批判」是原文「黃奇逸在《商周研究之批判——中國古文字的產生與發」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.03,
+          "after": 0.06,
+          "deltaPct": 100
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 17.94,
+          "after": 34.8,
+          "deltaPct": 93.98
+        },
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 1.01,
+          "after": 0.2,
+          "deltaPct": -80.2
+        }
+      ]
+    },
+    {
+      "id": "历史-朝代-明朝",
+      "label": "no-touch",
+      "charsIn": 27267,
+      "charsOut": 27279,
+      "editRatio": 16,
+      "aiScoreIn": 67,
+      "aiScoreOut": 32,
+      "registerIn": 82,
+      "registerOut": 75,
+      "formalHitsIn": 121,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.03,
+          "after": 0.07,
+          "deltaPct": 133.33
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 25.04,
+          "after": 46.3,
+          "deltaPct": 84.9
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 2.12,
+          "after": 0.74,
+          "deltaPct": -65.09
+        }
+      ]
+    },
+    {
+      "id": "历史-贸易-丝绸之路",
+      "label": "no-touch",
+      "charsIn": 9529,
+      "charsOut": 9503,
+      "editRatio": 12,
+      "aiScoreIn": 57,
+      "aiScoreOut": 25,
+      "registerIn": 88,
+      "registerOut": 84,
+      "formalHitsIn": 52,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「丝绸之路」是原文「丝绸之路并非是一条 “路”」被截断后的残留，谓语已丢失",
+        "「設立了漢朝對西域的直接管轄機構」是原文「設立了漢朝對西域的直接管轄機構——西域都護府」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.02,
+          "after": 0.05,
+          "deltaPct": 150
+        },
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 0.64,
+          "after": 0.11,
+          "deltaPct": -82.81
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 18.98,
+          "after": 34.5,
+          "deltaPct": 81.77
+        }
+      ]
+    },
+    {
+      "id": "地理-城市-北京市",
+      "label": "no-touch",
+      "charsIn": 22364,
+      "charsOut": 22335,
+      "editRatio": 10,
+      "aiScoreIn": 95,
+      "aiScoreOut": 60,
+      "registerIn": 99,
+      "registerOut": 95,
+      "formalHitsIn": 147,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「安徽的四大地方戏班」是原文「安徽的四大地方戏班——三庆班」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.02,
+          "after": 0.06,
+          "deltaPct": 200
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 19.92,
+          "after": 37.93,
+          "deltaPct": 90.41
+        },
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 0.18,
+          "after": 0.05,
+          "deltaPct": -72.22
+        }
+      ]
+    },
+    {
+      "id": "地理-山川-黄山",
+      "label": "no-touch",
+      "charsIn": 2619,
+      "charsOut": 2626,
+      "editRatio": 17,
+      "aiScoreIn": 8,
+      "aiScoreOut": 0,
+      "registerIn": 97,
+      "registerOut": 93,
+      "formalHitsIn": 17,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「瑰丽高峰」是原文「瑰丽高峰——莲花峰」被截断后的残留，谓语已丢失",
+        "「险峻高峰」是原文「险峻高峰——天都峰」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 1.17,
+          "after": 0.39,
+          "deltaPct": -66.67
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 26.06,
+          "after": 39.36,
+          "deltaPct": 51.04
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.24,
+          "after": 0.68,
+          "deltaPct": -45.16
+        }
+      ]
+    },
+    {
+      "id": "地理-水体-长江",
+      "label": "no-touch",
+      "charsIn": 9867,
+      "charsOut": 9862,
+      "editRatio": 8,
+      "aiScoreIn": 51,
+      "aiScoreOut": 18,
+      "registerIn": 90,
+      "registerOut": 87,
+      "formalHitsIn": 53,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.01,
+          "after": 0.06,
+          "deltaPct": 500
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 18.53,
+          "after": 38.88,
+          "deltaPct": 109.82
+        },
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 0.51,
+          "after": 0.1,
+          "deltaPct": -80.39
+        }
+      ]
+    },
+    {
+      "id": "文学-古典-红楼梦",
+      "label": "no-touch",
+      "charsIn": 18829,
+      "charsOut": 18793,
+      "editRatio": 12,
+      "aiScoreIn": 59,
+      "aiScoreOut": 0,
+      "registerIn": 97,
+      "registerOut": 97,
+      "formalHitsIn": 153,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「“专为和《水浒》唱对台戏」是原文「“专为和《水浒》唱对台戏——你写108条绿林好汉」被截断后的残留，谓语已丢失",
+        "「未就而没……」是原文「未就而没……                  」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 0.59,
+          "after": 0.05,
+          "deltaPct": -91.53
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 27.74,
+          "after": 44.99,
+          "deltaPct": 62.18
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.72,
+          "after": 0.74,
+          "deltaPct": -56.98
+        }
+      ]
+    },
+    {
+      "id": "文学-现当代-骆驼祥子",
+      "label": "no-touch",
+      "charsIn": 2488,
+      "charsOut": 2489,
+      "editRatio": 5,
+      "aiScoreIn": 20,
+      "aiScoreOut": 14,
+      "registerIn": 68,
+      "registerOut": 62,
+      "formalHitsIn": 7,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.02,
+          "after": 0.06,
+          "deltaPct": 200
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 23.18,
+          "after": 41.5,
+          "deltaPct": 79.03
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 2.51,
+          "after": 1.05,
+          "deltaPct": -58.17
+        }
+      ]
+    },
+    {
+      "id": "法律-中华人民共和国民法典",
+      "label": "no-touch",
+      "charsIn": 4198,
+      "charsOut": 4177,
+      "editRatio": 8,
+      "aiScoreIn": 32,
+      "aiScoreOut": 9,
+      "registerIn": 94,
+      "registerOut": 94,
+      "formalHitsIn": 44,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.01,
+          "after": 0.04,
+          "deltaPct": 300
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 13.48,
+          "after": 28.36,
+          "deltaPct": 110.39
+        },
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 0.24,
+          "after": 0,
+          "deltaPct": -100
+        }
+      ]
+    },
+    {
+      "id": "生物-生命科学-光合作用",
+      "label": "no-touch",
+      "charsIn": 4592,
+      "charsOut": 4583,
+      "editRatio": 12,
+      "aiScoreIn": 37,
+      "aiScoreOut": 13,
+      "registerIn": 96,
+      "registerOut": 96,
+      "formalHitsIn": 30,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.04,
+          "after": 0.09,
+          "deltaPct": 125
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 19.6,
+          "after": 34.91,
+          "deltaPct": 78.11
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.4,
+          "after": 0.43,
+          "deltaPct": -69.29
+        }
+      ]
+    },
+    {
+      "id": "生物-细胞-细胞",
+      "label": "no-touch",
+      "charsIn": 6954,
+      "charsOut": 6928,
+      "editRatio": 66,
+      "aiScoreIn": 36,
+      "aiScoreOut": 6,
+      "registerIn": 88,
+      "registerOut": 84,
+      "formalHitsIn": 37,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「包围着细胞的是」是原文「包围着细胞的是——通常包括细胞壁及其下层的细胞膜」被截断后的残留，谓语已丢失",
+        "「核仁（nucleolus）」是原文「核仁（nucleolus）——是真核细胞的細胞核」被截断后的残留，谓语已丢失",
+        "「核糖體（ribosomes）」是原文「核糖體（ribosomes）——負責合成蛋白質的」被截断后的残留，谓语已丢失",
+        "「高尔基体」是原文「高尔基体—— 是好幾粒扁平的囊袋相疊而成」被截断后的残留，谓语已丢失",
+        "「液泡（液胞）」是原文「液泡（液胞） ——是另一種囊狀的單層膜胞器」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 19.58,
+          "after": 42.21,
+          "deltaPct": 115.58
+        },
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.03,
+          "after": 0.06,
+          "deltaPct": 100
+        },
+        {
+          "key": "emDashPerKChar",
+          "label": "破折号/千字",
+          "before": 1.61,
+          "after": 0.15,
+          "deltaPct": -90.68
+        }
+      ]
+    },
+    {
+      "id": "科技-工程-集成电路",
+      "label": "no-touch",
+      "charsIn": 3432,
+      "charsOut": 3441,
+      "editRatio": 22,
+      "aiScoreIn": 11,
+      "aiScoreOut": 0,
+      "registerIn": 65,
+      "registerOut": 60,
+      "formalHitsIn": 7,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「这些电路的小尺寸」是原文「这些电路的小尺寸使得与板级集成相比」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 21.68,
+          "after": 40.18,
+          "deltaPct": 85.33
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.46,
+          "after": 0.44,
+          "deltaPct": -69.86
+        },
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 0.76,
+          "after": 0.36,
+          "deltaPct": -52.63
+        }
+      ]
+    },
+    {
+      "id": "科技-物理-量子力学",
+      "label": "no-touch",
+      "charsIn": 11913,
+      "charsOut": 11921,
+      "editRatio": 25,
+      "aiScoreIn": 54,
+      "aiScoreOut": 24,
+      "registerIn": 96,
+      "registerOut": 85,
+      "formalHitsIn": 72,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「则这光子可以给予足够能量来」是原文「则这光子可以给予足够能量来使得金属表面的一个电子」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.02,
+          "after": 0.07,
+          "deltaPct": 250
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 20.43,
+          "after": 40.34,
+          "deltaPct": 97.45
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.82,
+          "after": 0.49,
+          "deltaPct": -73.08
+        }
+      ]
+    },
+    {
+      "id": "科技-通信-5G",
+      "label": "no-touch",
+      "charsIn": 3999,
+      "charsOut": 3979,
+      "editRatio": 9,
+      "aiScoreIn": 28,
+      "aiScoreOut": 1,
+      "registerIn": 70,
+      "registerOut": 59,
+      "formalHitsIn": 10,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [
+        "「更多的蜂窝」是原文「更多的蜂窝使得5G网络基础设施比以前的蜂窝网络每」被截断后的残留，谓语已丢失"
+      ],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 16.58,
+          "after": 33.64,
+          "deltaPct": 102.9
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.39,
+          "after": 0.3,
+          "deltaPct": -78.42
+        },
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 0.61,
+          "after": 0.24,
+          "deltaPct": -60.66
+        }
+      ]
+    },
+    {
+      "id": "艺术-书法-书法",
+      "label": "no-touch",
+      "charsIn": 2540,
+      "charsOut": 2548,
+      "editRatio": 19,
+      "aiScoreIn": 7,
+      "aiScoreOut": 0,
+      "registerIn": 76,
+      "registerOut": 70,
+      "formalHitsIn": 11,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.12,
+          "after": 0.29,
+          "deltaPct": -74.11
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 24.5,
+          "after": 42.2,
+          "deltaPct": 72.24
+        },
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 0.61,
+          "after": 0.25,
+          "deltaPct": -59.02
+        }
+      ]
+    },
+    {
+      "id": "C1-work-summary",
+      "label": "should-change",
+      "charsIn": 274,
+      "charsOut": 265,
+      "editRatio": 11,
+      "aiScoreIn": 54,
+      "aiScoreOut": 25,
+      "registerIn": 100,
+      "registerOut": 100,
+      "formalHitsIn": 6,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.11,
+          "after": 0.41,
+          "deltaPct": 272.73
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 2.6,
+          "after": 1.43,
+          "deltaPct": -45
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 18.25,
+          "after": 26.42,
+          "deltaPct": 44.77
+        }
+      ]
+    },
+    {
+      "id": "C2-opinion-wechat",
+      "label": "should-change",
+      "charsIn": 213,
+      "charsOut": 200,
+      "editRatio": 30,
+      "aiScoreIn": 24,
+      "aiScoreOut": 12,
+      "registerIn": 100,
+      "registerOut": 50,
+      "formalHitsIn": 4,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.5,
+          "after": 1.13,
+          "deltaPct": -24.67
+        },
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 1,
+          "after": 0.88,
+          "deltaPct": -12
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 34.6,
+          "after": 31.1,
+          "deltaPct": -10.12
+        }
+      ]
+    },
+    {
+      "id": "C3-tech-popular",
+      "label": "should-change",
+      "charsIn": 282,
+      "charsOut": 278,
+      "editRatio": 7,
+      "aiScoreIn": 25,
+      "aiScoreOut": 13,
+      "registerIn": 100,
+      "registerOut": 90,
+      "formalHitsIn": 2,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.6,
+          "after": 1.17,
+          "deltaPct": -26.88
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 79.2,
+          "after": 59.5,
+          "deltaPct": -24.87
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.39,
+          "after": 0.3,
+          "deltaPct": -23.08
+        }
+      ]
+    },
+    {
+      "id": "C4-product-copy",
+      "label": "should-change",
+      "charsIn": 267,
+      "charsOut": 260,
+      "editRatio": 7,
+      "aiScoreIn": 18,
+      "aiScoreOut": 8,
+      "registerIn": 89,
+      "registerOut": 91,
+      "formalHitsIn": 1,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.16,
+          "after": 0.38,
+          "deltaPct": 137.5
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 25.42,
+          "after": 43.67,
+          "deltaPct": 71.79
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.83,
+          "after": 0.6,
+          "deltaPct": -67.21
+        }
+      ]
+    },
+    {
+      "id": "C5-news-release",
+      "label": "should-change",
+      "charsIn": 198,
+      "charsOut": 198,
+      "editRatio": 0,
+      "aiScoreIn": 17,
+      "aiScoreOut": 17,
+      "registerIn": 50,
+      "registerOut": 50,
+      "formalHitsIn": 0,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 25.77,
+          "after": 25.77,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.mean",
+          "label": "句长均值",
+          "before": 38.6,
+          "after": 38.6,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.27,
+          "after": 0.27,
+          "deltaPct": 0
+        }
+      ]
+    },
+    {
+      "id": "C6-academic-abstract",
+      "label": "should-change",
+      "charsIn": 226,
+      "charsOut": 222,
+      "editRatio": 13,
+      "aiScoreIn": 36,
+      "aiScoreOut": 7,
+      "registerIn": 100,
+      "registerOut": 100,
+      "formalHitsIn": 5,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.6,
+          "after": 1,
+          "deltaPct": -37.5
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 22.73,
+          "after": 27.78,
+          "deltaPct": 22.22
+        },
+        {
+          "key": "sentencesPerParagraph.mean",
+          "label": "每段句数",
+          "before": 5,
+          "after": 6,
+          "deltaPct": 20
+        }
+      ]
+    },
+    {
+      "id": "C7-story-dialogue",
+      "label": "should-change",
+      "charsIn": 208,
+      "charsOut": 208,
+      "editRatio": 3,
+      "aiScoreIn": 8,
+      "aiScoreOut": 0,
+      "registerIn": 12,
+      "registerOut": 12,
+      "formalHitsIn": 0,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 0.79,
+          "after": 0.47,
+          "deltaPct": -40.51
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 25.7,
+          "after": 17.8,
+          "deltaPct": -30.74
+        },
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 0.5,
+          "after": 0.35,
+          "deltaPct": -30
+        }
+      ]
+    },
+    {
+      "id": "C8-social-post",
+      "label": "should-change",
+      "charsIn": 118,
+      "charsOut": 118,
+      "editRatio": 5,
+      "aiScoreIn": 12,
+      "aiScoreOut": 12,
+      "registerIn": 0,
+      "registerOut": 0,
+      "formalHitsIn": 0,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "ultraShortRatio",
+          "label": "超短句占比",
+          "before": 0.17,
+          "after": 0,
+          "deltaPct": -100
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.68,
+          "after": 0.36,
+          "deltaPct": -47.06
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 32,
+          "after": 20.2,
+          "deltaPct": -36.87
+        }
+      ]
+    },
+    {
+      "id": "C9-mixed-links",
+      "label": "should-change",
+      "charsIn": 334,
+      "charsOut": 331,
+      "editRatio": 3,
+      "aiScoreIn": 25,
+      "aiScoreOut": 10,
+      "registerIn": 100,
+      "registerOut": 50,
+      "formalHitsIn": 1,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 0.71,
+          "after": 0.1,
+          "deltaPct": -85.92
+        },
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 0.43,
+          "after": 0.1,
+          "deltaPct": -76.74
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 17.01,
+          "after": 27.49,
+          "deltaPct": 61.61
+        }
+      ]
+    },
+    {
+      "id": "C10-tiny-input",
+      "label": "should-change",
+      "charsIn": 53,
+      "charsOut": 51,
+      "editRatio": 4,
+      "aiScoreIn": 6,
+      "aiScoreOut": 0,
+      "registerIn": 100,
+      "registerOut": 50,
+      "formalHitsIn": 2,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.2,
+          "after": 0.18,
+          "deltaPct": -10
+        },
+        {
+          "key": "sentLen.mean",
+          "label": "句长均值",
+          "before": 16.67,
+          "after": 16,
+          "deltaPct": -4.02
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 56.6,
+          "after": 58.82,
+          "deltaPct": 3.92
+        }
+      ]
+    },
+    {
+      "id": "C11-admin-notice",
+      "label": "should-change",
+      "charsIn": 292,
+      "charsOut": 292,
+      "editRatio": 4,
+      "aiScoreIn": 18,
+      "aiScoreOut": 8,
+      "registerIn": 100,
+      "registerOut": 100,
+      "formalHitsIn": 6,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 21.05,
+          "after": 42.11,
+          "deltaPct": 100.05
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 0.86,
+          "after": 0.08,
+          "deltaPct": -90.7
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.24,
+          "after": 0.45,
+          "deltaPct": 87.5
+        }
+      ]
+    },
+    {
+      "id": "C12-paper-abstract",
+      "label": "should-change",
+      "charsIn": 244,
+      "charsOut": 244,
+      "editRatio": 8,
+      "aiScoreIn": 26,
+      "aiScoreOut": 6,
+      "registerIn": 100,
+      "registerOut": 100,
+      "formalHitsIn": 3,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commaSentenceRatio",
+          "label": "含逗号句占比",
+          "before": 1,
+          "after": 0.43,
+          "deltaPct": -57
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.6,
+          "after": 0.88,
+          "deltaPct": 46.67
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.6,
+          "after": 0.86,
+          "deltaPct": -46.25
+        }
+      ]
+    },
+    {
+      "id": "C13-manual-steps",
+      "label": "should-change",
+      "charsIn": 224,
+      "charsOut": 224,
+      "editRatio": 3,
+      "aiScoreIn": 20,
+      "aiScoreOut": 1,
+      "registerIn": 87,
+      "registerOut": 87,
+      "formalHitsIn": 1,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.2,
+          "after": 0.44,
+          "deltaPct": 120
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 23.15,
+          "after": 37.04,
+          "deltaPct": 60
+        },
+        {
+          "key": "sentencesPerParagraph.mean",
+          "label": "每段句数",
+          "before": 5,
+          "after": 8,
+          "deltaPct": 60
+        }
+      ]
+    },
+    {
+      "id": "C14-finance-flash",
+      "label": "should-change",
+      "charsIn": 253,
+      "charsOut": 251,
+      "editRatio": 5,
+      "aiScoreIn": 18,
+      "aiScoreOut": 9,
+      "registerIn": 100,
+      "registerOut": 89,
+      "formalHitsIn": 3,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 21.37,
+          "after": 30.17,
+          "deltaPct": 41.18
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.71,
+          "after": 1.11,
+          "deltaPct": -35.09
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 51.4,
+          "after": 36.6,
+          "deltaPct": -28.79
+        }
+      ]
+    },
+    {
+      "id": "C15-policy-qa",
+      "label": "should-change",
+      "charsIn": 216,
+      "charsOut": 216,
+      "editRatio": 0,
+      "aiScoreIn": 18,
+      "aiScoreOut": 18,
+      "registerIn": 50,
+      "registerOut": 50,
+      "formalHitsIn": 0,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 13.89,
+          "after": 13.89,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.mean",
+          "label": "句长均值",
+          "before": 53,
+          "after": 53,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.47,
+          "after": 0.47,
+          "deltaPct": 0
+        }
+      ]
+    },
+    {
+      "id": "C16-prospectus-risk",
+      "label": "should-change",
+      "charsIn": 209,
+      "charsOut": 210,
+      "editRatio": 8,
+      "aiScoreIn": 36,
+      "aiScoreOut": 9,
+      "registerIn": 100,
+      "registerOut": 50,
+      "formalHitsIn": 2,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.21,
+          "after": 0.37,
+          "deltaPct": 76.19
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 20.1,
+          "after": 30,
+          "deltaPct": 49.25
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 2,
+          "after": 1.14,
+          "deltaPct": -43
+        }
+      ]
+    },
+    {
+      "id": "C17-verdict-labor",
+      "label": "should-change",
+      "charsIn": 291,
+      "charsOut": 291,
+      "editRatio": 1,
+      "aiScoreIn": 10,
+      "aiScoreOut": 6,
+      "registerIn": 50,
+      "registerOut": 50,
+      "formalHitsIn": 0,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.14,
+          "after": 0.25,
+          "deltaPct": 78.57
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.6,
+          "after": 0.72,
+          "deltaPct": 20
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 24.05,
+          "after": 27.49,
+          "deltaPct": 14.3
+        }
+      ]
+    },
+    {
+      "id": "C18-tender-spec",
+      "label": "should-change",
+      "charsIn": 273,
+      "charsOut": 273,
+      "editRatio": 0,
+      "aiScoreIn": 8,
+      "aiScoreOut": 8,
+      "registerIn": 50,
+      "registerOut": 50,
+      "formalHitsIn": 0,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 27.34,
+          "after": 27.34,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.mean",
+          "label": "句长均值",
+          "before": 38,
+          "after": 38,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.53,
+          "after": 0.53,
+          "deltaPct": 0
+        }
+      ]
+    },
+    {
+      "id": "C19-kids-essay",
+      "label": "should-change",
+      "charsIn": 146,
+      "charsOut": 146,
+      "editRatio": 0,
+      "aiScoreIn": 8,
+      "aiScoreOut": 8,
+      "registerIn": 50,
+      "registerOut": 50,
+      "formalHitsIn": 0,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 41.1,
+          "after": 41.1,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.mean",
+          "label": "句长均值",
+          "before": 23.33,
+          "after": 23.33,
+          "deltaPct": 0
+        },
+        {
+          "key": "sentLen.cv",
+          "label": "句长 CV",
+          "before": 0.39,
+          "after": 0.39,
+          "deltaPct": 0
+        }
+      ]
+    },
+    {
+      "id": "C20-speech-opening",
+      "label": "should-change",
+      "charsIn": 233,
+      "charsOut": 228,
+      "editRatio": 5,
+      "aiScoreIn": 23,
+      "aiScoreOut": 10,
+      "registerIn": 81,
+      "registerOut": 81,
+      "formalHitsIn": 1,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.71,
+          "after": 1.57,
+          "deltaPct": -8.19
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 50,
+          "after": 47.6,
+          "deltaPct": -4.8
+        },
+        {
+          "key": "sentLen.mean",
+          "label": "句长均值",
+          "before": 32.29,
+          "after": 31.57,
+          "deltaPct": -2.23
+        }
+      ]
+    },
+    {
+      "id": "C21-fenced-code-doc",
+      "label": "should-change",
+      "charsIn": 453,
+      "charsOut": 453,
+      "editRatio": 2,
+      "aiScoreIn": 26,
+      "aiScoreOut": 23,
+      "registerIn": 100,
+      "registerOut": 100,
+      "formalHitsIn": 4,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 8.11,
+          "after": 10.81,
+          "deltaPct": 33.29
+        },
+        {
+          "key": "commasPerSentence",
+          "label": "逗号/句",
+          "before": 1.44,
+          "after": 1.2,
+          "deltaPct": -16.67
+        },
+        {
+          "key": "sentencesPerParagraph.mean",
+          "label": "每段句数",
+          "before": 1.4,
+          "after": 1.6,
+          "deltaPct": 14.29
+        }
+      ]
+    },
+    {
+      "id": "C22-markdown-struct",
+      "label": "should-change",
+      "charsIn": 248,
+      "charsOut": 243,
+      "editRatio": 10,
+      "aiScoreIn": 26,
+      "aiScoreOut": 20,
+      "registerIn": 100,
+      "registerOut": 91,
+      "formalHitsIn": 5,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "shortRatio",
+          "label": "短句占比",
+          "before": 0.09,
+          "after": 0.17,
+          "deltaPct": 88.89
+        },
+        {
+          "key": "sentencesPerParagraph.mean",
+          "label": "每段句数",
+          "before": 1,
+          "after": 1.33,
+          "deltaPct": 33
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 23.47,
+          "after": 28.85,
+          "deltaPct": 22.92
+        }
+      ]
+    },
+    {
+      "id": "C23-frontmatter-indent",
+      "label": "should-change",
+      "charsIn": 252,
+      "charsOut": 249,
+      "editRatio": 7,
+      "aiScoreIn": 12,
+      "aiScoreOut": 6,
+      "registerIn": 100,
+      "registerOut": 100,
+      "formalHitsIn": 3,
+      "fidelity": {
+        "missingNumbers": [],
+        "changedUnits": [],
+        "urlOk": true,
+        "fenceOk": true
+      },
+      "fidelityHardFail": false,
+      "collapse": [],
+      "dangling": [],
+      "topStructureDeltas": [
+        {
+          "key": "sentencesPerParagraph.mean",
+          "label": "每段句数",
+          "before": 1,
+          "after": 1.33,
+          "deltaPct": 33
+        },
+        {
+          "key": "sentLen.p90",
+          "label": "句长 P90",
+          "before": 34,
+          "after": 23,
+          "deltaPct": -32.35
+        },
+        {
+          "key": "periodPerKChar",
+          "label": "句号密度/千字",
+          "before": 18.78,
+          "after": 23.81,
+          "deltaPct": 26.78
+        }
+      ]
+    }
+  ]
+}
