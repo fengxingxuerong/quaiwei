@@ -16,6 +16,10 @@
  * 误伤率（no-touch 面板）：保真硬失败 ∪ collapseIssues ∪ 悬空连接词 ∪ 改动率 ≥ 改动率红线
  * 的稿子占比。改动率红线默认 30（仅报告口径，**不写死门禁**——阈值该多少要等人工复核）。
  *
+ * 2026-11-09：新增 skipPolicy 面板与 lowRiskShareNormalized。用现行长度归一判据
+ * （src/engine/low-yield.ts）模拟「开启 --skip-low-risk 后命中篇逐字原样出稿」的残余误伤率；
+ * lowRiskShare 仍保留 v0.9.84 旧判据作对照。**只模拟、不重跑引擎、不进门禁**。
+ *
  * 语料 artifacts/human-corpus/*.txt 被 .gitignore 忽略，本脚本只在本机跑、报告入库，
  * 与 human-corpus-fidelity.ts 同一规矩。运行：npx tsx scripts/collateral-bench.ts
  */
@@ -26,6 +30,7 @@ import { humanize } from "../src/engine/humanize";
 import { aiScore, collapseIssues } from "../src/engine/humanize-metrics";
 import { changedUnits, missingNumericFacts } from "../src/engine/number-fidelity";
 import { registerIndex } from "../src/engine/register-metrics";
+import { isLowYieldRisk, isLegacyLowYieldRisk, LOW_YIELD_FORMAL_PER_1K } from "../src/engine/low-yield";
 import { compareMetrics, structureMetrics } from "../src/engine/structure-metrics";
 import { diffStats } from "../src/engine/diff";
 
@@ -61,6 +66,10 @@ interface PieceRow {
   registerIn: number;
   registerOut: number;
   formalHitsIn: number;
+  /** 现行 --skip-low-risk 判据（长度归一）是否命中；命中=开启开关时原样出稿 */
+  lowYieldHit: boolean;
+  /** v0.9.84 旧判据，仅作对照 */
+  legacyLowYieldHit: boolean;
   fidelity: { missingNumbers: string[]; changedUnits: string[]; urlOk: boolean; fenceOk: boolean };
   fidelityHardFail: boolean;
   collapse: string[];
@@ -89,6 +98,9 @@ function loadText(source: string): string {
 
 function runPiece(lb: Label): PieceRow {
   const src = loadText(lb.source);
+  const scoreIn = aiScore(src).score;
+  const lowYieldHit = isLowYieldRisk(src);
+  const legacyLowYieldHit = isLegacyLowYieldRisk(src, scoreIn);
   const out = humanize(src, { intensity: 0.6, seed: 20260905 });
   const missingNumbers = missingNumericFacts(src, out);
   const changedUnitsL = changedUnits(src, out);
@@ -105,11 +117,13 @@ function runPiece(lb: Label): PieceRow {
     charsIn: src.length,
     charsOut: out.length,
     editRatio: diffStats(src, out).ratio,
-    aiScoreIn: aiScore(src).score,
+    aiScoreIn: scoreIn,
     aiScoreOut: aiScore(out).score,
     registerIn: registerIndex(src).index,
     registerOut: registerIndex(out).index,
     formalHitsIn: registerIndex(src).formalHits,
+    lowYieldHit,
+    legacyLowYieldHit,
     fidelity: { missingNumbers, changedUnits: changedUnitsL, urlOk, fenceOk },
     fidelityHardFail:
       missingNumbers.length > 0 || changedUnitsL.length > 0 || !urlOk || !fenceOk,
@@ -146,7 +160,13 @@ function main(): void {
   const danglingHits = noTouch.filter((r) => r.dangling.length > 0);
   const overRedline = noTouch.filter((r) => r.editRatio >= EDIT_RATIO_REDLINE);
   const hurt = new Set([...hard, ...collapseHits, ...danglingHits, ...overRedline].map((r) => r.id));
-  const lowRisk = noTouch.filter((r) => r.aiScoreIn <= 27 && r.formalHitsIn <= 2);
+  const lowRisk = noTouch.filter((r) => r.legacyLowYieldHit);
+  const lowRiskNormalized = noTouch.filter((r) => r.lowYieldHit);
+  // 只模拟「开启 --skip-low-risk」：命中篇逐字原样出稿 ⇒ 该篇的误伤归零，不重跑引擎、不进门禁。
+  const skippedIds = new Set(lowRiskNormalized.map((r) => r.id));
+  const residualHurt = [...hurt].filter((id) => !skippedIds.has(id));
+  const skippedShouldChange = shouldChange.filter((r) => r.lowYieldHit);
+  const lostChanged = skippedShouldChange.filter((r) => r.editRatio >= EDIT_RATIO_FLOOR);
   const changed = shouldChange.filter((r) => r.editRatio >= EDIT_RATIO_FLOOR);
   const changedFidelity = changed.filter((r) => r.fidelityHardFail);
 
@@ -164,6 +184,7 @@ function main(): void {
       hurtIds: [...hurt].sort(),
       hurtRate: Math.round((hurt.size / noTouch.length) * 100),
       lowRiskShare: Math.round((lowRisk.length / noTouch.length) * 100),
+      lowRiskShareNormalized: Math.round((lowRiskNormalized.length / noTouch.length) * 100),
       editRatioMean: Math.round((noTouch.reduce((a, r) => a + r.editRatio, 0) / noTouch.length) * 10) / 10,
       aiScoreMeanIn: Math.round((noTouch.reduce((a, r) => a + r.aiScoreIn, 0) / noTouch.length) * 10) / 10,
       aiScoreMeanOut: Math.round((noTouch.reduce((a, r) => a + r.aiScoreOut, 0) / noTouch.length) * 10) / 10,
@@ -174,6 +195,17 @@ function main(): void {
       unchanged: shouldChange.filter((r) => r.editRatio < EDIT_RATIO_FLOOR).map((r) => r.id),
       fidelityHardFailAmongChanged: changedFidelity.map((r) => r.id),
       editRatioMean: Math.round((shouldChange.reduce((a, r) => a + r.editRatio, 0) / shouldChange.length) * 10) / 10,
+    },
+    skipPolicy: {
+      rule: `formalPer1k<=${LOW_YIELD_FORMAL_PER_1K}/千字（长度归一，不看 aiScore）`,
+      legacyRule: "aiScore<=27 && formalHits<=2（v0.9.84，仅对照）",
+      noTouchHit: lowRiskNormalized.length,
+      noTouchLegacyHit: lowRisk.length,
+      shouldChangeHit: skippedShouldChange.length,
+      simulatedResidualHurtIds: residualHurt.sort(),
+      simulatedResidualHurtRate: Math.round((residualHurt.length / noTouch.length) * 100),
+      lostChangedIds: lostChanged.map((r) => r.id),
+      note: "只模拟开启 --skip-low-risk 时命中篇逐字原样出稿；引擎未改动、未重跑，不进门禁。阈值属探索性，见 evidence/collateral-attribution-2026-11-09/。",
     },
     rows,
   };
@@ -198,6 +230,11 @@ function main(): void {
     `should-change（该改）${shouldChange.length} 篇：达改率 ${report.shouldChangePanel.changedRatio}%` +
       `（改动率 ≥${EDIT_RATIO_FLOOR}%），其中保真硬失败 ${changedFidelity.length} 篇；` +
       `未动清单：${report.shouldChangePanel.unchanged.join("、") || "无"}`,
+  );
+  console.log(
+    `低收益跳过判据（只模拟）：no-touch 命中 ${report.noTouchPanel.lowRiskShareNormalized}%` +
+      `（旧判据 ${report.noTouchPanel.lowRiskShare}%）｜should-change 误跳 ${report.skipPolicy.shouldChangeHit} 篇｜` +
+      `模拟残余误伤率 ${report.noTouchPanel.hurtRate}% → ${report.skipPolicy.simulatedResidualHurtRate}%`,
   );
   console.log(`报告：${reportPath}`);
 }

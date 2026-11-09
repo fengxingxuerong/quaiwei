@@ -13,6 +13,7 @@ import { runAsync } from "./run-async";
 import { VOCAB } from "../src/engine/humanize-vocab";
 import { FORMULAIC_EXTRA } from "../src/engine/humanize-vocab-extra";
 import { GUARD_AFTER, VERB_PHRASE_AFTER } from "../src/engine/humanize-guard";
+import { LOW_YIELD_FORMAL_PER_1K } from "../src/engine/low-yield";
 /* ---------------- 词表卫生（check-vocab-hygiene.ts 的核心规则固化） ---------------- */
 
 describe("词表卫生（check-vocab-hygiene 规则固化）", () => {
@@ -236,7 +237,12 @@ function loadCliFns(): {
   const m = /(?:async\s+)?function main/.exec(src);
   const end = m ? m.index : src.length;
   const body = src.slice(start, end).replace(/^import .*$/gm, "");
-  const js = transformSync(body, { loader: "ts", format: "cjs" }).code;
+  // 切片里的 import 被剥掉了，但 USAGE 自 v0.9.86 起用 ${LOW_YIELD_FORMAL_PER_1K} 插值
+  // ⇒ 沙箱里会变成未定义标识符。这里注入真值（不是硬编码 8），改阈值时测试自动跟上。
+  const js = transformSync(`const LOW_YIELD_FORMAL_PER_1K = ${LOW_YIELD_FORMAL_PER_1K};\n${body}`, {
+    loader: "ts",
+    format: "cjs",
+  }).code;
   const sandbox: {
     fs: typeof fs;
     path: typeof path;

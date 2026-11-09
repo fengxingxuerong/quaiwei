@@ -60,6 +60,7 @@ import path from "path";
 import { humanize, adviceFor } from "../src/engine/humanize";
 import { aiScore } from "../src/engine/humanize-metrics.ts";
 import { registerIndex, type RegisterReport } from "../src/engine/register-metrics.ts";
+import { isLowYieldRisk, LOW_YIELD_FORMAL_PER_1K } from "../src/engine/low-yield.ts";
 import { detectAI } from "../src/engine/detector";
 import { explainChanges, formatExplain, type ExplainItem } from "../src/engine/explain";
 import { formatReview, reviewText, type ReviewReport } from "../src/engine/review";
@@ -170,7 +171,7 @@ interface Args {
   strict: boolean;
   /** v0.9.82：受限句序重排（默认关）。产出是原句排列，"不新增事实"构造上成立 */
   structural: boolean;
-  /** v0.9.84：显式跳过人写带输入（默认关，照常改写）。aiScore 不是可靠门槛，故 opt-in */
+  /** 显式跳过低收益风险稿（默认关，照常改写）。判据见 src/engine/low-yield.ts；默认关=opt-in */
   skipLowRisk: boolean;
   persona: string;
   report: string;
@@ -282,9 +283,14 @@ const USAGE =
   "结构、断言词、残留套话）。退出码 0 = READY，2 = NOT READY（有阻断项），1 = 没法跑。" +
   "默认按 academic 文风跑，显式给 --style 则以你给的为准。" +
   "\n  --skip-low-risk 低收益风险稿**原样出稿、不改写**（默认关，照常改写）。" +
-  "判据 = aiScore≤27 且书面套话命中≤2：这类稿删套话规则没有作用对象，改写主要动断句/用词。" +
-  "双网关 23 篇实测：单用 aiScore 命中 20 篇、误伤 13 篇；组合判据命中 13 篇、误伤 6 篇，" +
-  "且救回 7 篇改善最明显的稿。仍不足以默认拦截，故只作用于本开关；" +
+  `判据 = 书面标记密度 formalPer1k≤${LOW_YIELD_FORMAL_PER_1K}/千字（长度归一，不看 aiScore）：` +
+  "书面套话稀薄时删套话规则没有作用对象，改写主要只能动断句和用词。" +
+  "44 篇误伤基准台归因：旧判据 aiScore≤27 && formalHits≤2 在真人长文上 0 命中" +
+  "（formalHits 是长度函数，字数相关系数 0.958）；新判据命中 15/21，" +
+  "开启后模拟残余误伤率 57%→14%，该改面板达改率不变。" +
+  "代价：23 篇该改稿里仍误跳 10 篇，双网关配对显示这些稿改写多半更像人 ⇒ 开关继续默认关。" +
+  "交叉复核 evidence/collateral-cross-2026-11-09/：15 篇短真人稿密度中位 4.6（长真人 6.4）、" +
+  "同长度区间 AUC 0.683、长度分层 5.1~6.1 稳定 ⇒ 判据不随长度漂移；但体裁混淆未分离、长 AI 稿未实测，阈值仍属探索性。" +
   "--report 记 lowYieldRisk / skippedLowRisk；引擎层（Web/MCP/API）行为不变。" +
   "\n  --against <文件>：配合 --academic-check 用。拿这份**外部改写稿**去比原文，" +
   "引擎不参与改写——审的是 LLM 深度模式产出、别人改的版本。这条路最容易真的丢数字/丢引用，" +
@@ -694,7 +700,7 @@ interface FileReport {
   error?: string;
   /** v0.9.32：产物落盘路径（并发/嵌套目录场景里 basename 不足以定位） */
   outPath?: string;
-  /** v0.9.84：低收益风险（aiScore≤27 且书面套话命中≤2），与开关是否开启无关 */
+  /** 低收益风险（书面标记密度 formalPer1k≤8/千字，长度归一），与开关是否开启无关 */
   lowYieldRisk?: boolean;
   /** v0.9.84：仅 --skip-low-risk 生效时置位：低收益稿原样出稿（未改写） */
   skippedLowRisk?: boolean;
@@ -789,9 +795,9 @@ async function runStdinMode(args: Args): Promise<void> {
 
   const t0 = Date.now();
   const before = detectAI(raw).probability;
-  // v0.9.84：与批量路径同口径——低收益风险 + --skip-low-risk 时原样输出；默认照常改写并给警告。
+  // 低收益风险 + --skip-low-risk 时原样输出；默认照常改写并给警告。判据与批量路径共用同一入口。
   const stdinAdvice = adviceFor(raw, aiScore(raw).score);
-  const stdinLowYield = stdinAdvice.code !== "ok" && registerIndex(raw).formalHits <= 2;
+  const stdinLowYield = isLowYieldRisk(raw);
   const stdinSkip = stdinLowYield && args.skipLowRisk;
   const out0 = stdinSkip
     ? raw
@@ -817,10 +823,12 @@ async function runStdinMode(args: Args): Promise<void> {
   );
   if (stdinSkip) {
     console.error(`⏭ 低收益风险：按 --skip-low-risk 原样输出，未改写`);
-  } else if (stdinAdvice.code !== "ok") {
-    console.error(`ⓘ ${stdinAdvice.message}`);
+  } else {
+    if (stdinAdvice.code !== "ok") console.error(`ⓘ ${stdinAdvice.message}`);
     if (stdinLowYield)
-      console.error(`ⓘ 低收益风险：书面套话命中少，规则引擎主要只能动断句和用词，建议先与原文对比再决定要不要用`);
+      console.error(
+        `ⓘ 低收益风险：书面标记密度≤${LOW_YIELD_FORMAL_PER_1K}/千字，规则引擎主要只能动断句和用词，建议先与原文对比再决定要不要用`,
+      );
   }
   if (args.explain) {
     const items = explainChanges(raw, out);
@@ -1233,22 +1241,19 @@ async function main() {
       // v0.9.85：--structural 时先记 false，由 onStructuralApplied 回调置 true。
       // 默认 false 也覆盖「守卫全过但没有可换对」与「--api 深度模式不接结构层」两种情形。
       if (args.structural) rep.structuralApplied = false;
-      // v0.9.84：人写带**可选**原样出稿（--skip-low-risk，默认关）。
+      // 低收益风险**可选**原样出稿（--skip-low-risk，默认关）。
       // 判定只放 CLI 入口层——引擎层 adviceFor 仍「只提示不改行为」，
       // regression-12samples 的 H1/H2 基线、Web/MCP/API 消费者行为都不受影响。
-      // 为什么不默认开：aiScore 与独立评委分只弱相关（r=0.353），典型 AI 腔短稿也会落在人写带，
-      // 一刀切会误伤；实测 20 篇低分稿里 13 篇改写反而更好。
+      // 判据（src/engine/low-yield.ts）：书面标记密度 formalPer1k≤8/千字，长度归一、不看 aiScore。
+      // 为什么换掉 v0.9.84 的 aiScore≤27 && formalHits≤2：
+      //   formalHits 是原始次数，字数相关系数 0.958 ⇒ 长文构造性不可能 ≤2；
+      //   P1-1 首跑在 21 篇真人长文上 0 命中，反在 23 篇该改短稿上命中 13 篇。
+      // 44 篇基准台模拟：新判据命中 15/21、残余误伤率 57%→14%、该改达改率不变；
+      // 仍误跳 10 篇该改稿（双网关配对显示改写多半更像人）⇒ 继续 opt-in。
+      // ⚠️ 阈值属探索性：两面板长度区间完全不重叠，需补长 AI 稿 / 短真人稿做交叉验证。
       // 开启后仍落盘同名文件（内容=原文），不静默不产出，批量文件数与旧版一致。
       const advice = adviceFor(raw, aiScore(raw).score);
-      // v0.9.84：--skip-low-risk 的判据从「只看 aiScore≤27」升级为组合信号。
-      // 机制：书面套话命中（formalHits）少 ⇒ 删套话规则没有作用对象，改写只剩动断句/用词，
-      // 正是 adviceFor 注释里「动了作者原本的断句」那类稿。
-      // 双网关 23 篇实测：aiScore≤27 命中 20 篇、精确率 0.35 / F1 0.52；
-      // 加上 formalHits≤2 后命中 13 篇、精确率 0.54 / F1 0.70，留一法 23/23 优于旧判据；
-      // 救回的 7 篇里含改善最明显的 C23(+47.5) / C14(+21) / C12(+19)。
-      // 仍不足以默认拦截（13 篇里 6 篇误伤），故只作用于 opt-in 开关。
-      // ⚠️ 阈值来自同一批 23 篇、正例仅 7 个，属探索性，未做独立验证集，别当标定用。
-      const lowYieldRisk = advice.code !== "ok" && registerIndex(raw).formalHits <= 2;
+      const lowYieldRisk = isLowYieldRisk(raw);
       rep.lowYieldRisk = lowYieldRisk;
       const didSkip = lowYieldRisk && args.skipLowRisk;
       let out: string;
@@ -1335,12 +1340,14 @@ async function main() {
           if (first.error) rep.detectorError = first.error;
         }
       }
-      // v0.9.84：默认路径照常改写、但把「其实不用去味」的警告说出来（文案依据换成独立评委实测）；
-      // 低收益风险再补一条机制说明，告诉用户为什么这篇可能白改。
-      if (advice.code !== "ok" && !didSkip) {
-        console.log(`   ⓘ ${advice.message}`);
+      // 默认路径照常改写、但把「其实不用去味」的警告说出来（文案依据换成独立评委实测）；
+      // 低收益风险另补一条机制说明（与 advice 解耦：新判据不看 aiScore）。
+      if (!didSkip) {
+        if (advice.code !== "ok") console.log(`   ⓘ ${advice.message}`);
         if (lowYieldRisk)
-          console.log(`   ⓘ 低收益风险：书面套话命中少，规则引擎主要只能动断句和用词，建议先与原文对比再决定要不要用`);
+          console.log(
+            `   ⓘ 低收益风险：书面标记密度≤${LOW_YIELD_FORMAL_PER_1K}/千字，规则引擎主要只能动断句和用词，建议先与原文对比再决定要不要用`,
+          );
       }
       if (args.explain) {
         const items = explainChanges(raw, out);

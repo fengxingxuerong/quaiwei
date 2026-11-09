@@ -8,7 +8,7 @@ description_zh: 去 AI 味（简体中文）——本地离线引擎或可选 LL
 description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
 metadata:
-  version: 0.9.85
+  version: 0.9.86
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 
@@ -79,7 +79,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--recursive` | 开关 | 目录扫描进子目录（默认不进；隐藏目录一律跳过） |
 | `--jobs <n>` | ≥1 | `--api` 模式并发路数（本地引擎单线程，给了也只提示忽略） |
 | `--dry-run` | 开关 | 只列出将处理哪些文件（含跳过原因），不建目录不落盘 |
-| `--skip-low-risk` | 开关 | **低收益风险稿**原样出稿、不改写（默认关：照常改写，只给醒目警告）。判据 = `aiScore≤27` **且**书面套话命中 `formalHits≤2`——这类稿删套话规则没有作用对象，改写主要只能动断句和用词。双网关 23 篇实测：单用 `aiScore` 命中 20 篇误伤 13 篇，组合判据命中 13 篇误伤 6 篇，还救回 7 篇改善最明显的稿。仍不足以默认拦截，所以只作用于本开关；批量仍产出同名文件（内容=原文），`--report` 记 `lowYieldRisk` / `skippedLowRisk`；引擎层（Web/MCP/API）不受影响 |
+| `--skip-low-risk` | 开关 | **低收益风险稿**原样出稿、不改写（默认关：照常改写，只给醒目警告）。判据 = 书面标记密度 `formalPer1k≤8/千字`（长度归一，**不看** `aiScore`）——书面套话稀薄时删套话规则没有作用对象，改写主要只能动断句和用词。44 篇误伤基准台归因：旧判据 `aiScore≤27 && formalHits≤2` 在真人长文上 **0 命中**（`formalHits` 是长度函数，字数相关 0.958），反在该改短稿上命中 13 篇；新判据命中 15/21，开启后模拟残余误伤率 57%→14%、该改达改率不变。代价：仍误跳 10 篇该改稿（双网关配对显示这些稿改写多半更像人）⇒ 开关继续默认关。证据 `evidence/collateral-attribution-2026-11-09/`；交叉复核 `evidence/collateral-cross-2026-11-09/`（15 篇短真人稿：密度中位 4.6 vs 长真人 6.4、同长度区间 AUC 0.683，长度分层 5.1~6.1 稳定）⇒ 密度判据不随长度漂移；但体裁混淆未分离、长 AI 稿未实测，阈值仍属探索性。批量仍产出同名文件（内容=原文），`--report` 记 `lowYieldRisk` / `skippedLowRisk`；引擎层（Web/MCP/API）不受影响 |
 
 ## 作为 MCP 工具（v0.9.84）
 

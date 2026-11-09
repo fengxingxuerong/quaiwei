@@ -1,0 +1,776 @@
+{
+  "at": "2026-11-09T12:44:54.405Z",
+  "thresholdPer1k": 8,
+  "purpose": "P1-1 交叉长度语料检验：短真人稿是否也会被判为低收益风险，判据在同长度区间是否仍有区分力",
+  "corpora": {
+    "hShort": "artifacts/human-corpus-short/（中文维基短条目，scripts/collateral-cross-fetch.ts 抓，CC BY-SA 4.0）",
+    "hLong": "artifacts/human-corpus/（中文维基长条目，P1-1 no-touch 面板）",
+    "aiShort": "scripts/realcase/cases.json（P1-1 should-change 面板）"
+  },
+  "panels": {
+    "hShort": {
+      "n": 15,
+      "charsMin": 191,
+      "charsMax": 457,
+      "cjkMin": 143,
+      "densityMedian": 4.6,
+      "densityQ1": 0,
+      "densityQ3": 6.2,
+      "densityMin": 0,
+      "densityMax": 28.5,
+      "hitCount": 12,
+      "hitRate": 80,
+      "legacyHitCount": 13,
+      "aiScoreMedian": 12
+    },
+    "hLong": {
+      "n": 21,
+      "charsMin": 2030,
+      "charsMax": 27147,
+      "cjkMin": 1678,
+      "densityMedian": 6.4,
+      "densityQ1": 3.6,
+      "densityQ3": 8.2,
+      "densityMin": 1.7,
+      "densityMax": 13.1,
+      "hitCount": 15,
+      "hitRate": 71.4,
+      "legacyHitCount": 0,
+      "aiScoreMedian": 35
+    },
+    "aiShort": {
+      "n": 23,
+      "charsMin": 53,
+      "charsMax": 453,
+      "cjkMin": 49,
+      "densityMedian": 12.5,
+      "densityQ1": 0,
+      "densityQ3": 23.6,
+      "densityMin": 0,
+      "densityMax": 40.8,
+      "hitCount": 10,
+      "hitRate": 43.5,
+      "legacyHitCount": 13,
+      "aiScoreMedian": 18
+    }
+  },
+  "separation": {
+    "aucHShortVsAiShort": 0.649,
+    "aucHLongVsAiShort": 0.613,
+    "aucHShortVsHLong": 0.648,
+    "note": "AUC=0.5 抛硬币；越接近 1 表示前者密度系统性更低（= 判据把真人判为低收益、AI 稿判为可改，方向正确）"
+  },
+  "sameLength": {
+    "band": "150~460 字",
+    "hShort": {
+      "n": 15,
+      "hitRate": 80,
+      "densityMedian": 4.6
+    },
+    "aiShort": {
+      "n": 20,
+      "hitRate": 40,
+      "densityMedian": 12.9
+    },
+    "auc": 0.683
+  },
+  "lengthStratified": [
+    {
+      "windowChars": 400,
+      "sample": 21,
+      "densityMedian": 5.7,
+      "densityQ1": 2.7,
+      "densityQ3": 6.1,
+      "hitRate": 81
+    },
+    {
+      "windowChars": 800,
+      "sample": 21,
+      "densityMedian": 6.1,
+      "densityQ1": 4.4,
+      "densityQ3": 7.2,
+      "hitRate": 81
+    },
+    {
+      "windowChars": 1600,
+      "sample": 21,
+      "densityMedian": 5.1,
+      "densityQ1": 3.8,
+      "densityQ3": 7.1,
+      "hitRate": 76.2
+    },
+    {
+      "windowChars": 3200,
+      "sample": 16,
+      "densityMedian": 5.8,
+      "densityQ1": 3.6,
+      "densityQ3": 9.1,
+      "hitRate": 68.8
+    }
+  ],
+  "gaps": {
+    "longAiSamples": {
+      "status": "未实测",
+      "reason": "本机 LLM 网关 2026-11-09 不可达（127.0.0.1:8080 与 192.168.151.151:18080 均拒连），无法生成真实长 AI 稿",
+      "impact": "长 AI 稿密度未知；但判据是密度（长度归一），短稿密度不随长度衰减的假设已由 lengthStratified 在真人侧验证，AI 侧未验证"
+    }
+  },
+  "verdict": "同长度区间区分力中等：AUC 0.683、命中率差 40 个百分点 ⇒ 判据在短文本上不足以支撑默认拦截，开关保持默认关是对的",
+  "rows": {
+    "hShort": [
+      {
+        "id": "拱桥",
+        "panel": "H-short",
+        "chars": 233,
+        "cjkChars": 209,
+        "formalHits": 1,
+        "formalPer1k": 4.78,
+        "aiScore": 4,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "张祜庄园",
+        "panel": "H-short",
+        "chars": 389,
+        "cjkChars": 325,
+        "formalHits": 2,
+        "formalPer1k": 6.15,
+        "aiScore": 10,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "父子进士牌坊",
+        "panel": "H-short",
+        "chars": 262,
+        "cjkChars": 195,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 16,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "隆昌石牌坊",
+        "panel": "H-short",
+        "chars": 192,
+        "cjkChars": 143,
+        "formalHits": 2,
+        "formalPer1k": 13.99,
+        "aiScore": 14,
+        "hit": false,
+        "legacyHit": true
+      },
+      {
+        "id": "梯田",
+        "panel": "H-short",
+        "chars": 433,
+        "cjkChars": 364,
+        "formalHits": 5,
+        "formalPer1k": 13.74,
+        "aiScore": 16,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "龙脊梯田",
+        "panel": "H-short",
+        "chars": 191,
+        "cjkChars": 148,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 15,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "上堡梯田",
+        "panel": "H-short",
+        "chars": 245,
+        "cjkChars": 200,
+        "formalHits": 1,
+        "formalPer1k": 5,
+        "aiScore": 27,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "保安革命旧址",
+        "panel": "H-short",
+        "chars": 223,
+        "cjkChars": 191,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 7,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "陈芳家宅",
+        "panel": "H-short",
+        "chars": 457,
+        "cjkChars": 362,
+        "formalHits": 1,
+        "formalPer1k": 2.76,
+        "aiScore": 19,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "灯塔市",
+        "panel": "H-short",
+        "chars": 321,
+        "cjkChars": 253,
+        "formalHits": 1,
+        "formalPer1k": 3.95,
+        "aiScore": 3,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "宁德时代",
+        "panel": "H-short",
+        "chars": 416,
+        "cjkChars": 350,
+        "formalHits": 2,
+        "formalPer1k": 5.71,
+        "aiScore": 12,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "老铁山灯塔",
+        "panel": "H-short",
+        "chars": 309,
+        "cjkChars": 240,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 8,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "卢浦大桥",
+        "panel": "H-short",
+        "chars": 411,
+        "cjkChars": 315,
+        "formalHits": 1,
+        "formalPer1k": 3.17,
+        "aiScore": 9,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "天然拱",
+        "panel": "H-short",
+        "chars": 311,
+        "cjkChars": 246,
+        "formalHits": 7,
+        "formalPer1k": 28.46,
+        "aiScore": 20,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "瀑布",
+        "panel": "H-short",
+        "chars": 255,
+        "cjkChars": 216,
+        "formalHits": 1,
+        "formalPer1k": 4.63,
+        "aiScore": 10,
+        "hit": true,
+        "legacyHit": true
+      }
+    ],
+    "hLong": [
+      {
+        "id": "人物-历史-诸葛亮",
+        "panel": "H-long",
+        "chars": 14149,
+        "cjkChars": 11904,
+        "formalHits": 73,
+        "formalPer1k": 6.13,
+        "aiScore": 35,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "人物-现代作家-老舍",
+        "panel": "H-long",
+        "chars": 2058,
+        "cjkChars": 1734,
+        "formalHits": 3,
+        "formalPer1k": 1.73,
+        "aiScore": 10,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "人物-现代作家-鲁迅",
+        "panel": "H-long",
+        "chars": 12810,
+        "cjkChars": 10614,
+        "formalHits": 63,
+        "formalPer1k": 5.94,
+        "aiScore": 39,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "人物-科学家-屠呦呦",
+        "panel": "H-long",
+        "chars": 2030,
+        "cjkChars": 1678,
+        "formalHits": 4,
+        "formalPer1k": 2.38,
+        "aiScore": 32,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "人物-科学家-钱学森",
+        "panel": "H-long",
+        "chars": 4146,
+        "cjkChars": 3338,
+        "formalHits": 11,
+        "formalPer1k": 3.3,
+        "aiScore": 43,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "医学-公共卫生-疫苗",
+        "panel": "H-long",
+        "chars": 3678,
+        "cjkChars": 2579,
+        "formalHits": 22,
+        "formalPer1k": 8.53,
+        "aiScore": 20,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "历史-文字-甲骨文",
+        "panel": "H-long",
+        "chars": 4897,
+        "cjkChars": 3959,
+        "formalHits": 29,
+        "formalPer1k": 7.33,
+        "aiScore": 31,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "历史-朝代-明朝",
+        "panel": "H-long",
+        "chars": 27147,
+        "cjkChars": 22392,
+        "formalHits": 121,
+        "formalPer1k": 5.4,
+        "aiScore": 68,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "历史-贸易-丝绸之路",
+        "panel": "H-long",
+        "chars": 9389,
+        "cjkChars": 8156,
+        "formalHits": 52,
+        "formalPer1k": 6.38,
+        "aiScore": 57,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "地理-城市-北京市",
+        "panel": "H-long",
+        "chars": 22234,
+        "cjkChars": 18037,
+        "formalHits": 147,
+        "formalPer1k": 8.15,
+        "aiScore": 95,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "地理-山川-黄山",
+        "panel": "H-long",
+        "chars": 2499,
+        "cjkChars": 1986,
+        "formalHits": 17,
+        "formalPer1k": 8.56,
+        "aiScore": 8,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "地理-水体-长江",
+        "panel": "H-long",
+        "chars": 9747,
+        "cjkChars": 7910,
+        "formalHits": 53,
+        "formalPer1k": 6.7,
+        "aiScore": 51,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "文学-古典-红楼梦",
+        "panel": "H-long",
+        "chars": 18699,
+        "cjkChars": 15373,
+        "formalHits": 153,
+        "formalPer1k": 9.95,
+        "aiScore": 59,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "文学-现当代-骆驼祥子",
+        "panel": "H-long",
+        "chars": 2348,
+        "cjkChars": 2085,
+        "formalHits": 7,
+        "formalPer1k": 3.36,
+        "aiScore": 20,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "法律-中华人民共和国民法典",
+        "panel": "H-long",
+        "chars": 3998,
+        "cjkChars": 3359,
+        "formalHits": 44,
+        "formalPer1k": 13.1,
+        "aiScore": 32,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "生物-生命科学-光合作用",
+        "panel": "H-long",
+        "chars": 4452,
+        "cjkChars": 3453,
+        "formalHits": 30,
+        "formalPer1k": 8.69,
+        "aiScore": 38,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "生物-细胞-细胞",
+        "panel": "H-long",
+        "chars": 6834,
+        "cjkChars": 5667,
+        "formalHits": 37,
+        "formalPer1k": 6.53,
+        "aiScore": 37,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "科技-工程-集成电路",
+        "panel": "H-long",
+        "chars": 3292,
+        "cjkChars": 2544,
+        "formalHits": 7,
+        "formalPer1k": 2.75,
+        "aiScore": 11,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "科技-物理-量子力学",
+        "panel": "H-long",
+        "chars": 11773,
+        "cjkChars": 9665,
+        "formalHits": 72,
+        "formalPer1k": 7.45,
+        "aiScore": 54,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "科技-通信-5G",
+        "panel": "H-long",
+        "chars": 3895,
+        "cjkChars": 2784,
+        "formalHits": 10,
+        "formalPer1k": 3.59,
+        "aiScore": 29,
+        "hit": true,
+        "legacyHit": false
+      },
+      {
+        "id": "艺术-书法-书法",
+        "panel": "H-long",
+        "chars": 2420,
+        "cjkChars": 2115,
+        "formalHits": 11,
+        "formalPer1k": 5.2,
+        "aiScore": 8,
+        "hit": true,
+        "legacyHit": false
+      }
+    ],
+    "aiShort": [
+      {
+        "id": "C1-work-summary",
+        "panel": "AI-short",
+        "chars": 274,
+        "cjkChars": 254,
+        "formalHits": 6,
+        "formalPer1k": 23.62,
+        "aiScore": 54,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C2-opinion-wechat",
+        "panel": "AI-short",
+        "chars": 213,
+        "cjkChars": 193,
+        "formalHits": 4,
+        "formalPer1k": 20.73,
+        "aiScore": 24,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C3-tech-popular",
+        "panel": "AI-short",
+        "chars": 282,
+        "cjkChars": 160,
+        "formalHits": 2,
+        "formalPer1k": 12.5,
+        "aiScore": 25,
+        "hit": false,
+        "legacyHit": true
+      },
+      {
+        "id": "C4-product-copy",
+        "panel": "AI-short",
+        "chars": 267,
+        "cjkChars": 159,
+        "formalHits": 1,
+        "formalPer1k": 6.29,
+        "aiScore": 18,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C5-news-release",
+        "panel": "AI-short",
+        "chars": 198,
+        "cjkChars": 173,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 17,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C6-academic-abstract",
+        "panel": "AI-short",
+        "chars": 226,
+        "cjkChars": 199,
+        "formalHits": 5,
+        "formalPer1k": 25.13,
+        "aiScore": 36,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C7-story-dialogue",
+        "panel": "AI-short",
+        "chars": 208,
+        "cjkChars": 165,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 8,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C8-social-post",
+        "panel": "AI-short",
+        "chars": 118,
+        "cjkChars": 95,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 12,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C9-mixed-links",
+        "panel": "AI-short",
+        "chars": 334,
+        "cjkChars": 81,
+        "formalHits": 1,
+        "formalPer1k": 12.35,
+        "aiScore": 25,
+        "hit": false,
+        "legacyHit": true
+      },
+      {
+        "id": "C10-tiny-input",
+        "panel": "AI-short",
+        "chars": 53,
+        "cjkChars": 49,
+        "formalHits": 2,
+        "formalPer1k": 40.82,
+        "aiScore": 6,
+        "hit": false,
+        "legacyHit": true
+      },
+      {
+        "id": "C11-admin-notice",
+        "panel": "AI-short",
+        "chars": 292,
+        "cjkChars": 258,
+        "formalHits": 6,
+        "formalPer1k": 23.26,
+        "aiScore": 18,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C12-paper-abstract",
+        "panel": "AI-short",
+        "chars": 244,
+        "cjkChars": 166,
+        "formalHits": 3,
+        "formalPer1k": 18.07,
+        "aiScore": 26,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C13-manual-steps",
+        "panel": "AI-short",
+        "chars": 224,
+        "cjkChars": 168,
+        "formalHits": 1,
+        "formalPer1k": 5.95,
+        "aiScore": 20,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C14-finance-flash",
+        "panel": "AI-short",
+        "chars": 253,
+        "cjkChars": 163,
+        "formalHits": 3,
+        "formalPer1k": 18.4,
+        "aiScore": 18,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C15-policy-qa",
+        "panel": "AI-short",
+        "chars": 216,
+        "cjkChars": 195,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 18,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C16-prospectus-risk",
+        "panel": "AI-short",
+        "chars": 209,
+        "cjkChars": 151,
+        "formalHits": 2,
+        "formalPer1k": 13.25,
+        "aiScore": 36,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C17-verdict-labor",
+        "panel": "AI-short",
+        "chars": 291,
+        "cjkChars": 253,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 10,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C18-tender-spec",
+        "panel": "AI-short",
+        "chars": 273,
+        "cjkChars": 162,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 8,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C19-kids-essay",
+        "panel": "AI-short",
+        "chars": 146,
+        "cjkChars": 130,
+        "formalHits": 0,
+        "formalPer1k": 0,
+        "aiScore": 8,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C20-speech-opening",
+        "panel": "AI-short",
+        "chars": 233,
+        "cjkChars": 203,
+        "formalHits": 1,
+        "formalPer1k": 4.93,
+        "aiScore": 23,
+        "hit": true,
+        "legacyHit": true
+      },
+      {
+        "id": "C21-fenced-code-doc",
+        "panel": "AI-short",
+        "chars": 453,
+        "cjkChars": 166,
+        "formalHits": 4,
+        "formalPer1k": 24.1,
+        "aiScore": 26,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C22-markdown-struct",
+        "panel": "AI-short",
+        "chars": 248,
+        "cjkChars": 156,
+        "formalHits": 5,
+        "formalPer1k": 32.05,
+        "aiScore": 26,
+        "hit": false,
+        "legacyHit": false
+      },
+      {
+        "id": "C23-frontmatter-indent",
+        "panel": "AI-short",
+        "chars": 252,
+        "cjkChars": 119,
+        "formalHits": 3,
+        "formalPer1k": 25.21,
+        "aiScore": 12,
+        "hit": false,
+        "legacyHit": false
+      }
+    ]
+  }
+}
