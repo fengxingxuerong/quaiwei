@@ -1,0 +1,224 @@
+{
+  "at": "2026-11-12T14:22:45.134Z",
+  "thresholdPer1k": 8,
+  "purpose": "P1-1 缺口收口：长 AI 稿密度实测——formalPer1k 是否随长度增长跌破阈值（补 collateral-cross-2026-11-09 的未实测象限）",
+  "gateway": {
+    "baseUrl": "http://127.0.0.1:8080",
+    "model": "glm-5.3-flash",
+    "keySource": "env:QUAIWEI_API_KEY（不落盘）"
+  },
+  "corpora": {
+    "aiLong": "artifacts/ai-corpus-long/（本机 GLM 网关生成，3 体裁 × 4 目标长度）",
+    "hLong": "artifacts/human-corpus/（中文维基长条目，对照面板）"
+  },
+  "overall": {
+    "n": 12,
+    "densityMedian": 6.9,
+    "densityMin": 0,
+    "hitCount": 8,
+    "hitRate": 66.7
+  },
+  "hLong": {
+    "n": 21,
+    "densityMedian": 6.4,
+    "hitRate": 71.4
+  },
+  "bands": [
+    {
+      "targetChars": 600,
+      "n": 3,
+      "charsMin": 516,
+      "charsMax": 660,
+      "densityMedian": 7,
+      "densityMin": 4.5,
+      "hitCount": 2,
+      "hitRate": 66.7,
+      "aiScoreMedian": 27
+    },
+    {
+      "targetChars": 1200,
+      "n": 3,
+      "charsMin": 1073,
+      "charsMax": 1165,
+      "densityMedian": 7.8,
+      "densityMin": 0,
+      "hitCount": 2,
+      "hitRate": 66.7,
+      "aiScoreMedian": 12
+    },
+    {
+      "targetChars": 2400,
+      "n": 3,
+      "charsMin": 2069,
+      "charsMax": 2223,
+      "densityMedian": 8,
+      "densityMin": 2.7,
+      "hitCount": 1,
+      "hitRate": 33.3,
+      "aiScoreMedian": 39
+    },
+    {
+      "targetChars": 4800,
+      "n": 3,
+      "charsMin": 4284,
+      "charsMax": 4585,
+      "densityMedian": 6.2,
+      "densityMin": 1.8,
+      "hitCount": 3,
+      "hitRate": 100,
+      "aiScoreMedian": 55
+    }
+  ],
+  "byAiScore": {
+    "aiMeaningfulScoreCut": 30,
+    "meaningful": {
+      "n": 6,
+      "skipped": 2,
+      "skippedIds": [
+        "AI-LONG-wiki-4800",
+        "AI-LONG-gov-4800"
+      ],
+      "falseSkipRate": 33.3
+    },
+    "faint": {
+      "n": 6,
+      "skipped": 6,
+      "note": "aiScore 低于分界的稿本来就没什么套话可删，跳过不算损失"
+    }
+  },
+  "verdict": "600 字档（密度中位 7）、1200 字档（密度中位 7.8）、2400 字档（密度中位 8）、4800 字档（密度中位 6.2） 密度中位跌破阈值 8/千字，AI 稿密度确实随长度衰减（短 AI 稿中位 12.5，本批 12 篇中位 6.9）。但把「AI 生成」当「该改」是错的：只有 aiScore>=30 的 6 篇才算有套话可删，其中被误跳 2 篇（33.3%，AI-LONG-wiki-4800(aiScore 55/密度 6.15)、AI-LONG-gov-4800(aiScore 80/密度 6.84)）；其余 6 篇 aiScore<30，跳过属正确行为。长文象限里 AI 稿密度中位 6.9 与真人长文 6.4 几乎重叠 ⇒ 密度判据在长文上分不出人与 AI，但对「套话已被写得很薄」的稿确实会误跳高 aiScore 样本。结论不变：--skip-low-risk 继续默认关。",
+  "rows": [
+    {
+      "id": "AI-LONG-wiki-600",
+      "genre": "wiki",
+      "target": 600,
+      "chars": 605,
+      "cjkChars": 568,
+      "formalHits": 4,
+      "formalPer1k": 7.04,
+      "aiScore": 27,
+      "hit": true
+    },
+    {
+      "id": "AI-LONG-wiki-1200",
+      "genre": "wiki",
+      "target": 1200,
+      "chars": 1165,
+      "cjkChars": 1021,
+      "formalHits": 8,
+      "formalPer1k": 7.84,
+      "aiScore": 12,
+      "hit": true
+    },
+    {
+      "id": "AI-LONG-wiki-2400",
+      "genre": "wiki",
+      "target": 2400,
+      "chars": 2223,
+      "cjkChars": 1998,
+      "formalHits": 27,
+      "formalPer1k": 13.51,
+      "aiScore": 77,
+      "hit": false
+    },
+    {
+      "id": "AI-LONG-wiki-4800",
+      "genre": "wiki",
+      "target": 4800,
+      "chars": 4585,
+      "cjkChars": 4062,
+      "formalHits": 25,
+      "formalPer1k": 6.15,
+      "aiScore": 55,
+      "hit": true
+    },
+    {
+      "id": "AI-LONG-mkt-600",
+      "genre": "mkt",
+      "target": 600,
+      "chars": 516,
+      "cjkChars": 449,
+      "formalHits": 2,
+      "formalPer1k": 4.45,
+      "aiScore": 12,
+      "hit": true
+    },
+    {
+      "id": "AI-LONG-mkt-1200",
+      "genre": "mkt",
+      "target": 1200,
+      "chars": 1073,
+      "cjkChars": 936,
+      "formalHits": 0,
+      "formalPer1k": 0,
+      "aiScore": 7,
+      "hit": true
+    },
+    {
+      "id": "AI-LONG-mkt-2400",
+      "genre": "mkt",
+      "target": 2400,
+      "chars": 2069,
+      "cjkChars": 1848,
+      "formalHits": 5,
+      "formalPer1k": 2.71,
+      "aiScore": 21,
+      "hit": true
+    },
+    {
+      "id": "AI-LONG-mkt-4800",
+      "genre": "mkt",
+      "target": 4800,
+      "chars": 4284,
+      "cjkChars": 3795,
+      "formalHits": 7,
+      "formalPer1k": 1.84,
+      "aiScore": 20,
+      "hit": true
+    },
+    {
+      "id": "AI-LONG-gov-600",
+      "genre": "gov",
+      "target": 600,
+      "chars": 660,
+      "cjkChars": 582,
+      "formalHits": 6,
+      "formalPer1k": 10.31,
+      "aiScore": 45,
+      "hit": false
+    },
+    {
+      "id": "AI-LONG-gov-1200",
+      "genre": "gov",
+      "target": 1200,
+      "chars": 1079,
+      "cjkChars": 961,
+      "formalHits": 13,
+      "formalPer1k": 13.53,
+      "aiScore": 45,
+      "hit": false
+    },
+    {
+      "id": "AI-LONG-gov-2400",
+      "genre": "gov",
+      "target": 2400,
+      "chars": 2181,
+      "cjkChars": 1997,
+      "formalHits": 16,
+      "formalPer1k": 8.01,
+      "aiScore": 39,
+      "hit": false
+    },
+    {
+      "id": "AI-LONG-gov-4800",
+      "genre": "gov",
+      "target": 4800,
+      "chars": 4543,
+      "cjkChars": 4094,
+      "formalHits": 28,
+      "formalPer1k": 6.84,
+      "aiScore": 80,
+      "hit": true
+    }
+  ]
+}

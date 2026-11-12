@@ -58,6 +58,8 @@ artifacts/human-corpus/*
 !artifacts/human-corpus/*.ts
 # 2026-11-09 交叉长度语料：短真人稿（维基短条目，CC BY-SA 4.0），语料同长文一样不入库
 artifacts/human-corpus-short/
+# 2026-11-10 深度模式 API 评测的临时工作目录（产物可重跑，不入库）
+eval-work/
 !artifacts/experiments/
 # 十篇小说规模测试（2026-10-28）：脚本与现场日志进版本控制，语料与产物（10 万字 + 三档输出）忽略
 !artifacts/novel-test-1028/
