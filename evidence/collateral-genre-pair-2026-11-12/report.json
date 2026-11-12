@@ -1,0 +1,200 @@
+{
+  "at": "2026-11-12T14:53:30.467Z",
+  "purpose": "体裁混淆分离：同体裁（百科体）、同长度下，「人 vs AI」的密度差还剩多少",
+  "thresholdPer1k": 8,
+  "corpora": {
+    "aiWiki": "artifacts/ai-corpus-long/AI-LONG-wiki-*.txt（11-10 GLM 生成，明确对齐 H-long 体裁）",
+    "humanWiki": "artifacts/human-corpus/（21 篇中文维基长条目）",
+    "note": "真人侧按 600/1200/2400/4800 字取首段窗口，与 AI 稿同长度；这是长度对照切片，不是独立短文"
+  },
+  "panels": {
+    "aiWiki": {
+      "n": 4,
+      "densityMedian": 7.44,
+      "hitRate": 75
+    },
+    "humanWiki": {
+      "n": 21,
+      "windows": 4,
+      "densityMedianByWindow": {
+        "600": 6.65,
+        "1200": 5.12,
+        "2400": 5.65,
+        "4800": 6.475
+      }
+    }
+  },
+  "bands": [
+    {
+      "windowChars": 600,
+      "humanN": 21,
+      "humanDensityMedian": 6.65,
+      "humanHitRate": 80.952,
+      "aiN": 1,
+      "aiDensityMedian": 7.04,
+      "aucHumanLower": 0.571
+    },
+    {
+      "windowChars": 1200,
+      "humanN": 21,
+      "humanDensityMedian": 5.12,
+      "humanHitRate": 76.19,
+      "aiN": 1,
+      "aiDensityMedian": 7.84,
+      "aucHumanLower": 0.762
+    },
+    {
+      "windowChars": 2400,
+      "humanN": 18,
+      "humanDensityMedian": 5.65,
+      "humanHitRate": 66.667,
+      "aiN": 1,
+      "aiDensityMedian": 13.51,
+      "aucHumanLower": 0.944
+    },
+    {
+      "windowChars": 4800,
+      "humanN": 10,
+      "humanDensityMedian": 6.475,
+      "humanHitRate": 90,
+      "aiN": 1,
+      "aiDensityMedian": 6.15,
+      "aucHumanLower": 0.4
+    }
+  ],
+  "overallAuc": 0.704,
+  "sampleAdequacy": {
+    "aiPerBand": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "aucSpread": 0.544,
+    "insufficient": true,
+    "requiredAiPerBand": 5
+  },
+  "crossGenre": {
+    "humanShortDensityMedian": 4.6,
+    "aiShortDensityMedian": 12.5,
+    "sameLengthAuc": 0.683,
+    "note": "真人=百科体短条目，AI=营销/公文/技术体；体裁与来源两者都变了"
+  },
+  "limitations": [
+    "AI-wiki 只有 4 篇（每个长度档 1 篇），AUC 的置信区间极宽；本结论是方向性归因，不是标定",
+    "同一模型（glm-5.3-flash）、4 个不同主题；换模型/主题是否同样重叠，未测",
+    "真人侧是「长文首段窗口切片」，不是完整独立短文；导语的定义句密度可能与正文不同",
+    "只覆盖了 wiki 百科体这一格；mkt/gov 体裁的真人对照语料仍缺，跨体裁泛化未验证",
+    "语料由 LLM 生成，不可复现；量测可复跑",
+    "本轮没有生成新语料：本机 8080 网关离线，18080 需 proxy API key（历史凭证全部 401）"
+  ],
+  "verdict": "**样本不足，不下结论。** 同体裁 AI 稿只有 4 篇、每个长度档 1/1/1/1 篇，逐档 AUC 从 0.4 摆到 0.944（跨度 0.544），总体 AUC 0.704 只是把 4 篇不同长度的 AI 稿混算出来的描述值，**不能当成「体裁是否已分离」的判据**。单篇就能把 AUC 从 0.4 拉到 0.944，说明方差主导。⇒ 要分离体裁混淆，必需「同体裁 AI 稿每档 ≥5 篇」（建议 4 档 × 5 = 20 篇）+ 真人侧同长度窗口，再看 AUC 是否稳定在 0.5 附近。本轮只把配对框架与缺口量化，不宣称已分离。",
+  "rows": {
+    "aiWiki": [
+      {
+        "id": "AI-LONG-wiki-1200",
+        "chars": 1165,
+        "density": 7.84,
+        "hit": true
+      },
+      {
+        "id": "AI-LONG-wiki-2400",
+        "chars": 2223,
+        "density": 13.51,
+        "hit": false
+      },
+      {
+        "id": "AI-LONG-wiki-4800",
+        "chars": 4585,
+        "density": 6.15,
+        "hit": true
+      },
+      {
+        "id": "AI-LONG-wiki-600",
+        "chars": 605,
+        "density": 7.04,
+        "hit": true
+      }
+    ],
+    "humanWindowDensities": {
+      "600": [
+        2.03,
+        4.01,
+        8.33,
+        2.02,
+        7.95,
+        5.86,
+        8,
+        4.26,
+        3.75,
+        7.66,
+        8.3,
+        4.21,
+        14.11,
+        3.67,
+        14.49,
+        7.34,
+        6.65,
+        4.23,
+        7.81,
+        6.73,
+        0
+      ],
+      "1200": [
+        4.09,
+        2,
+        5,
+        0.98,
+        6.22,
+        7.33,
+        10.02,
+        2.09,
+        7.71,
+        3.89,
+        8.69,
+        5.12,
+        11.96,
+        3.69,
+        20.45,
+        8.19,
+        6.26,
+        4.23,
+        7.68,
+        4.35,
+        2.9
+      ],
+      "2400": [
+        6.06,
+        2.99,
+        3.53,
+        8.55,
+        10,
+        3.71,
+        6.65,
+        4.88,
+        8.91,
+        2.58,
+        10.71,
+        15.79,
+        9.38,
+        6.49,
+        3.59,
+        4.78,
+        4.48,
+        5.24
+      ],
+      "4800": [
+        5.27,
+        6.57,
+        7.46,
+        5.37,
+        7.2,
+        12.31,
+        6.38,
+        7.01,
+        6.02,
+        5.82
+      ]
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "at": "2026-11-12T14:56:18.299Z",
+  "purpose": "C 类窄守卫离线模拟：若新增守卫，会动多少现有合法切点；不修改产品代码、不宣称验收通过",
+  "cFronts": [
+    {
+      "front": "这些电路的小尺寸使得与板级集成相比",
+      "existingGuardAllows": true,
+      "caughtBy": [
+        "R1 致使+比较状语悬空"
+      ]
+    },
+    {
+      "front": "则这光子可以给予足够能量来",
+      "existingGuardAllows": true,
+      "caughtBy": [
+        "R2 给予+目的「来」悬空"
+      ]
+    },
+    {
+      "front": "更多的蜂窝",
+      "existingGuardAllows": true,
+      "caughtBy": [
+        "R3′ 5~6字短段无真谓语"
+      ]
+    }
+  ],
+  "corpus": {
+    "files": 21,
+    "candidateFronts": 2306,
+    "existingGuardPassing": 1724
+  },
+  "rules": [
+    {
+      "name": "R1 致使+比较状语悬空",
+      "note": "「A使得…相比，」逗号不是句法边界；只拦「相比/相较/而言/来说」这 4 个收尾",
+      "additionalVeto": 0,
+      "vetoRateOfPassing": 0,
+      "samples": []
+    },
+    {
+      "name": "R2 给予+目的「来」悬空",
+      "note": "「可以给予足够能量来」缺后续动词；只拦「给予/提供/带来…来」",
+      "additionalVeto": 0,
+      "vetoRateOfPassing": 0,
+      "samples": []
+    },
+    {
+      "name": "R3′ 5~6字短段无真谓语",
+      "note": "把短残片门槛 4→6，但谓语判据从单字宽表换成 NP_PREDICATE_RE（双字谓词/体标记）",
+      "additionalVeto": 298,
+      "vetoRateOfPassing": 17.3,
+      "samples": [
+        "諸葛亮與徐元直、崔州平、石廣元、孟公威交好",
+        "諸葛亮改善經濟，休養生息，打壓益州豪族，平定南中叛亂",
+        "諸葛亮一生“鞠躬盡瘁、死而後已”",
+        "」徐庶見劉備，劉備器重，徐庶對劉備說：「諸葛孔明，是臥龍",
+        "）」；劉琦恍然大悟，決意離開襄陽；適值黃祖過身，劉琦得出",
+        "劉琮在蒯越、傅巽等人勸説下，最後選擇投降"
+      ]
+    }
+  ],
+  "combinedAdditionalVeto": 298,
+  "combinedVetoRateOfPassing": 17.3,
+  "verdict": "现有守卫对 3 条 C 类全部放行（3/3）；候选规则能拦 3/3。**风险全在 R3′**：R1/R2 在 1724 个「现有放行」的真人切点上新增否决均为 0；R3′ 单独带来 298 个（17.3%），三条合并 298 个（17.3%）⇒ R1/R2 是零影响面的窄守卫，R3′ 会挡住大量现有切分、是否属误伤必须靠双席 A/B 判定。本轮网关不可用（8080 离线 / 18080 需 proxy key / 历史凭证全 401）⇒ **A/B 未执行，三条都不进 src/**。",
+  "limitations": [
+    "「现有放行」不等于「合法」——其中可能本来就有缺陷，新增否决未必是误伤",
+    "R3 只是把短残片门槛 4→6 的粗模拟，真实实现要配 NP_PREDICATE_RE，影响面会小很多",
+    "front 抽取用 lastIndexOf('，')，与引擎 findSplitPoint 的 mid 选点不完全一致",
+    "只覆盖 21 篇维基长文，未扫 realcase 23 篇与 4080 次 sweep:format 语料",
+    "无双席 A/B，任何「效果更好」的说法都不成立"
+  ]
+}
