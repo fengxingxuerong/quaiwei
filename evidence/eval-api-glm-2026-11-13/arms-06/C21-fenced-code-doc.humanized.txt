@@ -1,0 +1,21 @@
+初始化流程这次有改动，不过旧写法仍然兼容，业务代码不用动。
+
+```js
+// 这里传的是应用 ID，不是密钥
+const client = new Client({ appId: "demo-app", timeout: 3000 });
+await client.connect(); // 建立长连接
+```
+
+错误重试建议用指数退避。网关侧做了限流，连续失败三次后要停 10 秒再试。
+
+```python
+# 重试策略：最多 5 次
+for i in range(5):
+    try:
+        client.ping()
+        break
+    except GatewayError:
+        time.sleep(2 ** i)
+```
+
+这次调整不会破坏既有集成，可以放心升级。更细的观测指标与告警能力，下个版本会提供。

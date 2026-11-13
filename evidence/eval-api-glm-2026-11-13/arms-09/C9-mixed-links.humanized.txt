@@ -1,0 +1,8 @@
+接口地址换成 https://api.example.com/v2/gateway，旧地址只用到 2026-12-31，别等停服才动手切。这次 API 升级还有两处调整：请求频率做了限制，QPS 上限 20；返回结果里的 user_id 字段，类型从 number 改成了 string，这个坑最容易踩——代码里凡是拿它当数字用的地方都得过一遍。
+
+调用示例：
+
+const resp = await fetch(url, { method: "POST", headers: { "X-Token": token } });
+if (!resp.ok) throw new Error("gateway 5xx");
+
+对接上有问题，发邮件给 dev-support@example.com。就这些。

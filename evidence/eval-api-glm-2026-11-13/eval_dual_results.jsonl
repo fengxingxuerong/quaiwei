@@ -1,0 +1,77 @@
+{"key": "abs|C1-work-summary|orig|A", "kind": "abs", "id": "C1-work-summary", "arm": "orig", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C1-work-summary|local09|A", "kind": "abs", "id": "C1-work-summary", "arm": "local09", "seat": "A", "score": 40, "raw": "40", "err": null}
+{"key": "abs|C2-opinion-wechat|orig|A", "kind": "abs", "id": "C2-opinion-wechat", "arm": "orig", "seat": "A", "score": 97, "raw": "97", "err": null}
+{"key": "abs|C2-opinion-wechat|local09|A", "kind": "abs", "id": "C2-opinion-wechat", "arm": "local09", "seat": "A", "score": 97, "raw": "97", "err": null}
+{"key": "abs|C3-tech-popular|orig|A", "kind": "abs", "id": "C3-tech-popular", "arm": "orig", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C3-tech-popular|local09|A", "kind": "abs", "id": "C3-tech-popular", "arm": "local09", "seat": "A", "score": 85, "raw": "85", "err": null}
+{"key": "abs|C4-product-copy|orig|A", "kind": "abs", "id": "C4-product-copy", "arm": "orig", "seat": "A", "score": 85, "raw": "85", "err": null}
+{"key": "abs|C4-product-copy|local09|A", "kind": "abs", "id": "C4-product-copy", "arm": "local09", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C5-news-release|orig|A", "kind": "abs", "id": "C5-news-release", "arm": "orig", "seat": "A", "score": 60, "raw": "60", "err": null}
+{"key": "abs|C5-news-release|local09|A", "kind": "abs", "id": "C5-news-release", "arm": "local09", "seat": "A", "score": 80, "raw": "80", "err": null}
+{"key": "abs|C6-academic-abstract|orig|A", "kind": "abs", "id": "C6-academic-abstract", "arm": "orig", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C6-academic-abstract|local09|A", "kind": "abs", "id": "C6-academic-abstract", "arm": "local09", "seat": "A", "score": 45, "raw": "45", "err": null}
+{"key": "abs|C7-story-dialogue|orig|A", "kind": "abs", "id": "C7-story-dialogue", "arm": "orig", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C7-story-dialogue|local09|A", "kind": "abs", "id": "C7-story-dialogue", "arm": "local09", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C8-social-post|orig|A", "kind": "abs", "id": "C8-social-post", "arm": "orig", "seat": "A", "score": 15, "raw": "15", "err": null}
+{"key": "abs|C8-social-post|local09|A", "kind": "abs", "id": "C8-social-post", "arm": "local09", "seat": "A", "score": 80, "raw": "80", "err": null}
+{"key": "abs|C9-mixed-links|orig|A", "kind": "abs", "id": "C9-mixed-links", "arm": "orig", "seat": "A", "score": 80, "raw": "80", "err": null}
+{"key": "abs|C9-mixed-links|local09|A", "kind": "abs", "id": "C9-mixed-links", "arm": "local09", "seat": "A", "score": 80, "raw": "80", "err": null}
+{"key": "abs|C10-tiny-input|orig|A", "kind": "abs", "id": "C10-tiny-input", "arm": "orig", "seat": "A", "score": 92, "raw": "92", "err": null}
+{"key": "abs|C10-tiny-input|local09|A", "kind": "abs", "id": "C10-tiny-input", "arm": "local09", "seat": "A", "score": 5, "raw": "5", "err": null}
+{"key": "abs|C11-admin-notice|orig|A", "kind": "abs", "id": "C11-admin-notice", "arm": "orig", "seat": "A", "score": 75, "raw": "75", "err": null}
+{"key": "abs|C11-admin-notice|local09|A", "kind": "abs", "id": "C11-admin-notice", "arm": "local09", "seat": "A", "score": 78, "raw": "78", "err": null}
+{"key": "abs|C12-paper-abstract|orig|A", "kind": "abs", "id": "C12-paper-abstract", "arm": "orig", "seat": "A", "score": 60, "raw": "60", "err": null}
+{"key": "abs|C12-paper-abstract|local09|A", "kind": "abs", "id": "C12-paper-abstract", "arm": "local09", "seat": "A", "score": 70, "raw": "70", "err": null}
+{"key": "abs|C13-manual-steps|orig|A", "kind": "abs", "id": "C13-manual-steps", "arm": "orig", "seat": "A", "score": 80, "raw": "80", "err": null}
+{"key": "abs|C13-manual-steps|local09|A", "kind": "abs", "id": "C13-manual-steps", "arm": "local09", "seat": "A", "score": 65, "raw": "65", "err": null}
+{"key": "abs|C14-finance-flash|orig|A", "kind": "abs", "id": "C14-finance-flash", "arm": "orig", "seat": "A", "score": 85, "raw": "85", "err": null}
+{"key": "abs|C14-finance-flash|local09|A", "kind": "abs", "id": "C14-finance-flash", "arm": "local09", "seat": "A", "score": 15, "raw": "15", "err": null}
+{"key": "abs|C15-policy-qa|orig|A", "kind": "abs", "id": "C15-policy-qa", "arm": "orig", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C15-policy-qa|local09|A", "kind": "abs", "id": "C15-policy-qa", "arm": "local09", "seat": "A", "score": 20, "raw": "20", "err": null}
+{"key": "abs|C16-prospectus-risk|orig|A", "kind": "abs", "id": "C16-prospectus-risk", "arm": "orig", "seat": "A", "score": 35, "raw": "35", "err": null}
+{"key": "abs|C16-prospectus-risk|local09|A", "kind": "abs", "id": "C16-prospectus-risk", "arm": "local09", "seat": "A", "score": 55, "raw": "55", "err": null}
+{"key": "abs|C17-verdict-labor|orig|A", "kind": "abs", "id": "C17-verdict-labor", "arm": "orig", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C17-verdict-labor|local09|A", "kind": "abs", "id": "C17-verdict-labor", "arm": "local09", "seat": "A", "score": 85, "raw": "85", "err": null}
+{"key": "abs|C18-tender-spec|orig|A", "kind": "abs", "id": "C18-tender-spec", "arm": "orig", "seat": "A", "score": 45, "raw": "45", "err": null}
+{"key": "abs|C18-tender-spec|local09|A", "kind": "abs", "id": "C18-tender-spec", "arm": "local09", "seat": "A", "score": 30, "raw": "30", "err": null}
+{"key": "abs|C19-kids-essay|orig|A", "kind": "abs", "id": "C19-kids-essay", "arm": "orig", "seat": "A", "score": 80, "raw": "80", "err": null}
+{"key": "abs|C19-kids-essay|local09|A", "kind": "abs", "id": "C19-kids-essay", "arm": "local09", "seat": "A", "score": 30, "raw": "30", "err": null}
+{"key": "abs|C20-speech-opening|orig|A", "kind": "abs", "id": "C20-speech-opening", "arm": "orig", "seat": "A", "score": 88, "raw": "88", "err": null}
+{"key": "abs|C20-speech-opening|local09|A", "kind": "abs", "id": "C20-speech-opening", "arm": "local09", "seat": "A", "score": 50, "raw": "50", "err": null}
+{"key": "abs|C21-fenced-code-doc|orig|A", "kind": "abs", "id": "C21-fenced-code-doc", "arm": "orig", "seat": "A", "score": 90, "raw": "90", "err": null}
+{"key": "abs|C21-fenced-code-doc|local09|A", "kind": "abs", "id": "C21-fenced-code-doc", "arm": "local09", "seat": "A", "score": 20, "raw": "20", "err": null}
+{"key": "abs|C22-markdown-struct|orig|A", "kind": "abs", "id": "C22-markdown-struct", "arm": "orig", "seat": "A", "score": 90, "raw": "90", "err": null}
+{"key": "abs|C22-markdown-struct|local09|A", "kind": "abs", "id": "C22-markdown-struct", "arm": "local09", "seat": "A", "score": 70, "raw": "70", "err": null}
+{"key": "abs|C23-frontmatter-indent|orig|A", "kind": "abs", "id": "C23-frontmatter-indent", "arm": "orig", "seat": "A", "score": 90, "raw": "90", "err": null}
+{"key": "abs|C23-frontmatter-indent|local09|A", "kind": "abs", "id": "C23-frontmatter-indent", "arm": "local09", "seat": "A", "score": 15, "raw": "15", "err": null}
+{"key": "pair|C1-work-summary|A|local09", "kind": "pair", "id": "C1-work-summary", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C2-opinion-wechat|A|local09", "kind": "pair", "id": "C2-opinion-wechat", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C3-tech-popular|A|local09", "kind": "pair", "id": "C3-tech-popular", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C4-product-copy|A|local09", "kind": "pair", "id": "C4-product-copy", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C5-news-release|A|local09", "kind": "pair", "id": "C5-news-release", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "乙", "chosen": "local09", "engineWin": false, "raw": "乙", "err": null}
+{"key": "pair|C6-academic-abstract|A|local09", "kind": "pair", "id": "C6-academic-abstract", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C7-story-dialogue|A|local09", "kind": "pair", "id": "C7-story-dialogue", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C8-social-post|A|local09", "kind": "pair", "id": "C8-social-post", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C9-mixed-links|A|local09", "kind": "pair", "id": "C9-mixed-links", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C10-tiny-input|A|local09", "kind": "pair", "id": "C10-tiny-input", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C11-admin-notice|A|local09", "kind": "pair", "id": "C11-admin-notice", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "乙", "chosen": "local09", "engineWin": false, "raw": "乙", "err": null}
+{"key": "pair|C12-paper-abstract|A|local09", "kind": "pair", "id": "C12-paper-abstract", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C13-manual-steps|A|local09", "kind": "pair", "id": "C13-manual-steps", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C14-finance-flash|A|local09", "kind": "pair", "id": "C14-finance-flash", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C15-policy-qa|A|local09", "kind": "pair", "id": "C15-policy-qa", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C16-prospectus-risk|A|local09", "kind": "pair", "id": "C16-prospectus-risk", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C17-verdict-labor|A|local09", "kind": "pair", "id": "C17-verdict-labor", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C18-tender-spec|A|local09", "kind": "pair", "id": "C18-tender-spec", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C19-kids-essay|A|local09", "kind": "pair", "id": "C19-kids-essay", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C20-speech-opening|A|local09", "kind": "pair", "id": "C20-speech-opening", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C21-fenced-code-doc|A|local09", "kind": "pair", "id": "C21-fenced-code-doc", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C22-markdown-struct|A|local09", "kind": "pair", "id": "C22-markdown-struct", "seat": "A", "armTag": "local09", "firstArm": "local09", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C23-frontmatter-indent|A|local09", "kind": "pair", "id": "C23-frontmatter-indent", "seat": "A", "armTag": "local09", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C3-tech-popular|A|local06", "kind": "pair", "id": "C3-tech-popular", "seat": "A", "armTag": "local06", "firstArm": "local06", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C9-mixed-links|A|local06", "kind": "pair", "id": "C9-mixed-links", "seat": "A", "armTag": "local06", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C11-admin-notice|A|local06", "kind": "pair", "id": "C11-admin-notice", "seat": "A", "armTag": "local06", "firstArm": "orig", "pick": "乙", "chosen": "local06", "engineWin": false, "raw": "乙", "err": null}
+{"key": "pair|C13-manual-steps|A|local06", "kind": "pair", "id": "C13-manual-steps", "seat": "A", "armTag": "local06", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C14-finance-flash|A|local06", "kind": "pair", "id": "C14-finance-flash", "seat": "A", "armTag": "local06", "firstArm": "orig", "pick": "甲", "chosen": "orig", "engineWin": true, "raw": "甲", "err": null}
+{"key": "pair|C16-prospectus-risk|A|local06", "kind": "pair", "id": "C16-prospectus-risk", "seat": "A", "armTag": "local06", "firstArm": "local06", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}
+{"key": "pair|C17-verdict-labor|A|local06", "kind": "pair", "id": "C17-verdict-labor", "seat": "A", "armTag": "local06", "firstArm": "orig", "pick": "乙", "chosen": "local06", "engineWin": false, "raw": "乙", "err": null}
+{"key": "pair|C20-speech-opening|A|local06", "kind": "pair", "id": "C20-speech-opening", "seat": "A", "armTag": "local06", "firstArm": "local06", "pick": "乙", "chosen": "orig", "engineWin": true, "raw": "乙", "err": null}

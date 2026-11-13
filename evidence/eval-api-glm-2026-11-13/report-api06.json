@@ -1,0 +1,614 @@
+{
+  "ts": "2026-11-12T20:25:47.520Z",
+  "args": {
+    "input": "eval-work/in",
+    "out": "eval-work/arms-api/06",
+    "intensity": 0.6,
+    "zhuque": false,
+    "style": "plain",
+    "variant": "none",
+    "academicCheck": false,
+    "auditStructure": false,
+    "metrics": false,
+    "against": "",
+    "styleExplicit": false,
+    "suffix": ".humanized",
+    "seed": 20260905,
+    "api": true,
+    "baseUrl": "http://127.0.0.1:8080/v1",
+    "model": "glm-5.3-flash",
+    "apiKey": "",
+    "judgeModel": "",
+    "altModel": "",
+    "deep": false,
+    "contest": 1,
+    "maxCalls": 0,
+    "maxWait": 0,
+    "llmTimeout": 300,
+    "target": 0,
+    "strict": false,
+    "structural": false,
+    "skipLowRisk": false,
+    "persona": "default",
+    "report": "eval-work/report-api06.json",
+    "outFormat": "follow",
+    "explain": false,
+    "recursive": false,
+    "jobs": 1,
+    "dryRun": false,
+    "stdin": false,
+    "help": false,
+    "detectOnly": false,
+    "detectors": [],
+    "detectorUrl": "",
+    "detectorKey": "",
+    "detectorPath": "score",
+    "detectorScale": "0-100"
+  },
+  "totals": {
+    "files": 23,
+    "ok": 23,
+    "fail": 0,
+    "skippedSuffix": 0,
+    "lowYieldRisk": 10,
+    "skippedLowRisk": 0,
+    "structuralApplied": 0,
+    "charsIn": 5507,
+    "charsOut": 5207,
+    "msTotal": 2432951
+  },
+  "reports": [
+    {
+      "file": "C1-work-summary.txt",
+      "ms": 66644,
+      "charsIn": 274,
+      "charsOut": 209,
+      "detectBefore": 33,
+      "detectAfter": 19,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "",
+      "degrade": [],
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C1-work-summary.humanized.txt"
+    },
+    {
+      "file": "C10-tiny-input.txt",
+      "ms": 76527,
+      "charsIn": 53,
+      "charsOut": 48,
+      "detectBefore": 28,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C10-tiny-input.humanized.txt"
+    },
+    {
+      "file": "C11-admin-notice.txt",
+      "ms": 75245,
+      "charsIn": 292,
+      "charsOut": 308,
+      "detectBefore": 40,
+      "detectAfter": 36,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C11-admin-notice.humanized.txt"
+    },
+    {
+      "file": "C12-paper-abstract.txt",
+      "ms": 121274,
+      "charsIn": 244,
+      "charsOut": 222,
+      "detectBefore": 25,
+      "detectAfter": 21,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 93,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C12-paper-abstract.humanized.txt"
+    },
+    {
+      "file": "C13-manual-steps.txt",
+      "ms": 27095,
+      "charsIn": 224,
+      "charsOut": 217,
+      "detectBefore": 32,
+      "detectAfter": 26,
+      "registerBefore": {
+        "index": 87,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 39,
+        "label": "偏口语"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C13-manual-steps.humanized.txt"
+    },
+    {
+      "file": "C14-finance-flash.txt",
+      "ms": 173027,
+      "charsIn": 253,
+      "charsOut": 249,
+      "detectBefore": 29,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C14-finance-flash.humanized.txt"
+    },
+    {
+      "file": "C15-policy-qa.txt",
+      "ms": 107930,
+      "charsIn": 216,
+      "charsOut": 212,
+      "detectBefore": 44,
+      "detectAfter": 39,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C15-policy-qa.humanized.txt"
+    },
+    {
+      "file": "C16-prospectus-risk.txt",
+      "ms": 86901,
+      "charsIn": 209,
+      "charsOut": 193,
+      "detectBefore": 47,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "",
+      "degrade": [],
+      "registerAfter": {
+        "index": 3,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C16-prospectus-risk.humanized.txt"
+    },
+    {
+      "file": "C17-verdict-labor.txt",
+      "ms": 172094,
+      "charsIn": 291,
+      "charsOut": 296,
+      "detectBefore": 28,
+      "detectAfter": 32,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 75,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C17-verdict-labor.humanized.txt"
+    },
+    {
+      "file": "C18-tender-spec.txt",
+      "ms": 219786,
+      "charsIn": 273,
+      "charsOut": 300,
+      "detectBefore": 26,
+      "detectAfter": 26,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C18-tender-spec.humanized.txt"
+    },
+    {
+      "file": "C19-kids-essay.txt",
+      "ms": 69677,
+      "charsIn": 146,
+      "charsOut": 160,
+      "detectBefore": 15,
+      "detectAfter": 20,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 3,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C19-kids-essay.humanized.txt"
+    },
+    {
+      "file": "C2-opinion-wechat.txt",
+      "ms": 88910,
+      "charsIn": 213,
+      "charsOut": 238,
+      "detectBefore": 45,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C2-opinion-wechat.humanized.txt"
+    },
+    {
+      "file": "C20-speech-opening.txt",
+      "ms": 64322,
+      "charsIn": 233,
+      "charsOut": 208,
+      "detectBefore": 33,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 81,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C20-speech-opening.humanized.txt"
+    },
+    {
+      "file": "C21-fenced-code-doc.txt",
+      "ms": 77823,
+      "charsIn": 453,
+      "charsOut": 384,
+      "detectBefore": 41,
+      "detectAfter": 25,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C21-fenced-code-doc.humanized.txt"
+    },
+    {
+      "file": "C22-markdown-struct.txt",
+      "ms": 72313,
+      "charsIn": 248,
+      "charsOut": 154,
+      "detectBefore": 54,
+      "detectAfter": 24,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C22-markdown-struct.humanized.txt"
+    },
+    {
+      "file": "C23-frontmatter-indent.txt",
+      "ms": 94214,
+      "charsIn": 252,
+      "charsOut": 193,
+      "detectBefore": 47,
+      "detectAfter": 18,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 0,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C23-frontmatter-indent.humanized.txt"
+    },
+    {
+      "file": "C3-tech-popular.txt",
+      "ms": 89641,
+      "charsIn": 282,
+      "charsOut": 289,
+      "detectBefore": 39,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C3-tech-popular.humanized.txt"
+    },
+    {
+      "file": "C4-product-copy.txt",
+      "ms": 166477,
+      "charsIn": 267,
+      "charsOut": 283,
+      "detectBefore": 36,
+      "detectAfter": 31,
+      "registerBefore": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C4-product-copy.humanized.txt"
+    },
+    {
+      "file": "C5-news-release.txt",
+      "ms": 98932,
+      "charsIn": 198,
+      "charsOut": 164,
+      "detectBefore": 34,
+      "detectAfter": 25,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C5-news-release.humanized.txt"
+    },
+    {
+      "file": "C6-academic-abstract.txt",
+      "ms": 120401,
+      "charsIn": 226,
+      "charsOut": 216,
+      "detectBefore": 38,
+      "detectAfter": 31,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "",
+      "degrade": [],
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C6-academic-abstract.humanized.txt"
+    },
+    {
+      "file": "C7-story-dialogue.txt",
+      "ms": 125750,
+      "charsIn": 208,
+      "charsOut": 212,
+      "detectBefore": 18,
+      "detectAfter": 19,
+      "registerBefore": {
+        "index": 12,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C7-story-dialogue.humanized.txt"
+    },
+    {
+      "file": "C8-social-post.txt",
+      "ms": 40114,
+      "charsIn": 118,
+      "charsOut": 102,
+      "detectBefore": 3,
+      "detectAfter": 19,
+      "registerBefore": {
+        "index": 0,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 0,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C8-social-post.humanized.txt"
+    },
+    {
+      "file": "C9-mixed-links.txt",
+      "ms": 197854,
+      "charsIn": 334,
+      "charsOut": 350,
+      "detectBefore": 28,
+      "detectAfter": 23,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\arms-api\\06\\C9-mixed-links.humanized.txt"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+旧版写法不用动。这次调整的是初始化流程，旧写法依然兼容，业务代码不需要改。
+
+初始化示例：
+
+```js
+// 注意：这里传的是应用 ID，不是密钥
+const client = new Client({ appId: "demo-app", timeout: 3000 });
+await client.connect(); // 建立长连接
+```
+
+重试要注意一点：网关侧做了限流，连续失败三次就得停 10 秒再试，所以建议走指数退避：
+
+```python
+# 重试最多 5 次
+for i in range(5):
+    try:
+        client.ping()
+        break
+    except GatewayError:
+        time.sleep(2 ** i)
+```
+
+既有集成不受影响。更细的观测指标和告警能力排在下个版本。
