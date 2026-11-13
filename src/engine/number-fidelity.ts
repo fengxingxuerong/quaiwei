@@ -201,11 +201,12 @@ export function missingNumericFacts(source: string, output: string): string[] {
  */
 export function addedNumericFacts(source: string, output: string): string[] {
   const srcFacts = quantityFacts(source);
-  if (srcFacts.length === 0 && quantityFacts(output).length === 0) return [];
+  const outFacts = quantityFacts(output);
+  if (srcFacts.length === 0 && outFacts.length === 0) return [];
   const srcKeys = new Set(srcFacts.map((f) => `${f.value}|${f.unit}`));
   const srcValues = new Set(srcFacts.map((f) => f.value));
   const out = new Set<string>();
-  for (const f of quantityFacts(output)) {
+  for (const f of outFacts) {
     if (srcKeys.has(`${f.value}|${f.unit}`)) continue;
     // 数值本身在原文出现过 ⇒ 属"改了量纲/去掉了单位"，交给 changedUnits，不在此重复报
     if (srcValues.has(f.value)) continue;
