@@ -192,12 +192,13 @@ for (const entry of APP_ENTRIES) {
 }
 console.log(`    app 顶层文件已复制：${APP_ENTRIES.join(" / ")}`);
 
-/* 2b. 随包《使用说明.txt》——放交付目录根，不进 app 内部。
+/* 2b. 随包《使用说明.txt》与《启动 QuAiWei.bat》——放交付目录根，不进 app 内部。
  * 为什么 repack 要管它：这一层此前只有打包器（electron-packager 时代）会写，而 repack 才是日常重建路径，
  * 结果产物根目录那份文档一直停在 v0.8.2、里面还写着"内置 3 Key 轮换"（桌面版从 v0.8.6 起
  * 根本不内置 Key）。用户真正读的是根目录这份，不是 resources/app 里那份。
- * verify-pruned.cjs 会逐字节比对它，落后即不给发布。 */
-for (const doc of ["使用说明.txt"]) {
+ * v0.9.88 包体修订：加 bat 兜底（双击 exe 在部分 GPU 沙箱机器上会崩），同样由 repack 刷新。
+ * verify-pruned.cjs 会逐字节比对这两份，落后即不给发布。 */
+for (const doc of ["使用说明.txt", "启动 QuAiWei.bat"]) {
   const src = path.join(__dirname, doc);
   if (!fs.existsSync(src)) {
     console.error(`✗ 随包文档缺失：${src}`);

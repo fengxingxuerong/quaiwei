@@ -31,6 +31,7 @@ const GROUPS = {
     "electron-app/ppl-engine.cjs",
     "electron-app/package.json",
     "electron-app/使用说明.txt",
+    "electron-app/启动 QuAiWei.bat",
   ],
   "build-step": ["scripts/sync-dist.mjs"],
 };

@@ -4,6 +4,7 @@
  * 用法：
  *   node scripts/_publish.cjs --check   # 只自检 + 网络探测，不推不发
  *   node scripts/_publish.cjs           # 全流程：自检 → push → 建 Release（幂等）→ 上传 zip
+ *   node scripts/_publish.cjs --replace # 重发包体：删同名 zip/sha256 资产再传，并刷新 Release 正文
  *
  * 顺序为什么是 push 在前：Release 的 tag 必须指向**已推送的** commit，
  * 先发 Release 会得到一个指向旧 master 的 tag（假发）。
@@ -32,6 +33,8 @@ const CHANGELOG = path.join(ROOT, "CHANGELOG.md");
 process.env.NODE_USE_ENV_PROXY = process.env.NODE_USE_ENV_PROXY || "1";
 
 const CHECK_ONLY = process.argv.includes("--check");
+/** 重发包体用：同名 Release 资产先删后传。默认保持「已存在就跳过」的旧行为。 */
+const REPLACE_ASSETS = process.argv.includes("--replace");
 
 const log = (...a) => console.log(...a);
 const die = (msg) => {
@@ -220,7 +223,7 @@ const probeTcp = (host, port, ms = 8000) =>
     });
     const text = await res.text();
     if (!res.ok) throw new Error(`${method} ${url} → ${res.status} ${text.slice(0, 300)}`);
-    return JSON.parse(text);
+    return text ? JSON.parse(text) : null; // DELETE 204 没有响应体
   };
 
   /* ---------- 4. push（远端已同步则跳过） ---------- */
@@ -285,10 +288,21 @@ const probeTcp = (host, port, ms = 8000) =>
   /* ---------- 5. 建 Release（幂等） ---------- */
   log(`\n== [4] Release ${TAG} ==`);
   let release;
+  let existing = null;
   try {
-    release = await apiCall("GET", `https://api.github.com/repos/${REPO}/releases/tags/${TAG}`);
-    log(`  已存在，复用 id=${release.id}`);
+    existing = await apiCall("GET", `https://api.github.com/repos/${REPO}/releases/tags/${TAG}`);
   } catch {
+    // 该 tag 还没有 Release，下面新建。GET 失败与 PATCH 失败必须分开，别把 PATCH 报错吞成「去新建」。
+  }
+  if (existing) {
+    // 复用时旧正文不会自己更新：包体修订的说明必须跟着 CHANGELOG 走，否则 Release 页还在讲上一版。
+    release = await apiCall(
+      "PATCH",
+      `https://api.github.com/repos/${REPO}/releases/${existing.id}`,
+      { body },
+    );
+    log(`  已存在，复用 id=${release.id}（正文已同步 CHANGELOG）`);
+  } else {
     release = await apiCall("POST", `https://api.github.com/repos/${REPO}/releases`, {
       tag_name: TAG,
       target_commitish: branch,
@@ -306,9 +320,13 @@ const probeTcp = (host, port, ms = 8000) =>
     `https://api.github.com/repos/${REPO}/releases/${release.id}/assets`,
   );
   const dup = assets.find((a) => a.name === name);
-  if (dup) {
-    log(`\n== [5] 资源 ${name} 已存在（${(dup.size / 1048576).toFixed(1)} MB），跳过上传`);
-  } else {
+  if (dup && REPLACE_ASSETS) {
+    await apiCall("DELETE", `https://api.github.com/repos/${REPO}/releases/assets/${dup.id}`);
+    log(`\n== [5] 已删除同名旧资产 ${name}（${(dup.size / 1048576).toFixed(1)} MB），准备重传`);
+  } else if (dup) {
+    log(`\n== [5] 资源 ${name} 已存在（${(dup.size / 1048576).toFixed(1)} MB），跳过上传；要覆盖加 --replace`);
+  }
+  if (!dup || REPLACE_ASSETS) {
     log(`\n== [5] 上传 ${name}（${zipMB} MB）==`);
     const upRes = await fetch(
       `https://uploads.github.com/repos/${REPO}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
@@ -335,9 +353,14 @@ const probeTcp = (host, port, ms = 8000) =>
   const shaText = `${crypto.createHash("sha256").update(buf).digest("hex")}  ${name}\n`;
   fs.writeFileSync(`${ZIP}.sha256`, shaText, "ascii");
   log(`\n== [6] 校验码 ${shaName} ==\n  ${shaText.trim()}`);
-  if (assets.find((a) => a.name === shaName)) {
-    log("  已存在，跳过上传");
-  } else {
+  const shaDup = assets.find((a) => a.name === shaName);
+  if (shaDup && REPLACE_ASSETS) {
+    await apiCall("DELETE", `https://api.github.com/repos/${REPO}/releases/assets/${shaDup.id}`);
+    log("  已删除同名旧校验码，准备重传");
+  } else if (shaDup) {
+    log("  已存在，跳过上传；要覆盖加 --replace");
+  }
+  if (!shaDup || REPLACE_ASSETS) {
     const upRes = await fetch(
       `https://uploads.github.com/repos/${REPO}/releases/${release.id}/assets?name=${encodeURIComponent(shaName)}`,
       {

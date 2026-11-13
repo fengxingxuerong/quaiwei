@@ -96,6 +96,18 @@ if (!fs.existsSync(SRC_DOC)) {
       : bad(`落后于源，用户会拿到旧说明。跑 ${via} 才会更新：${rel}`);
   }
 }
+/* 3b. 兜底启动器：双击 exe 崩的机器只能靠它，漏放等于这次修订白做。 */
+const SRC_BAT = path.join(__dirname, "启动 QuAiWei.bat");
+const SHIPPED_BAT = path.join(DIST, "启动 QuAiWei.bat");
+if (!fs.existsSync(SRC_BAT)) {
+  bad("源启动器缺失：electron-app/启动 QuAiWei.bat");
+} else if (!fs.existsSync(SHIPPED_BAT)) {
+  bad("产物根目录缺 启动 QuAiWei.bat —— 跑 rebuild-app.cjs 刷新随包文件");
+} else {
+  Buffer.compare(fs.readFileSync(SRC_BAT), fs.readFileSync(SHIPPED_BAT)) === 0
+    ? ok("与源一致：启动 QuAiWei.bat")
+    : bad("产物里的 启动 QuAiWei.bat 落后于源，跑 rebuild-app.cjs 刷新");
+}
 try {
   const rootV = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8")).version;
   const appV = JSON.parse(fs.readFileSync(path.join(APP, "package.json"), "utf8")).version;

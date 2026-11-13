@@ -73,7 +73,7 @@ trade-offs are stated; pick per job.
 
 **Desktop (Windows, no install, ~209 MB zip for v0.9.88):**
 [latest release](https://github.com/fengxingxuerong/quaiwei/releases/latest) — unzip, double-click
-`QuAiWei.exe`. The published desktop build can lag behind the repo version; check the release page.
+`QuAiWei.exe`. The desktop build matches v0.9.88. If the exe crashes on launch, run `启动 QuAiWei.bat` in the same folder (GPU compatibility switches).
 
 **CLI** (needs the repo locally + Node ≥ 22.12):
 
