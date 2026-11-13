@@ -17,6 +17,10 @@
  * v0.9.79 改成**数值 + 量纲**比对，并用 chinese-numerals 解析中文数字：
  *   · `3 个` 与 `三个` 现在是同一个事实（此前只能把单个数字整体丢掉，白白损失灵敏度）；
  *   · `14 小时` 与 `十四小时` 同样互认。
+ * v0.9.88 补**反方向**：`addedNumericFacts` 抓"产出多出原文没有的量"。
+ *   单轮 `--api` 实产里两次抓到同一类失真——模型做算术派生（6499−4999「差价 1500 元」、
+ *   21.4−15.8「低了 5.6 个百分点」），数值算对了，但原文没有这个口径。
+ *   此前三条检查全是"原文有的还在不在"，这一侧完全空着。
  *
  * ## 设计边界（都是有意的）
  *
@@ -173,6 +177,43 @@ export function missingNumericFacts(source: string, output: string): string[] {
   return [...out];
 }
 
+/**
+ * 产出里有、原文里**根本没有**的数量事实（凭空多出来的量化断言）。
+ *
+ * 为什么要有（2026-11-13 实测出处，`evidence/eval-api-glm-2026-11-13/README.md` 第四节）：
+ *   `--api` 单轮改写 C16 招股风险提示，原文 7 个数字**全部保留、一个没丢**，但产出多了一句
+ *   「比营收增速低了 **5.6** 个百分点」——21.4 − 15.8 的算术派生。数值算对了，可这是
+ *   **原文没有的新事实**：读者会当成披露口径去找出处，而原文从没这么说过。
+ *   `missingNumericFacts` 查的是相反方向（丢数字），这一类从它下面整个漏过去。
+ *
+ * ## 为什么"数值出现在原文"不算新增
+ *
+ * `126.75 亿元` → `126.75 万元` 这种是**改量纲**，已经由 `changedUnits` 报过了；
+ * 这里再报一遍等于同一处失真喊两次，用户会当成两件事。
+ * 所以判据打成「这个**数值**在原文一次都没出现过」——只抓真正从零冒出来的量。
+ *
+ * ## 已知边界（有意的）
+ *
+ *  - 把模糊表述改成精确值（`近一半` → `48%`）会被算成新增。这**在语义上确实是新增量化**，
+ *    公文/财报里同样不该出现，所以不豁免；但它也是本条误报的主要来源，
+ *    因此接入时**默认只提示、严格保真才否决**，与 `missingNumericFacts` 同口径。
+ *  - `quantityFacts` 本身的口径原样继承：量词（个/项/家）不算量纲、无单位单个数字不收。
+ */
+export function addedNumericFacts(source: string, output: string): string[] {
+  const srcFacts = quantityFacts(source);
+  if (srcFacts.length === 0 && quantityFacts(output).length === 0) return [];
+  const srcKeys = new Set(srcFacts.map((f) => `${f.value}|${f.unit}`));
+  const srcValues = new Set(srcFacts.map((f) => f.value));
+  const out = new Set<string>();
+  for (const f of quantityFacts(output)) {
+    if (srcKeys.has(`${f.value}|${f.unit}`)) continue;
+    // 数值本身在原文出现过 ⇒ 属"改了量纲/去掉了单位"，交给 changedUnits，不在此重复报
+    if (srcValues.has(f.value)) continue;
+    out.add(f.unit ? `${f.value}${f.unit}` : f.value);
+  }
+  return [...out];
+}
+
 /** 原文有、产出里**量纲被换掉**的那些量（数值还在，量纲变了） */
 export function changedUnits(source: string, output: string): string[] {
   const outFacts = quantityFacts(output);
@@ -211,6 +252,19 @@ export function numericFidelityWarning(source: string, output: string): string |
     const shown = units.slice(0, 4).join("；");
     const more = units.length > 4 ? ` 等 ${units.length} 处` : "";
     parts.push(`产出改了原文的数字单位：${shown}${more}`);
+  }
+  /**
+   * v0.9.88：反向缺口——产出**多出**原文没有的数量事实。
+   * 实测面（115 组真实产出：--api 单轮 92 组 + 本地引擎 23 篇）只有 2 例命中，
+   * 且两例都是同一类：模型做了算术派生（6499−4999=「差价 1500 元」、
+   * 21.4−15.8=「低了 5.6 个百分点」）。数值算得对，但原文从没这么说过，
+   * 财报/招股/招标场景里等于凭空多一条披露口径 ⇒ 归为内容失真，与缺失同级。
+   */
+  const added = addedNumericFacts(source, output);
+  if (added.length) {
+    const shown = added.slice(0, 6).join("、");
+    const more = added.length > 6 ? ` 等 ${added.length} 个` : "";
+    parts.push(`产出新增了原文没有的数字：${shown}${more}`);
   }
   if (parts.length === 0) return null;
   return `${parts.join("；")}（内容失真，请核对；严格保真模式会因此回退原稿）`;

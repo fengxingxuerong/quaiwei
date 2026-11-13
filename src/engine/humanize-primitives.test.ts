@@ -160,6 +160,23 @@ describe("fragmentFrontCanStand —— 必须拒绝的（残句防线）", () =>
     expect(fragmentFrontCanStand("有关负责人表示")).toBe(false);
     expect(fragmentFrontCanStand("他在会上强调")).toBe(false);
   });
+
+  /**
+   * v0.9.88：C 类悬空（碎句化 27 条归因里唯一被判"真语病"的一类）。
+   * 三条原文全部来自 `evidence/collateral-collapse-2026-11-12/`，不是构造句。
+   */
+  it("v0.9.88：致使 + 比较状语双悬空（C 类第 ① 条）", () => {
+    expect(fragmentFrontCanStand("这些电路的小尺寸使得与板级集成相比")).toBe(false);
+    // 「使得…」后面接完整谓语时照常放行——只拦状语收尾这一种
+    expect(fragmentFrontCanStand("这使得成本相比去年下降了三成")).toBe(true);
+  });
+
+  it("v0.9.88：给予 + 目的「来」缺后续动词（C 类第 ② 条）", () => {
+    expect(fragmentFrontCanStand("则这光子可以给予足够能量来")).toBe(false);
+    expect(fragmentFrontCanStand("公司为员工提供了培训机会来")).toBe(false);
+    // 「…来」后面紧跟动词的完整句不受影响
+    expect(fragmentFrontCanStand("公司提供了培训机会来提高技能")).toBe(true);
+  });
 });
 
 describe("fragmentFrontCanStand —— 必须放行的（别把守卫写死）", () => {

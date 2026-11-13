@@ -14,6 +14,7 @@ import {
   quantitativeFacts,
   changedUnits,
   missingNumericFacts,
+  addedNumericFacts,
   numericFidelityWarning,
 } from "./number-fidelity";
 
@@ -152,5 +153,52 @@ describe("numericFidelityWarning（文案）", () => {
     const many = Array.from({ length: 9 }, (_, i) => `${i + 1}.5 亿元`).join("、");
     const msg = numericFidelityWarning(`总计 ${many}。`, "总计若干。");
     expect(msg).toContain("等 9 个");
+  });
+});
+
+/**
+ * v0.9.88：反向缺口——产出多出原文没有的数量事实。
+ *
+ * 两条用例都来自 2026-11-13 的 `--api` 单轮实产（`evidence/eval-api-glm-2026-11-13/`），
+ * 不是构造的：模型做了算术派生，数字全对，但原文没这个口径。
+ */
+describe("addedNumericFacts（新增数字）", () => {
+  it("算术派生算新增：21.4% 与 15.8% 推出「低了 5.6 个百分点」", () => {
+    const src = "公司营收同比增长 21.4%，净利润同比增长 15.8%。";
+    const out = "公司营收同比增长 21.4%，净利润增长 15.8%，比营收增速低了 5.6 个百分点。";
+    expect(addedNumericFacts(src, out)).toEqual(["5.6个百分点"]);
+    expect(numericFidelityWarning(src, out)).toContain("新增了原文没有的数字");
+  });
+
+  it("价格差也是新增：4999 与 6499 之间凭空写出「差价 1500 元」", () => {
+    const src = "标准版定价 4999 元，Pro 版定价 6499 元。";
+    const out = "标准版 4999 元，Pro 版 6499 元，差价 1500 元。";
+    expect(addedNumericFacts(src, out)).toEqual(["1500"]);
+  });
+
+  it("原文一次都没提到的量才算新增（数值出现过就归 changedUnits，不重复报）", () => {
+    const src = "总资产 126.75 亿元。";
+    const out = "总资产 126.75 万元。";
+    expect(addedNumericFacts(src, out)).toEqual([]);
+    expect(changedUnits(src, out).length).toBe(1);
+  });
+
+  it("中文数字与阿拉伯数字互认，不当新增", () => {
+    expect(addedNumericFacts("共三个批次，耗时十四小时。", "共 3 个批次，耗时 14 小时。")).toEqual(
+      [],
+    );
+  });
+
+  it("完全相同的文本不报", () => {
+    expect(addedNumericFacts(SRC, SRC)).toEqual([]);
+    expect(numericFidelityWarning(SRC, SRC)).toBeNull();
+  });
+
+  it("原文没有任何数量事实、产出冒出量化的，照样报", () => {
+    expect(addedNumericFacts("很多用户反馈不错。", "有 68% 的用户反馈不错。")).toEqual(["68%"]);
+  });
+
+  it("标识符里的数字不算：X200 / iPhone15 不进事实表", () => {
+    expect(addedNumericFacts("设备型号 X200。", "设备型号 X200，另配 iPhone15。")).toEqual([]);
   });
 });

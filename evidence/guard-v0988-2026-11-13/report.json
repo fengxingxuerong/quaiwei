@@ -1,0 +1,75 @@
+{
+  "version": "0.9.88",
+  "date": "2026-11-13",
+  "addedNumericGuard": {
+    "function": "addedNumericFacts(source, output)",
+    "wiredInto": "numericFidelityWarning (第三类失真)",
+    "policy": "默认只提示；strictFidelity 否决并回退",
+    "corpora": [
+      {
+        "name": "api-single-round-glm-5.3-flash",
+        "detail": "evidence/eval-api-glm-2026-11-13/arms-09 与 arms-06（与 eval-work/arms-api/* 逐字相同）",
+        "groups": 46,
+        "hits": [
+          {
+            "id": "C16-prospectus-risk",
+            "arm": "0.9",
+            "added": ["5.6个百分点"],
+            "truth": "21.4 - 15.8 的算术派生，原文无此口径",
+            "verdict": "true-positive"
+          },
+          {
+            "id": "C4-product-copy",
+            "arm": "0.6",
+            "added": ["1500"],
+            "truth": "6499 - 4999 的差价，原文无此口径",
+            "verdict": "true-positive"
+          }
+        ],
+        "hitRate": 0.043
+      },
+      {
+        "name": "local-engine-realcase",
+        "detail": "scripts/realcase/out（23 篇，seed 20261015 / intensity 0.9）",
+        "groups": 23,
+        "hits": [],
+        "hitRate": 0
+      }
+    ],
+    "falsePositive": 0,
+    "falsePositiveDenominator": 69
+  },
+  "cGuard": {
+    "rules": [
+      "R1 /(?:使得|致使)[^，。；：]{0,24}(?:相比|相较|而言|来说)$/",
+      "R2 /(?:给予|提供|带来)[^，。；：]{0,20}来$/"
+    ],
+    "loc": "src/engine/humanize-primitives.ts :: fragmentFrontCanStand",
+    "impactTest": {
+      "corpus": "artifacts/human-corpus (21 篇真人维基长条目)",
+      "seed": 20261113,
+      "intensity": 0.9,
+      "method": "改动前后各跑一遍全量产出，逐文件 diff",
+      "changedFiles": 1,
+      "changedFile": "科技-工程-集成电路.txt",
+      "changedHunks": 1,
+      "before": "…小尺寸使得与板级集成相比。有更高速度，更低功耗…",
+      "after": "…小尺寸使得与板级集成相比，有更高速度。更低功耗…",
+      "note": "同一句的「更低功耗」仍是并列名词残片（属 R3′ 范围，未上线）"
+    }
+  },
+  "notDone": {
+    "R3prime": "新增否决 298/1724 = 17.3%，需双席 A/B 才能判是否误伤 ⇒ 不上线",
+    "dualSeatAB": "网关 8080/18081 离线、8326 需 key、历史 3 条凭证全 401 ⇒ 未执行",
+    "genreConfounding": "需每档 ≥5 篇 AI 稿（4×5=20），无可用网关 ⇒ 未补",
+    "npmPublish": "用户明确跳过；tarball 需按新版重打"
+  },
+  "gates": {
+    "tsc": "pass",
+    "realcaseMatrix": "硬缺陷 0 / 软提示 0（2 seed × 2 强度）",
+    "sweepFormat": "exit 0（机械扰动入口 3543 属已知边界，不计入门禁）",
+    "testImprove": "4/4 达标",
+    "testQuality": "强度 1.0 零泄漏、零省略号",
+    "unit": "number-fidelity 28/28、humanize-primitives 33/33、api 398/398"
+  }
+}

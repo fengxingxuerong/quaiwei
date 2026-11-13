@@ -435,6 +435,26 @@ export function fragmentFrontCanStand(front: string): boolean {
   // v0.9.43：及物动词收尾（宾语被留在后半句）⇒ 悬空及物动词残句（见 TRANSITIVE_TAIL_RE）
   if (TRANSITIVE_TAIL_RE.test(front)) return false;
   if (ADVERBIAL_HEAD_RE.test(front) && ADVERBIAL_TAIL_RE.test(front)) return false;
+  /**
+   * v0.9.88：**致使/给予类悬空**——C 类碎句化里唯一被判定为"真语病"的那一类。
+   *
+   * 出处（`evidence/collateral-collapse-2026-11-12/`，27 条碎句化逐条归因）：C 类 3 条，
+   * 但三条切点位置**各不相同**，不是一条"使得"守卫就能盖住：
+   *   ① 「这些电路的小尺寸使得与板级集成相比，」——致使 + 比较状语双重悬空
+   *   ② 「则这光子可以给予足够能量来，」——给予 + 目的「来」，后面缺动词
+   *   ③ 「更多的蜂窝」——5 字名词残片（归 R3′，见下方"已知未做"）
+   * 现有 `fragmentFrontCanStand` 对这三条 **3/3 全放行**。
+   *
+   * 为什么这两条能进产品、R3′ 不能（`evidence/collateral-c-guard-sim-2026-11-12/report.json`）：
+   * 从 21 篇真人长文抽 2306 个候选 front（现有守卫放行 1724 个）做影响面模拟，
+   * R1/R2 的**新增否决均为 0**——真实中文里「使得…相比，」后面必然还有谓语，
+   * 不会有人这样断句。R3′（短段门槛 4→6 + 双字谓词判据）新增否决 298 个（17.3%），
+   * 那 298 个里有多少是误伤必须靠双席 A/B 判，**网关不可用期间不上线**。
+   *
+   * 已知未做（不要顺手补进去）：R3′；以及 B 类省略号压缩、D 类引号截断。
+   */
+  if (/(?:使得|致使)[^，。；：]{0,24}(?:相比|相较|而言|来说)$/.test(front)) return false;
+  if (/(?:给予|提供|带来)[^，。；：]{0,20}来$/.test(front)) return false;
   // 「…的同时」「…的时候」等复合状语尾
   if (/(?:的同时|的时候|的情形|的情况下|的基础上)$/.test(front)) return false;
   // 名词残片：末段过短且无谓语标记（「工艺」）；或量词开头的同位语短语且无谓语标记
