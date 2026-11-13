@@ -71,7 +71,7 @@ trade-offs are stated; pick per job.
 
 **Try it in your browser** — no install needed: **[online demo](https://fengxingxuerong.github.io/quaiwei/)** (live)
 
-**Desktop (Windows, no install, ~209 MB zip for v0.9.87):**
+**Desktop (Windows, no install, ~209 MB zip for v0.9.88):**
 [latest release](https://github.com/fengxingxuerong/quaiwei/releases/latest) — unzip, double-click
 `QuAiWei.exe`. The published desktop build can lag behind the repo version; check the release page.
 
