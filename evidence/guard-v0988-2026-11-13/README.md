@@ -87,17 +87,19 @@ if (/(?:给予|提供|带来)[^，。；：]{0,20}来$/.test(front)) return fals
 ## 五、复现
 
 ```bash
-# 新增数字：在 46 组 --api 产出 + 23 篇本地产出上回放（临时脚本不入库）
-npx tsx scripts/_num-added-audit.ts
-npx tsx scripts/_num-added-local.ts
+# 新增数字：在 69 组真实产出上回放（本地引擎 23 + --api 两档各 23）
+npx tsx scripts/guard-replay.ts
 
-# C 类守卫影响面：改动前后各跑一遍 21 篇真人长文再 diff
-npx tsx scripts/_guard-impact.ts <out-new>
+# C 类守卫影响面：改动前后各 dump 一遍 21 篇真人长文再 diff
+npx tsx scripts/guard-dump.ts /tmp/after-new
 git stash push -- src/engine/humanize-primitives.ts
-npx tsx scripts/_guard-impact.ts <out-old>
+npx tsx scripts/guard-dump.ts /tmp/after-old
 git stash pop
-diff -rq <out-new> <out-old>
+diff -rq /tmp/after-new /tmp/after-old
 
 # 门禁
 npx tsc --noEmit && npm run test:realcase && npm run test:improve && npm run test:quality
 ```
+
+前置：`scripts/realcase/out`（本地引擎产出）需先跑一次 `npx tsx scripts/realcase/run.ts`；
+`artifacts/human-corpus/` 是 gitignored 的本地语料，缺了 `guard-dump` 会直接报错退出。
