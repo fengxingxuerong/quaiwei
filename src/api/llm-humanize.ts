@@ -27,6 +27,16 @@ import { voiceDirectiveBlock } from "../engine/voice-profile";
 import { numericFidelityWarning } from "../engine/number-fidelity";
 import { errMsg } from "./llm-judge";
 
+/** v0.9.89：事实钉住标记指令。原文里的 ⟦逐字保留N⟧ 是硬占位符，必须原样带回。 */
+export function pinDirectiveBlock(count?: number): string {
+  if (!count || count <= 0) return "";
+  return (
+    `\n\n【最高优先级 · 逐字保留标记】原文里有 ${count} 个形如 ⟦逐字保留0⟧ 的标记。` +
+    `改写时每个标记都必须**原样、逐字**出现在你的输出里（包括方括号与数字），` +
+    `不得翻译、不得改写、不得删除、不得替换成别的内容。它们代表用户要求保真的事实片段，之后会被还原。`
+  );
+}
+
 /* ----------------------------- 去味 ----------------------------- */
 
 /** v0.8.8 评判员宽严自适应：动态达标线 = max(绝对目标, 首轮分 × 此比例)。
@@ -117,7 +127,8 @@ export function buildSystemPrompt(cfg: ApiConfig, intensity: number, sourceText?
     styleDirective(cfg.style) +
     personaDirective(cfg.persona) +
     intensityDirective(intensity) +
-    voiceDirectiveBlock(cfg.voiceSample)
+    voiceDirectiveBlock(cfg.voiceSample) +
+    pinDirectiveBlock(cfg.pinCount)
   );
 }
 

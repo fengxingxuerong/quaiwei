@@ -1,0 +1,172 @@
+{
+  "seatA": "eval-work/out-api-glm/eval_dual_results.jsonl",
+  "seatB": "eval-work/out-api-dfmodel/eval_dual_results.jsonl",
+  "pair": {
+    "local09": {
+      "n_cases": 23,
+      "votes": 41,
+      "seatA_win": 21,
+      "seatB_win": 20,
+      "combined_win": 41,
+      "combined_winRate": 0.891,
+      "p_one_tail": 4.547473508864641e-13,
+      "seat_agreement": 0.87,
+      "firstArmChosen": 0.37,
+      "per_case": {
+        "C1-work-summary": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C10-tiny-input": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C11-admin-notice": {
+          "A_engineWin": false,
+          "B_engineWin": false
+        },
+        "C12-paper-abstract": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C13-manual-steps": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C14-finance-flash": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C15-policy-qa": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C16-prospectus-risk": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C17-verdict-labor": {
+          "A_engineWin": true,
+          "B_engineWin": false
+        },
+        "C18-tender-spec": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C19-kids-essay": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C2-opinion-wechat": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C20-speech-opening": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C21-fenced-code-doc": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C22-markdown-struct": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C23-frontmatter-indent": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C3-tech-popular": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C4-product-copy": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C5-news-release": {
+          "A_engineWin": false,
+          "B_engineWin": true
+        },
+        "C6-academic-abstract": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C7-story-dialogue": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C8-social-post": {
+          "A_engineWin": true,
+          "B_engineWin": false
+        },
+        "C9-mixed-links": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        }
+      }
+    },
+    "local06": {
+      "n_cases": 8,
+      "votes": 12,
+      "seatA_win": 6,
+      "seatB_win": 6,
+      "combined_win": 12,
+      "combined_winRate": 0.75,
+      "p_one_tail": 0.000244140625,
+      "seat_agreement": 1.0,
+      "firstArmChosen": 0.375,
+      "per_case": {
+        "C11-admin-notice": {
+          "A_engineWin": false,
+          "B_engineWin": false
+        },
+        "C13-manual-steps": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C14-finance-flash": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C16-prospectus-risk": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C17-verdict-labor": {
+          "A_engineWin": false,
+          "B_engineWin": false
+        },
+        "C20-speech-opening": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C3-tech-popular": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        },
+        "C9-mixed-links": {
+          "A_engineWin": true,
+          "B_engineWin": true
+        }
+      }
+    }
+  },
+  "abs_cross_seat": {
+    "orig": {
+      "n": 23,
+      "pearson": 0.481,
+      "mae": 13.4,
+      "meanA": 77.2,
+      "meanB": 89.3
+    },
+    "local09": {
+      "n": 23,
+      "pearson": 0.099,
+      "mae": 31.1,
+      "meanA": 56.1,
+      "meanB": 59.2
+    }
+  }
+}

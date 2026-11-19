@@ -13,7 +13,7 @@ passing any detector. See [the full evaluation](docs/eval-dual-2026-11-06.md) an
 [SCORECARD](SCORECARD.md) §4.
 
 Unlike most projects in this space (a list of rules handed to an LLM), this is a compiled
-TypeScript engine with a **2,334-case regression suite** — every rule is anchored to a real text
+TypeScript engine with a **2,375-case regression suite** — every rule is anchored to a real text
 sample and locked by a test.
 
 > 中文完整文档：[README.md](README.md) · [成绩页 SCORECARD](SCORECARD.md) · [CHANGELOG](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
@@ -47,7 +47,7 @@ useful for before/after trend on the same text, **not** calibrated to any vendor
 
 | | Rule-list skills (blader/humanizer, Humanizer-zh, stop-slop…) | QuAiWei |
 |---|---|---|
-| Engine | A markdown file the LLM reads | TypeScript engine, **2,334 test cases**, CI on every push |
+| Engine | A markdown file the LLM reads | TypeScript engine, **2,375 test cases**, CI on every push |
 | Runs offline | No (needs an LLM) | **Yes** — default path is local, costs nothing, sends nothing |
 | Reproducible | No | **Yes** — fixed seed; same input + same seed → same output (CLI / MCP) |
 | Built-in scoring | No | Yes — heuristic proxy score + explainable per-item trace (`--explain`) |
@@ -71,9 +71,9 @@ trade-offs are stated; pick per job.
 
 **Try it in your browser** — no install needed: **[online demo](https://fengxingxuerong.github.io/quaiwei/)** (live)
 
-**Desktop (Windows, no install, ~209 MB zip for v0.9.88):**
+**Desktop (Windows, no install, ~209 MB zip for v0.9.89):**
 [latest release](https://github.com/fengxingxuerong/quaiwei/releases/latest) — unzip, double-click
-`QuAiWei.exe`. The desktop build matches v0.9.88. If the exe crashes on launch, run `启动 QuAiWei.bat` in the same folder (GPU compatibility switches).
+`QuAiWei.exe`. The desktop build matches v0.9.89. If the exe crashes on launch, run `启动 QuAiWei.bat` in the same folder (GPU compatibility switches).
 
 **CLI** (needs the repo locally + Node ≥ 22.12):
 
@@ -162,16 +162,16 @@ measured at 0.40 between "merge on / split off" thresholds).
   entirely in v0.9.83**: an unverifiable conversion pretends to a precision it cannot back.
   History lives in `docs/fingerprint-and-zhuque-calibration.md` (archived).
 
-## Competitor landscape (measured 2026-10-27; scan script: `node scripts/scan-github-sector.mjs --md`)
+## Competitor landscape (measured 2026-11-19; scan script: `node scripts/scan-github-sector.mjs --md`)
 
 | Project | ★ | Offline | Chinese | Structure-level | Detector hook-up |
 |---|---:|:--:|:--:|:--:|:--:|
-| blader/humanizer | 60,979 | ✗ | ✗ | LLM decides | ✗ |
-| op7418/Humanizer-zh | 21,047 | ✗ | ✓ | LLM decides | ✗ |
-| hardikpandya/stop-slop | 18,371 | ✗ | ✗ | LLM decides | ✗ |
-| petergyang/no-ai-slop | 12,847 | ✗ | ✗ | LLM decides | ✗ |
-| sgaofen/humanizer-local-model | 546 | ✓ | ✓ | ✓ (12B weights) | self-reported once |
-| **quaiwei** | 3 | ✓ | ✓ | LLM deep mode only | **✓ any HTTP endpoint, multi-vendor** |
+| blader/humanizer | 71,124 | ✗ | ✗ | LLM decides | ✗ |
+| op7418/Humanizer-zh | 23,304 | ✗ | ✓ | LLM decides | ✗ |
+| hardikpandya/stop-slop | 19,061 | ✗ | ✗ | LLM decides | ✗ |
+| petergyang/no-ai-slop | 13,637 | ✗ | ✗ | LLM decides | ✗ |
+| sgaofen/humanizer-local-model | 998 | ✓ | ✓ | ✓ (12B weights) | self-reported once |
+| **quaiwei** | 4 | ✓ | ✓ | LLM deep mode only | **✓ any HTTP endpoint, multi-vendor** |
 
 Self-reported pass-rates elsewhere (">50% → 11%", "100% human-rate cases") have **not been
 reproduced here** — and no forward pass-rate sample exists in this repo either (the credential

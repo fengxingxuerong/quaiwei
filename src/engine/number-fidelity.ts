@@ -100,6 +100,23 @@ const CHINESE_RE = new RegExp(
   "g",
 );
 
+/**
+ * 中文数字 + 单位 的伪量词排除：有些单位字同时是常用构词成分，
+ * 紧跟特定后缀时整段不是数量（「这一升级」的「一升」不是 1 升；
+ * 「一度重视」的「一度」不是 1 度）。只排这些已知组合，不放宽真实量词。
+ */
+const NON_QUANTITY_SUFFIX: Record<string, string> = {
+  // 「一升级 / 三提升 / 两升高」是动词/形容，不是升数；其余单位不动，避免误伤真实量词。
+  升: "级降高",
+};
+
+function isPseudoQuantity(text: string, matchEnd: number, unit: string): boolean {
+  const suffixes = NON_QUANTITY_SUFFIX[unit];
+  if (!suffixes) return false;
+  const next = text.slice(matchEnd, matchEnd + 1);
+  return next.length > 0 && suffixes.includes(next);
+}
+
 function normalizeText(text: string): string {
   return text
     .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
@@ -127,6 +144,7 @@ export function quantityFacts(text: string): QuantityFact[] {
     const raw = m[1].replace(/,/g, "");
     const before = norm.slice(Math.max(0, m.index - 1), m.index);
     if (/[A-Za-z]/.test(before)) continue; // 标识符：X200 / iPhone15
+    if (m[2] && isPseudoQuantity(norm, m.index + m[0].length, m[2])) continue;
     const unit = m[2] ? normUnit(m[2] === "%" ? "%" : m[2]) : "";
     const isQuantity = unit !== "" || /\./.test(raw) || raw.length >= 2;
     if (!isQuantity) continue; // 无单位的单个数字
@@ -137,6 +155,7 @@ export function quantityFacts(text: string): QuantityFact[] {
   while ((m = CHINESE_RE.exec(norm)) !== null) {
     const n = parseChineseNumber(m[1]);
     if (n === null) continue;
+    if (isPseudoQuantity(norm, m.index + m[0].length, m[2])) continue;
     out.push({ value: canonNumber(n), unit: normUnit(m[2]) });
   }
   return out;

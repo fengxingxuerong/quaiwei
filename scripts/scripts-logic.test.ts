@@ -207,6 +207,8 @@ interface CliArgs {
   judgeModel: string;
   deep: boolean;
   contest: number;
+  /** v0.9.89：声口样本文件路径 */
+  voiceSamplePath: string;
   outFormat: string;
   explain: boolean;
   recursive: boolean;
@@ -378,6 +380,17 @@ describe("humanize-cli parseArgs", () => {
     expect(parseArgs(base(["./in"])).outFormat).toBe("follow");
     expect(parseArgs(base(["./in", "--out-format", "docx"])).outFormat).toBe("docx");
     expect(parseArgs(base(["./in", "--out-format", "TXT"])).outFormat).toBe("txt");
+  });
+
+  // v0.9.89：声口样本 CLI 化。解析层只收路径，不读文件、不影响任何默认值。
+  it("--voice-sample：默认空串；显式路径原样收下，不吞掉后续参数", () => {
+    expect(parseArgs(base(["./in"])).voiceSamplePath).toBe("");
+    const a = parseArgs(
+      base(["./in", "--voice-sample", "./my-writing.txt", "--intensity", "0.9"]),
+    );
+    expect(a.voiceSamplePath).toBe("./my-writing.txt");
+    expect(a.intensity).toBe(0.9);
+    expect(a.outFormat).toBe("follow");
   });
 
   // v0.9.30：explain.ts 的出口之一。默认必须关——它是 O(句数) 的额外 diff，

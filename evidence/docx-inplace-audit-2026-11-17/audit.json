@@ -1,0 +1,167 @@
+{
+  "at": "2026-11-16T16:41:33.699Z",
+  "purpose": "docx 原地编辑只读体检：识别可改 <w:t> 与不可改区域",
+  "sample": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"\n            xmlns:m=\"http://schemas.openxmlformats.org/officeDocument/2006/math\"\n            xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">\n<w:body>\n  <w:p><w:r><w:t>这是一段纯正文可以改写。</w:t></w:r></w:p>\n  <w:p><w:pPr><w:b/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>这段带加粗属性，文本可改、rPr 保留。</w:t></w:r></w:p>\n  <w:p><w:r><w:instrText xml:space=\"preserve\"> PAGE </w:instrText></w:r><w:r><w:t>第 1 页</w:t></w:r></w:p>\n  <w:p><w:r><m:oMath><m:r><m:t>E=mc^2</m:t></m:r></m:oMath></w:r><w:r><w:t>公式如上。</w:t></w:r></w:p>\n  <w:p><w:r><w:t>带批注的正文</w:t><w:commentReference w:id=\"0\"/></w:r></w:p>\n  <w:p><w:r><w:t>图片说明文字</w:t><w:drawing><wp:inline/></w:drawing></w:r></w:p>\n  <w:p><w:r><w:t>访问</w:t></w:r><w:hyperlink r:id=\"rId5\"><w:r><w:t>示例网站</w:t></w:r></w:hyperlink><w:r><w:t>了解详情。</w:t></w:r></w:p>\n  <w:p><w:del w:id=\"1\"><w:r><w:delText>旧文本</w:delText></w:r></w:del><w:ins w:id=\"2\"><w:r><w:t>新文本</w:t></w:r></w:ins></w:p>\n  <w:p><w:r><w:t>文本框外正文</w:t><w:txbxContent><w:p><w:r><w:t>文本框内正文</w:t></w:r></w:p></w:txbxContent></w:r></w:p>\n  <w:p/>\n  <w:tbl><w:tr><w:tc><w:p><w:r><w:t>表格单元格正文。</w:t></w:r></w:p></w:tc></w:tr></w:tbl>\n</w:body>\n</w:document>",
+  "paragraphs": [
+    {
+      "idx": 0,
+      "textFromReaderScope": "这是一段纯正文可以改写。",
+      "hasWt": true,
+      "immutable": [],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "可整段改写"
+    },
+    {
+      "idx": 1,
+      "textFromReaderScope": "这段带加粗属性，文本可改、rPr 保留。",
+      "hasWt": true,
+      "immutable": [],
+      "preserve": [
+        {
+          "kind": "run 属性",
+          "tag": "w:rPr"
+        }
+      ],
+      "textboxTexts": [],
+      "cls": "含正文+结构(文本可改/结构保留)"
+    },
+    {
+      "idx": 2,
+      "textFromReaderScope": "第 1 页",
+      "hasWt": true,
+      "immutable": [
+        {
+          "kind": "域代码",
+          "tag": "w:instrText"
+        }
+      ],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "含正文+结构(文本可改/结构保留)"
+    },
+    {
+      "idx": 3,
+      "textFromReaderScope": "公式如上。",
+      "hasWt": true,
+      "immutable": [
+        {
+          "kind": "OMML 公式",
+          "tag": "m:oMath"
+        }
+      ],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "含正文+结构(文本可改/结构保留)"
+    },
+    {
+      "idx": 4,
+      "textFromReaderScope": "带批注的正文",
+      "hasWt": true,
+      "immutable": [
+        {
+          "kind": "批注引用",
+          "tag": "w:commentReference"
+        }
+      ],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "含正文+结构(文本可改/结构保留)"
+    },
+    {
+      "idx": 5,
+      "textFromReaderScope": "图片说明文字",
+      "hasWt": true,
+      "immutable": [
+        {
+          "kind": "图片/图形",
+          "tag": "w:drawing"
+        }
+      ],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "含正文+结构(文本可改/结构保留)"
+    },
+    {
+      "idx": 6,
+      "textFromReaderScope": "访问示例网站了解详情。",
+      "hasWt": true,
+      "immutable": [],
+      "preserve": [
+        {
+          "kind": "超链接",
+          "tag": "w:hyperlink"
+        }
+      ],
+      "textboxTexts": [],
+      "cls": "含正文+结构(文本可改/结构保留)"
+    },
+    {
+      "idx": 7,
+      "textFromReaderScope": "新文本",
+      "hasWt": true,
+      "immutable": [
+        {
+          "kind": "修订删除文本",
+          "tag": "w:delText"
+        },
+        {
+          "kind": "修订插入标记",
+          "tag": "w:ins"
+        },
+        {
+          "kind": "修订删除标记",
+          "tag": "w:del"
+        }
+      ],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "含正文+结构(文本可改/结构保留)"
+    },
+    {
+      "idx": 8,
+      "textFromReaderScope": "文本框外正文文本框内正文",
+      "hasWt": true,
+      "immutable": [],
+      "preserve": [],
+      "textboxTexts": [
+        "文本框内正文"
+      ],
+      "cls": "含文本框(需拆分)"
+    },
+    {
+      "idx": 9,
+      "textFromReaderScope": "",
+      "hasWt": false,
+      "immutable": [],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "空段"
+    },
+    {
+      "idx": 10,
+      "textFromReaderScope": "表格单元格正文。",
+      "hasWt": true,
+      "immutable": [],
+      "preserve": [],
+      "textboxTexts": [],
+      "cls": "可整段改写"
+    }
+  ],
+  "summary": {
+    "paragraphs": 11,
+    "byClass": {
+      "可整段改写": 2,
+      "含正文+结构(文本可改/结构保留)": 7,
+      "含文本框(需拆分)": 1,
+      "空段": 1
+    },
+    "readerLeaks": {
+      "textbox": true,
+      "instrText": false,
+      "formula_mt": false,
+      "delText": false
+    },
+    "verdict": "只读体检通过：现有 docxXmlToText 只读 <w:t>，域代码(PAGE)/公式(m:t)/修订删除(delText) 均未泄漏（false=true）；唯一确认风险是文本框 <w:txbxContent> 内的 <w:t> 也被 reader 收入（leak=true）——原地编辑必须把文本框节点排除在改写单位之外。结论：方案 §2.2「只改 word/document.xml 的 <w:t>、其余 ZIP 条目逐字节回写」可行；但必须补一条硬约束「跳过 <w:txbxContent> 内 <w:t>」，否则会把文本框文字当正文改写。本轮只验证识别能力，未动产品代码、未实现写入。"
+  }
+}

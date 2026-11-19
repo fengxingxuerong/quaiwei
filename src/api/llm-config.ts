@@ -94,6 +94,13 @@ export interface ApiConfig {
    */
   voiceSample?: string;
   /**
+   * v0.9.89：事实钉住标记数（CLI --pin 走 LLM 通道时 >0）。
+   * buildSystemPrompt 追加一条硬指令：原文里的 ⟦逐字保留N⟧ 标记必须原样出现在产出中，
+   * 不得改写/翻译/删除。CLI 在 restorePins 里按标记换回用户指定的原文片段。
+   * 只服务 LLM 路径；本地引擎用私用区占位符，不消费此字段。
+   */
+  pinCount?: number;
+  /**
    * v0.9.55 竞品吸收（四）：回译洗稿（仅深度模式收尾执行，默认关）。
    *
    * 来源：lynote-ai 的"中→外→中回译"——绕一圈外语再回来，句式与用词换了
@@ -281,6 +288,7 @@ export const DEFAULT_API: ApiConfig = {
   persona: "default",
   // v0.9.55 竞品吸收（一）：声线样本默认空（不注入，行为与升级前逐字一致）
   voiceSample: "",
+  pinCount: 0,
   // v0.9.55 竞品吸收（四）：回译洗稿默认关（多花 2 次调用，且引入新的改写面；
   // 不做默认行为变更——默认用户的产出与升级前逐字一致）
   backTranslation: false,

@@ -8,6 +8,7 @@ import {
 } from "./llm-humanize.ts";
 import { DEFAULT_API } from "./llm-config.ts";
 import { buildRevisionPrompt } from "./llm-prompts.ts";
+import { pinDirectiveBlock } from "./llm-humanize.ts";
 /** 构造 OpenAI 兼容 200 响应 */
 function okJson(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -1383,5 +1384,16 @@ describe("数字保真（深度模式，v0.9.77）", () => {
     );
     expect(deep.text).toBe(KEEP);
     expect(deep.note).not.toContain("产出缺少原文中的数字");
+  });
+});
+
+describe("pinDirectiveBlock（v0.9.89 事实钉住 LLM 指令）", () => {
+  it("count<=0 不注入；正数给出逐字保留硬指令", () => {
+    expect(pinDirectiveBlock(0)).toBe("");
+    expect(pinDirectiveBlock(undefined)).toBe("");
+    const s = pinDirectiveBlock(2);
+    expect(s).toContain("2 个");
+    expect(s).toContain("⟦逐字保留0⟧");
+    expect(s).toContain("不得改写");
   });
 });

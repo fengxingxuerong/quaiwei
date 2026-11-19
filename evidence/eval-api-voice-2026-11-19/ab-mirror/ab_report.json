@@ -1,0 +1,52 @@
+{
+ "model": "glm-5.3-flash",
+ "modelsBySeat": {
+  "A": "glm-5.3-flash",
+  "B": "glm-5.3-flash"
+ },
+ "seats": "AB",
+ "cases": 3,
+ "pairs": 6,
+ "bWin": 5,
+ "bWinRate": 0.833,
+ "bySeat": {
+  "A": {
+   "n": 3,
+   "bWin": 3
+  },
+  "B": {
+   "n": 3,
+   "bWin": 2
+  }
+ },
+ "firstArmChosen": 0.667,
+ "seatAgreement": {
+  "pairs": 3,
+  "rate": 0.667
+ },
+ "pValue": 0.109375,
+ "errors": 0,
+ "perCase": [
+  {
+   "id": "c1",
+   "bWinVotes": 2,
+   "votes": 2,
+   "winner": "b"
+  },
+  {
+   "id": "c2",
+   "bWinVotes": 2,
+   "votes": 2,
+   "winner": "b"
+  },
+  {
+   "id": "c3",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  }
+ ],
+ "armA": "D:\\projects\\_quaiwei-tmp\\voice-eval\\arm-novoice",
+ "armB": "D:\\projects\\_quaiwei-tmp\\voice-eval\\arm-voice",
+ "elapsedSec": 22.9
+}

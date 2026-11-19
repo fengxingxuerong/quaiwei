@@ -1,18 +1,18 @@
 ---
 name: qu-ai-wei
-display_name: 去 AI 味 · QuAiWei
-display_name_zh: 去 AI 味 · QuAiWei
+display_name: 趣AI味 QuAiWei
+display_name_zh: 趣AI味 QuAiWei
 display_name_en: QuAiWei Humanizer
-description: 去 AI 味（简体中文）——调用本仓库自带的本地离线引擎（零成本、不联网）或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后 AI 味评分与逐条痕迹报告。当用户要求「降 AI 率 / 去 AI 味 / 去 AIGC 痕迹 / 让这段更像人写的 / 自检朱雀类检测」时使用。
-description_zh: 去 AI 味（简体中文）——本地离线引擎或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后评分与痕迹报告。
+description: 趣AI味 QuAiWei（简体中文去 AI 味）——调用本仓库自带的本地离线引擎（零成本、不联网）或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后 AI 味评分与逐条痕迹报告。当用户要求「降 AI 率 / 去 AI 味 / 去 AIGC 痕迹 / 让这段更像人写的 / 自检朱雀类检测」时使用。
+description_zh: 趣AI味 QuAiWei（简体中文去 AI 味）——本地离线引擎或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后评分与痕迹报告。
 description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
 metadata:
-  version: 0.9.88
+  version: 0.9.89
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 
-# 去 AI 味 · QuAiWei
+# 趣AI味 QuAiWei
 
 薄壳 skill：**规则与引擎都在仓库里**，这里只负责告诉 agent「怎么调、什么别做」。
 与"一份提示词清单"型 skill 的区别是——本仓库跑的是有回归测试锁死的 TypeScript 引擎，
@@ -68,6 +68,9 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--contest <n>` | ≥1 | 首轮多候选择优（调用数 ×n） |
 | `--max-calls <n>` / `--max-wait <sec>` | 预算 | 整篇调用预算 / 轮间最长等待 |
 | `--llm-timeout <sec>` | 请求超时 | 单次 LLM 请求超时，默认 90 秒（上限 600）；慢思考型网关可调到 180~300，避免被误报成「模型返回空内容」 |
+| `--voice-sample <文件>` | 本人写作样本 | 只作用 `--api` 通道：给 2~3 段自己的写作（≥100 可见字符，上限 5000），抽出句长节奏/标点习惯/口气注入提示词，让改写跟随你的声口。样本过短或读不到就原样出稿；本地引擎不消费此参数 |
+| `--docx-inplace` | 开关 | **docx 富文本原地编辑**：只改 `word/document.xml` 的 `<w:t>`，样式/批注/修订/公式/文本框/图片逐字节保留；改写单位是段落、不跨段。保格式但去味强度受限（不做跨段结构重排）。只吃 `.docx`，与 `--api` / `--pin` / `--variant` 互斥 |
+| `--pin <文件>` | 事实钉住 | 每行一段原文片段（数字、引文、承诺、专名），这些片段改写前后逐字不变（私有占位符在 CLI 层做，引擎看不见）。任一段没保住就**整篇回退原文**。空行与 `#` 注释忽略，单段 ≥4 可见字符，单篇 ≤64 段。`--report` 记 `pins` 段与 `totals.pinApplied`/`pinFallback` |
 | `--target <1~100>` | 默认 10 | 深度模式达标线：LLM 评判 ≤ 此分即收手。调低=多压几轮更彻底也更慢，调高=更快收手；不给则沿用默认 |
 | `--strict` | 开关 | 严格保真：发现编造事实即拒绝交付并回退 |
 | `--structural` | 开关 | 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，对守卫全过的相邻句做**至多一次交换**——产出是原句排列，不新增任何内容；叙事/人写体裁不受影响。v0.9.85 起开启即尝试（不再随机跳过），`--report` 记 `structuralApplied`；23 篇真实语料实测仅 2 篇真换成功，其余被守卫否决，别为提高生效率放宽守卫 |

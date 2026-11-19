@@ -71,6 +71,8 @@ import { readDocxText, writeDocxText } from "../src/docx-io";
 import { applyRegionalVariant, formatRegionalSummary, type RegionalHit } from "../src/engine/regional-zh";
 import { academicAudit, formatAcademicReport } from "../src/engine/academic-check";
 import { auditStructure, formatStructureReport } from "../src/engine/structure-audit";
+import { parsePinFile, preparePins, restorePins } from "./pin-guard";
+import { rewriteDocxInplace } from "../src/docx-inplace";
 import {
   structureMetrics,
   formatMetrics,
@@ -175,6 +177,19 @@ interface Args {
   skipLowRisk: boolean;
   persona: string;
   report: string;
+  /**
+   * v0.9.89：声口样本文件（用户本人写作节选，≥100 可见字符才生效）。
+   * 只服务 --api 的 LLM 通道（注入 system prompt 的声线画像）；本地引擎不消费。
+   * 与 UI 设置里的 voiceSample 同一口径，上限 5000 字符。
+   */
+  voiceSamplePath: string;
+  /**
+   * v0.9.89：事实钉住文件。每行一段「逐字保留」的原文片段（数字/引文/承诺句/专名），
+   * 改写前后必须原样出现。占位符在 CLI 层做，引擎不消费。
+   */
+  pinFile: string;
+  /** v0.9.89：docx 原地编辑——只改 word/document.xml 的 <w:t>，保样式/批注/公式/文本框 */
+  docxInplace: boolean;
   /** v0.9.17：输出格式。follow = 跟随输入扩展名（.docx 进 → .docx 出） */
   outFormat: "follow" | "txt" | "docx";
   /** v0.9.30：改完附「为什么这么改」清单（句级 diff 反查规则表，事后归因） */
@@ -249,6 +264,7 @@ const USAGE =
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
   " [--llm-timeout <sec>]" +
+  " [--voice-sample <本人写作样本.txt>] [--pin <逐字保留清单.txt>] [--docx-inplace]" +
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
   " [--academic-check [--against <改后稿>]]" +
@@ -272,6 +288,14 @@ const USAGE =
   "\n  --detect-only 审题模式：只给「AI 味痕迹地图」（哪句、为什么命中、怎么改），" +
   "一个字都不改也不落盘，无需 API Key。与 --dry-run（列待处理文件清单）不是一回事。" +
   "\n  --help / -h 打印本用法（退出码 0）。" +
+  "\n  --voice-sample <文件>：本人写作样本（2~3 段，≥100 可见字符），只作用 --api 通道。" +
+  "把你的句长节奏/标点习惯/口气抽成画像注入提示词，让改写跟随你的声口而非通用默认；" +
+  "样本过短或文件读不到就原样出稿（不瞎画像）。本地引擎不消费这个参数。" +
+  "\n  --pin <文件>：事实钉住。每行一段原文片段（数字、引文、承诺、专名），" +
+  "这些片段改写前后逐字不变；任何一段没保住就整篇回退原文，宁可不改也不毁事实。" +
+  "空行与 # 注释行忽略，单段至少 4 个可见字符，单篇最多 64 段。" +
+  "\n  --docx-inplace：docx 富文本原地编辑（只吃 .docx）。只改 word/document.xml 的 <w:t>，" +
+  "样式/批注/修订/公式/文本框/图片逐字节保留；改写单位是段落、不跨段。保格式但去味强度受限。" +
   "\n  --variant zh-TW：台湾用词 + 半角标点转全角（默认 none 不动）。" +
   "\n  --structural 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，" +
   "对守卫全过的相邻句做至多一次交换——产出是原句排列，句多重集逐字不变，" +
@@ -335,6 +359,9 @@ function parseArgs(argv: string[]): Args {
     skipLowRisk: false,
     persona: "default",
     report: "",
+    voiceSamplePath: "",
+    pinFile: "",
+    docxInplace: false,
     outFormat: "follow",
     explain: false,
     recursive: false,
@@ -383,6 +410,8 @@ function parseArgs(argv: string[]): Args {
     "--llm-timeout",
     "--persona",
     "--report",
+    "--voice-sample",
+    "--pin",
     "--out-format",
     "--jobs",
   ]);
@@ -509,6 +538,15 @@ function parseArgs(argv: string[]): Args {
       case "--report":
         args.report = a[++i] ?? "";
         break;
+      case "--voice-sample":
+        args.voiceSamplePath = a[++i] ?? "";
+        break;
+      case "--pin":
+        args.pinFile = a[++i] ?? "";
+        break;
+      case "--docx-inplace":
+        args.docxInplace = true;
+        break;
       case "--out-format": {
         const v = (a[++i] ?? "").toLowerCase();
         if (v === "follow" || v === "txt" || v === "docx") args.outFormat = v;
@@ -607,6 +645,15 @@ function buildApiConfig(args: Args): ApiConfig {
   if (args.altModel) cfg.altModel = args.altModel;
   if (args.persona === "default" || args.persona === "netgen" || args.persona === "classic") {
     cfg.persona = args.persona;
+  }
+  // v0.9.89：声口样本。读不到/过短不报错——按 DEFAULT_API 的空串走，追问都不做（与 UI 口径一致：
+  // extractVoiceProfile 对 <100 可见字符返回 null，注入层自然跳过）。上限与 store 的 5000 对齐。
+  if (args.voiceSamplePath) {
+    try {
+      cfg.voiceSample = fs.readFileSync(args.voiceSamplePath, "utf-8").slice(0, 5000);
+    } catch {
+      console.error(`✗ 读声口样本失败（--voice-sample ${args.voiceSamplePath}），本次不注入声线画像`);
+    }
   }
   return cfg;
 }
@@ -727,6 +774,16 @@ interface FileReport {
   detectorScores?: DetectorScoreRow[];
   /* v0.9.81：地区用词/标点校正（--variant zh-TW 时才有） */
   regional?: { variant: string; terms: RegionalHit[]; punctuation: number };
+  /** v0.9.89：docx 原地编辑（--docx-inplace）逐篇结果 */
+  docxInplace?: { paragraphs: number; skipped: number };
+  /* v0.9.89：事实钉住（--pin）逐篇结果 */
+  pins?: {
+    requested: number;
+    applied: number;
+    unmatched: number;
+    fallbackToOriginal: boolean;
+    missingTokens: number[];
+  };
 }
 
 /** 一档检测器的读数：失败时分数为 null、error 记原因 */
@@ -1117,6 +1174,33 @@ async function main() {
     process.exit(1);
   }
 
+  // v0.9.89：docx 原地编辑与 --api/--pin/--variant 不兼容——后几者都作用在纯文本流水线上，
+  // 混用会产出「保了格式但没做声口/钉住/地区校正」的稿子，用户以为生效其实没有。
+  if (args.docxInplace && (args.api || args.pinFile || args.variant !== "none")) {
+    console.error(
+      "✗ --docx-inplace 不能和 --api / --pin / --variant 同用（它们作用在纯文本流水线，与保格式档互斥）",
+    );
+    process.exit(1);
+  }
+
+  // v0.9.89：事实钉住清单。整批共用一份——每行一段「逐字保留」的原文片段。
+  // 读不到就报错退出，绝不静默忽略（用户以为钉住了其实没有，比没这个功能更糟）。
+  let pinLines: string[] = [];
+  if (args.pinFile) {
+    try {
+      const parsed = parsePinFile(fs.readFileSync(args.pinFile, "utf-8"));
+      pinLines = parsed.pins;
+      if (parsed.skipped.length)
+        console.log(
+          `   ⓘ 事实钉住清单：跳过 ${parsed.skipped.length} 行（空行/注释/过短/超上限）`,
+        );
+      console.log(`   ⓘ 事实钉住：本批每篇尝试保留 ${pinLines.length} 段原文片段`);
+    } catch (e) {
+      console.error(`✗ 读事实钉住清单失败（--pin ${args.pinFile}）：${(e as Error).message}`);
+      process.exit(1);
+    }
+  }
+
   // v0.9.32：--dry-run 在 Key 校验/建目录之前返回——预览不该被网关配置挡住，也不该留下空目录
   if (args.dryRun) {
     console.log(
@@ -1171,6 +1255,8 @@ async function main() {
   let cfg: ApiConfig | null = null;
   if (args.api) {
     cfg = buildApiConfig(args);
+    // v0.9.89：pin 走 LLM 通道时用可读标记 + system prompt 硬指令（私用区会被 LLM 剥掉）
+    if (pinLines.length) cfg.pinCount = pinLines.length;
     // CLI 没有 vite / Electron 的同源代理：形如 "/sensenova/v1" 的相对路径在 Node 里必挂，
     // 与其让它在第一次 fetch 时报个看不懂的错，不如现在说清楚。
     if (/^\//.test(cfg.baseUrl)) {
@@ -1222,6 +1308,47 @@ async function main() {
     const name = path.basename(f);
     const step = multi ? `[${idx + 1}/${files.length}] ` : "";
     try {
+      // v0.9.89：docx 原地编辑——独立路径，不进纯文本流水线（保 ZIP 其余条目）。
+      if (args.docxInplace) {
+        const t0 = Date.now();
+        if (!f.toLowerCase().endsWith(".docx")) {
+          throw new Error("--docx-inplace 只吃 .docx（收到 " + f + "）");
+        }
+        const bytes = new Uint8Array(fs.readFileSync(f));
+        const rawText = await readInputText(f);
+        const rewritten = await rewriteDocxInplace(bytes, {
+          rewrite: (para) =>
+            humanize(para, {
+              intensity: args.intensity,
+              seed: args.seed,
+              zhuqueMode: args.zhuque,
+              style: args.style,
+            }),
+        });
+        const dest = path.join(args.out, name.replace(/\.docx$/i, "") + args.suffix + ".docx");
+        const outBytes = new Uint8Array(await rewritten.blob.arrayBuffer());
+        fs.writeFileSync(dest, Buffer.from(outBytes));
+        const afterText = await readDocxText(
+          toArrayBuffer(Buffer.from(outBytes)),
+        );
+        const rep: FileReport = {
+          file: name,
+          ms: Date.now() - t0,
+          charsIn: rawText.length,
+          charsOut: afterText.length,
+          detectBefore: detectAI(rawText).probability,
+          detectAfter: detectAI(afterText.replace(/<[^>]+>/g, "")).probability,
+          ok: true,
+          outPath: dest,
+          docxInplace: rewritten.result,
+        };
+        reports[idx] = rep;
+        ok++;
+        console.log(
+          `${step}✅ ${name}：原地改写 ${rewritten.result.paragraphs} 段（跳过 ${rewritten.result.skipped}）→ ${path.basename(dest)}`,
+        );
+        return;
+      }
       const raw = await readInputText(f);
       if (!raw.trim()) {
         console.log(`${step}⏭  ${name}：空文件，跳过`);
@@ -1256,13 +1383,18 @@ async function main() {
       const lowYieldRisk = isLowYieldRisk(raw);
       rep.lowYieldRisk = lowYieldRisk;
       const didSkip = lowYieldRisk && args.skipLowRisk;
+      // v0.9.89：事实钉住——把命中片段换成私用区占位符再送进改写层（引擎/LLM 都看不见它们）。
+      const prep = pinLines.length
+        ? preparePins(raw, pinLines, !!cfg)
+        : { text: raw, pins: [] as string[], unmatched: [] as string[] };
+      const rewriteInput = prep.text;
       let out: string;
       if (didSkip) {
         out = raw;
         rep.skippedLowRisk = true;
       } else if (cfg) {
         const r = await runHumanize(
-          raw,
+          rewriteInput,
           args.intensity,
           cfg,
           (round, score, stage) => {
@@ -1280,7 +1412,7 @@ async function main() {
         rep.note = r.note;
         rep.degrade = r.degrade;
       } else {
-        out = humanize(raw, {
+        out = humanize(rewriteInput, {
           intensity: args.intensity,
           seed: args.seed,
           zhuqueMode: args.zhuque,
@@ -1293,11 +1425,33 @@ async function main() {
       }
       rep.ms = Date.now() - t0;
       // v0.9.81：地区校正（--variant）。默认 none，不跑、不记账，产出与之前逐字相同
+      // 注意：pin 占位符是私用区字符，地区词表/标点表都不碰它，所以先校正再还原，
+      // 钉住的原文片段不会被 zh-TW 换词。
       if (args.variant !== "none" && !didSkip) {
         const regional = applyRegionalVariant(out, args.variant);
         out = regional.text;
         rep.regional = { variant: args.variant, terms: regional.terms, punctuation: regional.punctuation };
         console.log(`${step}   ⓘ 地区校正：${formatRegionalSummary(regional)}`);
+      }
+      // 事实钉住还原：任何一段没保住 → 整篇回退原文（宁可不改，也不毁事实）。
+      if (prep.pins.length) {
+        const restored = restorePins(out, prep.pins, !!cfg);
+        rep.pins = {
+          requested: pinLines.length,
+          applied: prep.pins.length,
+          unmatched: prep.unmatched.length,
+          fallbackToOriginal: false,
+          missingTokens: restored.missing,
+        };
+        if (restored.missing.length) {
+          out = raw;
+          rep.pins.fallbackToOriginal = true;
+          console.log(
+            `${step}   ⚠ ${name}：${restored.missing.length} 段钉住内容没保住，整篇回退原文`,
+          );
+        } else {
+          out = restored.text;
+        }
       }
       rep.charsOut = out.length;
       rep.detectAfter = detectAI(out).probability;
@@ -1432,6 +1586,8 @@ async function main() {
             lowYieldRisk: reps.filter((r) => r.lowYieldRisk).length,
             skippedLowRisk: reps.filter((r) => r.skippedLowRisk).length,
             structuralApplied: reps.filter((r) => r.structuralApplied).length,
+            pinApplied: reps.filter((r) => r.pins && !r.pins.fallbackToOriginal).length,
+            pinFallback: reps.filter((r) => r.pins?.fallbackToOriginal).length,
             charsIn: sum0(reps, (r) => r.charsIn),
             charsOut: sum0(reps, (r) => r.charsOut),
             msTotal: sum0(reps, (r) => r.ms),

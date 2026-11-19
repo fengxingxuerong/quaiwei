@@ -1,0 +1,6 @@
+{"key": "pair|c1|A", "id": "c1", "seat": "A", "aIsFirst": true, "pick": "甲", "chosen": "b", "bWin": true, "raw": "甲", "err": null}
+{"key": "pair|c2|A", "id": "c2", "seat": "A", "aIsFirst": false, "pick": "乙", "chosen": "b", "bWin": true, "raw": "乙", "err": null}
+{"key": "pair|c1|B", "id": "c1", "seat": "B", "aIsFirst": false, "pick": "乙", "chosen": "b", "bWin": true, "raw": "乙", "err": null}
+{"key": "pair|c2|B", "id": "c2", "seat": "B", "aIsFirst": true, "pick": "甲", "chosen": "b", "bWin": true, "raw": "甲", "err": null}
+{"key": "pair|c3|A", "id": "c3", "seat": "A", "aIsFirst": true, "pick": "甲", "chosen": "b", "bWin": true, "raw": "甲", "err": null}
+{"key": "pair|c3|B", "id": "c3", "seat": "B", "aIsFirst": false, "pick": "甲", "chosen": "a", "bWin": false, "raw": "甲", "err": null}

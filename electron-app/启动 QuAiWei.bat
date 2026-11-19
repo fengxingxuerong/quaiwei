@@ -1,6 +1,6 @@
 @echo off
 chcp 936 >nul
-rem QuAiWei v0.9.88 compatibility launcher: use this if QuAiWei.exe crashes on double-click.
+rem QuAiWei v0.9.89 compatibility launcher: use this if QuAiWei.exe crashes on double-click.
 rem Same executable, extra Chromium switches for GPU/sandbox issues. Keep this folder intact.
 cd /d "%~dp0"
 if not exist "QuAiWei.exe" goto NOEXE

@@ -202,3 +202,14 @@ describe("addedNumericFacts（新增数字）", () => {
     expect(addedNumericFacts("设备型号 X200。", "设备型号 X200，另配 iPhone15。")).toEqual([]);
   });
 });
+
+describe("伪量词排除（升级/提升 不是升数）", () => {
+  it("「这一升级」「显著提升」不再被当成 1升 / 著升", () => {
+    const a = "本项目完成了全面升级，这一升级带来了显著的性能提升。";
+    const b = "项目全面升级，性能提升很明显。";
+    expect(missingNumericFacts(a, b)).toEqual([]);
+  });
+  it("真实升数仍要守住", () => {
+    expect(missingNumericFacts("加油 5升，代价 3升。", "加油 5升。")).toContain("3升");
+  });
+});

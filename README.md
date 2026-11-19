@@ -1,4 +1,4 @@
-# 趣AI味 · QuAiWei v0.9.88
+# 趣AI味 · QuAiWei v0.9.89
 
 [![CI](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml/badge.svg)](https://github.com/fengxingxuerong/quaiwei/actions/workflows/ci.yml)
 
@@ -13,7 +13,7 @@
 定位：中文 AI 文本**去味预处理工具 + 送检前自检清单**——可接入朱雀（网页版半自动 / EdgeOne API 全自动）等真实检测器做闭环验证。
 
 **在线试玩**（无需安装，浏览器直接跑，✅ 已上线）：<https://fengxingxuerong.github.io/quaiwei/> ｜
-**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（v0.9.88，约 209MB zip；release 与仓库版本一致）——解压双击 `QuAiWei.exe` 即用；若双击闪退/白屏，改用包内 `启动 QuAiWei.bat`（GPU 兼容参数） ｜
+**下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（v0.9.89，约 209MB zip；release 与仓库版本一致）——解压双击 `QuAiWei.exe` 即用；若双击闪退/白屏，改用包内 `启动 QuAiWei.bat`（GPU 兼容参数） ｜
 [English](README_EN.md) ｜ [贡献指南](CONTRIBUTING.md) ｜ [Discussions](https://github.com/fengxingxuerong/quaiwei/discussions)
 
 **先看 [成绩页（SCORECARD）](SCORECARD.md)**：能做什么 / 不能做什么 / 已知失败 / 怎么复现——每条都附命令，跑不出来算我写错。
@@ -49,17 +49,17 @@ npx tsx scripts/humanize-cli.ts in.txt --out out.txt --intensity 0.6 --seed 2026
 
 本地引擎离线运行：不联网、不需要 Key、固定 seed 同输入同产出。要保持这个特性就什么都不用配。
 
-### 同类项目对比（2026-10-27 实时星数，抓取脚本 `node scripts/scan-github-sector.mjs --md`）
+### 同类项目对比（2026-11-19 实时星数，抓取脚本 `node scripts/scan-github-sector.mjs --md`）
 
 | 项目 | ★ | 离线 | 中文 | 结构级改写 | 外部检测器接入 | 数字/格式守卫 |
 |---|---:|:--:|:--:|:--:|:--:|:--:|
-| blader/humanizer | 60,979 | ✗ | ✗ | 由 LLM 决定 | ✗ | ✗ |
-| op7418/Humanizer-zh | 21,047 | ✗ | ✓ | 由 LLM 决定 | ✗ | ✗ |
-| hardikpandya/stop-slop | 18,371 | ✗ | ✗ | 由 LLM 决定 | ✗ | ✗ |
-| petergyang/no-ai-slop | 12,847 | ✗ | ✗ | 由 LLM 决定 | ✗ | ✗ |
-| sgaofen/humanizer-local-model | 546 | ✓ | ✓ | ✓（12B 本地权重） | ✗ | 自报 149/204 中文改写无事实问题 |
-| swaylq/humanize-chinese | 29 | ✓ | ✓ | ✗ | ✗ | ✗ |
-| **quaiwei（本仓）** | **3** | **✓** | **✓** | LLM 深度模式 | **✓ 任意 HTTP 接口，可多档横向** | **✓ 23 条结构不变式 + 数字守卫** |
+| blader/humanizer | 71,124 | ✗ | ✗ | 由 LLM 决定 | ✗ | ✗ |
+| op7418/Humanizer-zh | 23,304 | ✗ | ✓ | 由 LLM 决定 | ✗ | ✗ |
+| hardikpandya/stop-slop | 19,061 | ✗ | ✗ | 由 LLM 决定 | ✗ | ✗ |
+| petergyang/no-ai-slop | 13,637 | ✗ | ✗ | 由 LLM 决定 | ✗ | ✗ |
+| sgaofen/humanizer-local-model | 998 | ✓ | ✓ | ✓（12B 本地权重） | ✗ | 自报 149/204 中文改写无事实问题 |
+| swaylq/humanize-chinese | 31 | ✓ | ✓ | ✗ | ✗ | ✗ |
+| **quaiwei（本仓）** | **4** | **✓** | **✓** | LLM 深度模式 | **✓ 任意 HTTP 接口，可多档横向** | **✓ 23 条结构不变式 + 数字守卫** |
 
 完整榜（33 项，含繁体/日韩俄/学术分支）跑 `node scripts/scan-github-sector.mjs --md` 自己出表。
 邻类不算同类，已排除：`hexiecs/talk-normal`（让 LLM 回答别啰嗦，管的是回复不是文稿）、
@@ -67,8 +67,9 @@ npx tsx scripts/humanize-cli.ts in.txt --out out.txt --intensity 0.6 --seed 2026
 
 五处要照实说的短处：
 
-1. **星数差两个数量级。** 头部 60,979，本仓 3。形态是主因：对面 `npx skills add` 一行装完，
-   本仓的 skill 还要求仓库在本地、Node ≥22.12。
+1. **星数差四个数量级。** 头部 71,124，本仓 4。形态是主因：对面 `npx skills add` 一行装完，
+   本仓的 skill 还要求仓库在本地、Node ≥22.12。头部三周（10-27→11-19）涨了一万星且仍在提交；
+   中文侧 op7418 停在 09-23、sgaofen 停在 10-19，但 star 是存量，停更不等于让位。
 2. **本地引擎默认不碰句序，段落骨架只做模式破除。** 默认路径做切句、重切、换词、拆排比/枚举；
    v0.9.82 起可选 `--structural` 做**受限句序重排**——只对守卫全过的相邻句做至多一次交换，
    产出是原句排列（句多重集逐字不变），"不新增事实"在构造上成立；
@@ -812,5 +813,5 @@ MIT（见 LICENSE）。
 
 ## 更新日志
 
-完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.88**（以 `package.json` 的 `version` 为准）。
+完整版本历史见 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v0.9.89**（以 `package.json` 的 `version` 为准）。
 

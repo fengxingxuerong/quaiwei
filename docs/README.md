@@ -19,7 +19,9 @@
 | [竞品对比-2026-10-27.md](竞品对比-2026-10-27.md) | 当前口径 | 同赛道 33 项横比：实时星数、形态分布、能力面、撞名处置、该做与不做。抓数用 `node scripts/scan-github-sector.mjs --md`，脚本里的 `REPOS` 是竞品名单唯一出处 |
 | [regional-zh.md](regional-zh.md) | 当前口径 | 地区用词校正（v0.9.81）：`--variant zh-TW` 的用法、三条边界、词表门槛、验法 |
 | [academic-check.md](academic-check.md) | 当前口径 | 学术自检（v0.9.81）：`--academic-check` 与 `--against` 判什么/不判什么、退出码、180 组实测、真阻断样例 |
-| [索引投稿.md](索引投稿.md) | 方案 | awesome-humanizer-skills 的投稿材料：他们的 issue 格式、可直接贴的正文、为什么这次没提交 |
+| [索引投稿.md](索引投稿.md) | 当前口径 | awesome-humanizer-skills 投稿材料：issue 格式、已提交的正文（2026-11-15 → [#2](https://github.com/zhuyansen/awesome-humanizer-skills/issues/2)）、10-26「没有 GitHub 凭证」结论的更正与复现路径 |
+| [命名口径.md](命名口径.md) | 当前口径 | 对外命名口径（2026-11-15）：不改 repo slug、统一「趣AI味 QuAiWei」；已改 description / 19 topics，随包文件待下次发版统一的指纹原因 |
+| [竞品对齐排期-2026-11-15.md](竞品对齐排期-2026-11-15.md) | 方案 | 优先级 2~5 执行记录：索引榜 issue #2 已提交；同文横向盲测的网关/竞品产物阻塞与恢复后协议；docx 原地编辑方案与排期 |
 | [桌面端冒烟-2026-10-23.md](桌面端冒烟-2026-10-23.md) | 当前口径 | 桌面端冒烟的两个环境坑与可执行判据（`npm run smoke:desktop`），发版流程第 4 步引用它 |
 | [sensenova-models-2026-10-24.md](sensenova-models-2026-10-24.md) | 当前口径 | 商汤网关在售 7 个模型的可用性实测（4 可用 / 3 不可用及原因）；复核用 `npm run probe:models` |
 

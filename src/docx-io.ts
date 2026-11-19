@@ -67,14 +67,17 @@ async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
 
 /* ----------------------------- zip 读 ----------------------------- */
 
-interface ZipEntry {
+export interface ZipEntry {
   method: number;
   compressedSize: number;
   localHeaderOffset: number;
+  /** 解压后字节数（原地回写校验用） */
+  uncompressedSize: number;
+  crc: number;
 }
 
 /** 解析 zip 中央目录：返回 文件名 → 条目信息 */
-function readZipDirectory(b: Uint8Array): Map<string, ZipEntry> {
+export function readZipDirectory(b: Uint8Array): Map<string, ZipEntry> {
   // EOCD 签名 PK\x05\x06 在文件尾部（含 comment，最多 64KB）倒查
   const eocdScanStart = Math.max(0, b.length - 65557);
   let eocd = -1;
@@ -94,20 +97,28 @@ function readZipDirectory(b: Uint8Array): Map<string, ZipEntry> {
   for (let i = 0; i < entryCount; i++) {
     if (u32At(b, p) !== 0x02014b50) throw new Error(`zip 中央目录损坏（entry ${i}）`);
     const method = u16At(b, p + 10);
+    const crc = u32At(b, p + 16);
     const compressedSize = u32At(b, p + 20);
+    const uncompressedSize = u32At(b, p + 24);
     const nameLen = u16At(b, p + 28);
     const extraLen = u16At(b, p + 30);
     const commentLen = u16At(b, p + 32);
     const localOffset = u32At(b, p + 42);
     const name = DEC.decode(b.subarray(p + 46, p + 46 + nameLen));
-    entries.set(name, { method, compressedSize, localHeaderOffset: localOffset });
+    entries.set(name, {
+      method,
+      compressedSize,
+      uncompressedSize,
+      crc,
+      localHeaderOffset: localOffset,
+    });
     p += 46 + nameLen + extraLen + commentLen;
   }
   return entries;
 }
 
 /** 读取 zip 内某条目的原始字节（按 local file header 定位数据区） */
-async function readZipEntry(b: Uint8Array, entry: ZipEntry): Promise<Uint8Array> {
+export async function readZipEntry(b: Uint8Array, entry: ZipEntry): Promise<Uint8Array> {
   const off = entry.localHeaderOffset;
   if (u32At(b, off) !== 0x04034b50) throw new Error("zip local header 损坏");
   const nameLen = u16At(b, off + 26);
@@ -210,7 +221,7 @@ export function textToDocxXml(text: string): string {
 }
 
 /** zip 写入（全部 deflate + UTF-8 文件名 flag） */
-async function buildZip(files: { name: string; data: Uint8Array }[]): Promise<Uint8Array> {
+export async function buildZip(files: { name: string; data: Uint8Array }[]): Promise<Uint8Array> {
   const local: number[] = [];
   const central: number[] = [];
   const offsets: number[] = [];

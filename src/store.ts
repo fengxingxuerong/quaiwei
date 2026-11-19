@@ -105,6 +105,9 @@ export function loadApi(): ApiConfig {
     // v0.9.55 竞品吸收（一）：声线样本透传（上限 5000 字符，防手改配置把提示词撑爆——
     // 提示词内的节选还有独立的 800 字截断，这里的上限只兜住存储层）
     voiceSample: str(o, "voiceSample", DEFAULT_API.voiceSample ?? "").slice(0, 5000),
+    // v0.9.89：事实钉住标记数（CLI 经 cfg 透传给 system prompt；UI 不暴露此字段，
+    // 但白名单漏读会让 loadApi 往返一致性测试红，按同款守旧口径补读）
+    pinCount: num(o, "pinCount", DEFAULT_API.pinCount ?? 0),
     // v0.9.55 竞品吸收（四）：回译洗稿开关透传（漏读会让用户"勾了、刷新就丢"，
     // 该漏读模式已让 apiKeys / contestSamples / strictFidelity 三次静默失配）
     backTranslation: bool(o, "backTranslation", DEFAULT_API.backTranslation ?? false),
