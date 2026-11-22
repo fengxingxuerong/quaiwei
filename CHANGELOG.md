@@ -2,6 +2,62 @@
 
 > 完整版本历史，细节以对应 Git 提交为准。
 
+## v0.9.90 更新（本地 GLM 通道、空内容重试、自动结构钉住、低分稿默认跳过，2026-11-22）
+
+这一版解决的是**「LLM 通道不稳」和「改写把人写稿改坏」**两件事。引擎判据零改动——
+`humanize()` 的改写规则与 v0.9.89 逐字相同，新东西全在 API 配置、CLI 与保真层。
+
+### 一、`--reasoning-effort` + `--reasoning-format`：接上「始终思考」的模型
+
+`glm-5.3-flash` 这类模型不支持关闭思考，传 OpenRouter 的 `reasoning:{effort}` 会直接报
+1210「不支持关闭思考；请使用 low/high/max」——正确字段是**顶层** `reasoning_effort`。
+现在 `ApiConfig` 多一个 `reasoningEffortFormat`（`nested` 默认 / `top-level`），CLI 多两个参数：
+
+```bash
+ai-humanizer in.txt --api --model glm/glm-5.3-flash \
+  --reasoning-effort low --reasoning-format top-level \
+  --base-url http://127.0.0.1:18326/v1 --llm-timeout 300
+```
+
+不填 `--reasoning-effort` 时两种格式都不附加，旧网关行为逐字不变（单测锁死）。
+`--reasoning-format` 只有配了 `--reasoning-effort` 才生效，避免「传了没反应」。
+
+### 二、单轮 `--api` 空内容自动重试
+
+思考型模型偶发把 16000 token 全花在 reasoning 上、`content` 返回空，旧代码直接回退本地引擎
+（实测一篇耗 274 秒仍回退）。现在单轮也走深度路径同款的 `chatNonEmpty`：默认 → token 翻倍
+→ 换 `--alt-model`。判据/提示词/产出格式都没动，只是多给两次机会。
+
+### 三、`--api` 自动钉住 frontmatter / 围栏代码块
+
+本地引擎有 `format-integrity.ts` 逐字冻结结构块，但 `--api` 把整篇丢给 LLM，这层保护不存在——
+实测 C23 的 YAML frontmatter（`date: 2026-10-18`）被整块吞掉。现在 `--api` 自动把
+frontmatter 与围栏代码块交给 `--pin` 通道（私用区占位符 → 还原），任一块丢失就整篇回退。
+本地引擎路径不加（它本来就有保护，也不改变默认产出）。
+
+### 四、pin 丢失先低强度重试一次
+
+钉住内容没保住时，旧行为立刻整篇回退。现在 LLM 路径会用**更低强度（0.4）**重跑一次再判定，
+仍失败才回退——「宁可不改也不毁事实」的契约不变，只是多给一次机会。`--report` 新增
+`totals.pinRetried` 记账。诚实标注：C21 围栏块端到端复测仍丢 2 段，机制正确但该模型保不住
+哨兵，属模型能力边界。
+
+### 五、低分稿默认跳过（**行为变更**，可用 `--force-low-risk` 关掉）
+
+v0.9.84 起 `--skip-low-risk` 是 opt-in。本地 GLM 臂实测 C8（aiScore 3→13）、C17（28→33）：
+原文已落在人写带时，改写反而更像 AI。这一版把默认反转——低收益风险稿原样出稿，
+想强制改写给 `--force-low-risk`。
+
+判据仍是 `formalPer1k ≤ 8/千字`（不看 aiScore）。**代价如实标注**：23 篇该改稿里仍误跳 10 篇、
+判据 AUC 0.683、短档体裁未分离（11-21 扩样）⇒ 默认跳过是保守取向，不是能力承诺。
+证据 `evidence/collateral-attribution-2026-11-09/`、`evidence/eval-local-glm-2026-11-21/`。
+
+### 其他
+
+- `--jobs > 3` 给告警：OFM 中继并发硬上限 3，超了易 502/429（只警告不拦截）。
+- `SKILL.md`、`USAGE` 同步新参数；`ab_accept.py` 支持 `--reasoning-effort-a/-b`（评测侧）。
+- 门禁：vitest **129 文件 2408 用例全绿**、tsc 0、lint 0、`check:release` exit 0。
+
 ## v0.9.89 更新（三个交付级缺口：声口 CLI 化、事实钉住、docx 原地编辑，2026-11-20）
 
 这一版补的是**「竞品能做、我们做不了」的三件事**，全部零新依赖、可逐条复验。
