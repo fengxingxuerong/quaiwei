@@ -212,20 +212,26 @@ export async function humanizeViaApi(
   cfg: ApiConfig,
   intensity = 0.6,
 ): Promise<string> {
-  const { content } = await chat(
+  // v0.9.90：单轮此前裸调一次 chat()，思考型模型偶发 content 空（reasoning 吃光
+  // 16000 token）就直接回退本地引擎——实测本地 GLM 23 篇里 C4 耗 274s 仍回退。
+  // 改为与深度路径同款的降级重试（默认 → token 翻倍 → 换 altModel），提高单轮可用性。
+  // 单轮没有调用预算概念，传 () => false 让降级链跑完；判据/提示词/产出格式均不变。
+  const r = await chatNonEmpty(
     cfg,
     [
       { role: "system", content: buildSystemPrompt(cfg, intensity, text) },
       { role: "user", content: text },
     ],
     { temperature: cfg.temperature, maxTokens: 16000 },
+    cfg.altModel,
+    () => false,
   );
   // 空输出视为失败：让上层回退本地引擎，而不是把空串当去味结果
-  if (!content) {
-    throw new Error("模型返回空内容（思考型模型 token 预算耗尽，可重试或换非思考型模型）");
+  if (!r.content) {
+    throw emptyContentError(r.failure);
   }
   // v0.8.9：回填被 LLM 压掉的中英/中数空格（提示词管不住，改确定性后处理）
-  return restoreMixedSpacing(text, content);
+  return restoreMixedSpacing(text, r.content);
 }
 
 /**

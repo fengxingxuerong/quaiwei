@@ -68,6 +68,8 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--contest <n>` | ≥1 | 首轮多候选择优（调用数 ×n） |
 | `--max-calls <n>` / `--max-wait <sec>` | 预算 | 整篇调用预算 / 轮间最长等待 |
 | `--llm-timeout <sec>` | 请求超时 | 单次 LLM 请求超时，默认 90 秒（上限 600）；慢思考型网关可调到 180~300，避免被误报成「模型返回空内容」 |
+| `--reasoning-effort <档>` | 推理强度 | low/medium/high/max/x-high，只作用 `--api` 推理模型；不配就不附加该参数 |
+| `--reasoning-format nested\|top-level` | 推理参数线格式 | `nested`（默认）= `reasoning:{effort}`，OpenRouter 系；`top-level` = `reasoning_effort`，OFM 中继 `glm/glm-5.3-flash` 直连专用（该模型始终思考，传 nested 报 1210）。须配 `--reasoning-effort` 才生效 |
 | `--voice-sample <文件>` | 本人写作样本 | 只作用 `--api` 通道：给 2~3 段自己的写作（≥100 可见字符，上限 5000），抽出句长节奏/标点习惯/口气注入提示词，让改写跟随你的声口。样本过短或读不到就原样出稿；本地引擎不消费此参数 |
 | `--docx-inplace` | 开关 | **docx 富文本原地编辑**：只改 `word/document.xml` 的 `<w:t>`，样式/批注/修订/公式/文本框/图片逐字节保留；改写单位是段落、不跨段。保格式但去味强度受限（不做跨段结构重排）。只吃 `.docx`，与 `--api` / `--pin` / `--variant` 互斥 |
 | `--pin <文件>` | 事实钉住 | 每行一段原文片段（数字、引文、承诺、专名），这些片段改写前后逐字不变（私有占位符在 CLI 层做，引擎看不见）。任一段没保住就**整篇回退原文**。空行与 `#` 注释忽略，单段 ≥4 可见字符，单篇 ≤64 段。`--report` 记 `pins` 段与 `totals.pinApplied`/`pinFallback` |
@@ -82,7 +84,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--recursive` | 开关 | 目录扫描进子目录（默认不进；隐藏目录一律跳过） |
 | `--jobs <n>` | ≥1 | `--api` 模式并发路数（本地引擎单线程，给了也只提示忽略） |
 | `--dry-run` | 开关 | 只列出将处理哪些文件（含跳过原因），不建目录不落盘 |
-| `--skip-low-risk` | 开关 | **低收益风险稿**原样出稿、不改写（默认关：照常改写，只给醒目警告）。判据 = 书面标记密度 `formalPer1k≤8/千字`（长度归一，**不看** `aiScore`）——书面套话稀薄时删套话规则没有作用对象，改写主要只能动断句和用词。44 篇误伤基准台归因：旧判据 `aiScore≤27 && formalHits≤2` 在真人长文上 **0 命中**（`formalHits` 是长度函数，字数相关 0.958），反在该改短稿上命中 13 篇；新判据命中 15/21，开启后模拟残余误伤率 57%→14%、该改达改率不变。代价：仍误跳 10 篇该改稿（双网关配对显示这些稿改写多半更像人）⇒ 开关继续默认关。证据 `evidence/collateral-attribution-2026-11-09/`；交叉复核 `evidence/collateral-cross-2026-11-09/`（15 篇短真人稿：密度中位 4.6 vs 长真人 6.4、同长度区间 AUC 0.683，长度分层 5.1~6.1 稳定）⇒ 密度判据不随长度漂移；但体裁混淆未分离、长 AI 稿未实测，阈值仍属探索性。批量仍产出同名文件（内容=原文），`--report` 记 `lowYieldRisk` / `skippedLowRisk`；引擎层（Web/MCP/API）不受影响 |
+| `--skip-low-risk` / `--force-low-risk` | 开关对 | **低收益风险稿**原样出稿、不改写（**v0.9.90 起默认开**，`--force-low-risk` 恢复旧的强制改写）。反转依据：本地 GLM 臂 C8（3→13）/C17（28→33）在原文已落人写带时改写反而更像 AI，默认跳过可止住反噬。判据 = 书面标记密度 `formalPer1k≤8/千字`（长度归一，**不看** `aiScore`）——书面套话稀薄时删套话规则没有作用对象，改写主要只能动断句和用词。44 篇误伤基准台归因：旧判据 `aiScore≤27 && formalHits≤2` 在真人长文上 **0 命中**（`formalHits` 是长度函数，字数相关 0.958），反在该改短稿上命中 13 篇；新判据命中 15/21，开启后模拟残余误伤率 57%→14%、该改达改率不变。⚠️ 代价如实标注：仍误跳 10 篇该改稿（双网关配对显示这些稿改写多半更像人）、判据 AUC 0.683、短档体裁未分离（11-21 扩样）⇒ 默认跳过是**保守取向，非能力承诺**。证据 `evidence/collateral-attribution-2026-11-09/`、`evidence/collateral-cross-2026-11-09/`、`evidence/eval-local-glm-2026-11-21/`。批量仍产出同名文件（内容=原文），`--report` 记 `lowYieldRisk` / `skippedLowRisk`；引擎层（Web/MCP/API）不受影响 |
 
 ## 作为 MCP 工具（v0.9.84）
 

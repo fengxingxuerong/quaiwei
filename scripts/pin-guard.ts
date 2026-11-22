@@ -12,6 +12,7 @@
  *
  * 契约：纯函数、确定性；同一 text + pins 永远得到同一 token 序列。
  */
+import { frontmatterSpans, fencedCodeSpans, type TextSpan } from "../src/engine/text-shield.ts";
 
 /** 占位符左右边界（Unicode 私用区，正常中文文稿不会出现）——本地引擎路径用 */
 export const PIN_OPEN = "\uE000";
@@ -109,9 +110,7 @@ export function restorePins(out: string, pins: string[], llmMode = false): Resto
   const missing: number[] = [];
   let restored = 0;
   for (let i = 0; i < pins.length; i++) {
-    const token = llmMode
-      ? `${PIN_LLM_OPEN}${i}${PIN_LLM_CLOSE}`
-      : `${PIN_OPEN}${i}${PIN_CLOSE}`;
+    const token = llmMode ? `${PIN_LLM_OPEN}${i}${PIN_LLM_CLOSE}` : `${PIN_OPEN}${i}${PIN_CLOSE}`;
     if (!text.includes(token)) {
       missing.push(i);
       continue;
@@ -120,4 +119,63 @@ export function restorePins(out: string, pins: string[], llmMode = false): Resto
     restored++;
   }
   return { text, restored, missing };
+}
+
+/**
+ * v0.9.90：pin 失败后的保真重试（纯逻辑，重试动作由调用方以回调注入）。
+ *
+ * 第一次还原若丢了哨兵，调用 `rewrite()` 重跑一次改写（调用方用更低强度），
+ * 再尝试还原；仍丢才返回 missing（调用方据此整篇回退）。无回调或首次成功则不重试。
+ * `out` 字段在最终仍失败时为空串——调用方应据此回退原文，不要用半成品。
+ */
+export async function restorePinsWithRetry(
+  out: string,
+  pins: string[],
+  llmMode: boolean,
+  rewrite: (() => Promise<string>) | null,
+): Promise<{ out: string; missing: number[]; retried: boolean }> {
+  const first = restorePins(out, pins, llmMode);
+  if (!first.missing.length || !rewrite) {
+    return { out: first.missing.length ? "" : first.text, missing: first.missing, retried: false };
+  }
+  const second = await rewrite();
+  const restored2 = restorePins(second, pins, llmMode);
+  return {
+    out: restored2.missing.length ? "" : restored2.text,
+    missing: restored2.missing,
+    retried: true,
+  };
+}
+
+/**
+ * v0.9.90：自动结构钉住——从原文提取「本地引擎已逐字保护、但 LLM 路径会重写」的结构块。
+ *
+ * 为什么需要：C23-frontmatter-indent 实测，--api 改写把 YAML frontmatter
+ * （`date: 2026-10-18`）整块吞掉，丢了 3 个数字；11-13 旧臂却保留了。本地引擎有
+ * `format-integrity.ts` 逐字冻结 frontmatter / 围栏块，但 LLM 拿到整篇重写时看不到这层保护。
+ * 这里把结构块交给 pin 通道：LLM 只见占位符，产出后按 token 还原；任一块丢失 ⇒ 整篇回退。
+ *
+ * 提取范围与 `format-integrity.ts` 对齐：frontmatter（含首尾 ---）+ 围栏代码块（含围栏行）。
+ * 缩进代码块不提取——它是 4 空格前缀的续行，整块钉住会连同前后正文一起吞，且实测 LLM
+ * 对缩进块存活率较高（C23 新臂保留了代码行本身）；若用户要逐字保留可显式 --pin。
+ *
+ * 片段内若已含 pin 占位符边界（⟦逐字保留 / ⟧ 或私用区字符）则跳过该块——
+ * 否则 preparePins 会因「原文自带边界」整体拒绝钉住，把用户显式 pin 也一起废掉。
+ */
+const PIN_BOUNDARIES = [PIN_OPEN, PIN_CLOSE, PIN_LLM_OPEN, PIN_LLM_CLOSE];
+
+export function autoStructurePins(text: string): string[] {
+  if (!text) return [];
+  const spans: TextSpan[] = [...frontmatterSpans(text), ...fencedCodeSpans(text)].sort(
+    (a, b) => a.start - b.start,
+  );
+  const out: string[] = [];
+  for (const s of spans) {
+    const block = text.slice(s.start, s.end);
+    if (!block.trim()) continue;
+    if (PIN_BOUNDARIES.some((b) => block.includes(b))) continue;
+    // 去重：frontmatter 与围栏不会重叠，但保险起见
+    if (!out.includes(block)) out.push(block);
+  }
+  return out;
 }

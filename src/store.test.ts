@@ -120,6 +120,7 @@ describe("loadApi / saveApi（逐字段清洗）", () => {
       altModel: "probe-alt",
       style: "academic" as const,
       reasoningEffort: "high" as const,
+      reasoningEffortFormat: "top-level" as const,
       maxWaitSeconds: 77,
       maxApiCalls: 33,
       contestSamples: 3,

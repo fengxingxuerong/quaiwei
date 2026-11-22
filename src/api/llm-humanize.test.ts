@@ -54,12 +54,38 @@ function rolePlayFetch(): { fetch: ReturnType<typeof vi.fn>; count: () => number
 describe("LLM 空输出防护", () => {
   const cfg = { ...DEFAULT_API, enabled: true, apiKey: "test-key" };
 
-  it("单轮：空内容拒绝并提示回退，绝不把空串当去味结果", async () => {
+  it("单轮：空内容先走 token 翻倍降级，仍空才拒绝并提示回退", async () => {
+    let calls = 0;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => okJson({ choices: [{ message: { content: "" } }] })),
+      vi.fn(async () => {
+        calls++;
+        return okJson({ choices: [{ message: { content: "" } }] });
+      }),
     );
     await expect(humanizeViaApi("值得注意的是，人工智能很重要。", cfg)).rejects.toThrow(/空内容/);
+    // v0.9.90：单轮从裸调一次改为降级重试（默认 + token 翻倍 = 2 次），与深度路径同款
+    expect(calls).toBe(2);
+  });
+
+  it("单轮：首轮空、token 翻倍后成功 → 返回改写稿（不再一次失败就回退本地）", async () => {
+    const tokens: number[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body)) as { max_tokens?: number };
+        tokens.push(body.max_tokens ?? 0);
+        // 首轮空；翻倍档返回有效改写
+        return okJson({
+          choices: [
+            { message: { content: tokens.length === 1 ? "" : "值得注意的是，人工智能确实重要。" } },
+          ],
+        });
+      }),
+    );
+    const out = await humanizeViaApi("值得注意的是，人工智能很重要。", cfg);
+    expect(out).toContain("人工智能");
+    expect(tokens).toEqual([16000, 32000]); // 验证走的确实是 token 翻倍降级档
   });
 
   it("深度模式零轮完成：拒绝而不是静默返回空串", async () => {

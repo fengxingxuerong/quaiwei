@@ -524,6 +524,38 @@ describe("请求体：推理强度按需附加 + 响应畸形兜底", () => {
     expect(body.reasoning).toEqual({ effort: "high" });
   });
 
+  it("reasoningEffortFormat=top-level → body.reasoning_effort 透传、不出现 nested reasoning", async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return resp(200);
+      }),
+    );
+    await chat(
+      { ...cfg, reasoningEffort: "low", reasoningEffortFormat: "top-level" },
+      msgs2,
+      opts2,
+    );
+    expect(body.reasoning_effort).toBe("low");
+    expect("reasoning" in body).toBe(false);
+  });
+
+  it("reasoningEffortFormat 缺省 → 即使配了 effort 也发 nested（既有网关行为不变）", async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return resp(200);
+      }),
+    );
+    await chat({ ...cfg, reasoningEffort: "high" }, msgs2, opts2);
+    expect(body.reasoning).toEqual({ effort: "high" });
+    expect("reasoning_effort" in body).toBe(false);
+  });
+
   it("cfg.reasoningEffort 缺省 → 请求体不含 reasoning 字段", async () => {
     let body: Record<string, unknown> = {};
     vi.stubGlobal(

@@ -49,6 +49,14 @@ export interface ApiConfig {
    *  low / medium / high / max / x-high。max 最强但最慢。
    *  OpenRouter 的推理模型通过 reasoning.effort 参数传入。 */
   reasoningEffort?: "low" | "medium" | "high" | "max" | "x-high";
+  /**
+   * 推理强度参数的**线格式**（v0.9.90）：不同网关对同一语义的字段名不统一——
+   *   - `nested`（默认，旧行为）：`reasoning: { effort }`，OpenRouter 系用这个；
+   *   - `top-level`：顶层 `reasoning_effort`，OFM 中继的 `glm/glm-5.3-flash` 直连通道
+   *     始终思考，只认这个字段（传 nested 报 1210「不支持关闭思考；请使用 low/high/max」）。
+   * 只影响请求体序列化，不影响判据。不填 = nested，既有网关行为逐字不变。
+   */
+  reasoningEffortFormat?: "nested" | "top-level";
   /** 单次 LLM 请求超时（毫秒）。不传 = 90 秒（保持旧行为）。
    *  2026-11-05 实测：思考型模型 + 长 system prompt + 8000/16000 max_tokens 在部分网关上
    *  单次要 88~180 秒，90 秒硬编码会把可用请求掐断，最终被误报成「模型返回空内容」。
@@ -278,6 +286,7 @@ export const DEFAULT_API: ApiConfig = {
   // 即 casual 没有任何一个体裁上的量化优势。
   style: "plain",
   reasoningEffort: undefined,
+  reasoningEffortFormat: "nested",
   maxWaitSeconds: 0,
   maxApiCalls: 0,
   contestSamples: 1,

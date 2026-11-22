@@ -86,6 +86,10 @@ export function loadApi(): ApiConfig {
     )
       ? (o.reasoningEffort as ApiConfig["reasoningEffort"])
       : undefined,
+    // v0.9.90：推理参数线格式（nested=OpenRouter / top-level=OFM GLM 直连）。
+    // 白名单漏读会让「面板选了、刷新回默认」，与 reasoningEffort 成对透传。
+    reasoningEffortFormat:
+      o.reasoningEffortFormat === "top-level" ? "top-level" : ("nested" as const),
     maxWaitSeconds:
       typeof o.maxWaitSeconds === "number" && o.maxWaitSeconds >= 0 ? o.maxWaitSeconds : 0,
     maxApiCalls: typeof o.maxApiCalls === "number" && o.maxApiCalls >= 0 ? o.maxApiCalls : 0,

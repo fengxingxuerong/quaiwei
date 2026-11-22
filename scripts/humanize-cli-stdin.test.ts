@@ -64,22 +64,18 @@ async function runCli(argv: string[], input: string): Promise<RunResult> {
   // node 把 node.exe 本身当脚本读（MZ SyntaxError，2026-10-13 实测踩过）。
   const script = 'printf %s "$CLI_STDIN" | "$NODE_BIN" "$TSX_BIN" "$CLI_BIN" "$@"';
   try {
-    const { stdout, stderr } = await execFileAsync(
-      BASH,
-      ["-c", script, "ai-humanizer", ...argv],
-      {
-        env: {
-          ...process.env,
-          CLI_STDIN: input,
-          NODE_BIN: process.execPath,
-          TSX_BIN: TSX,
-          CLI_BIN: CLI,
-        },
-        cwd: ROOT,
-        timeout: 90_000,
-        maxBuffer: 8 * 1024 * 1024,
+    const { stdout, stderr } = await execFileAsync(BASH, ["-c", script, "ai-humanizer", ...argv], {
+      env: {
+        ...process.env,
+        CLI_STDIN: input,
+        NODE_BIN: process.execPath,
+        TSX_BIN: TSX,
+        CLI_BIN: CLI,
       },
-    );
+      cwd: ROOT,
+      timeout: 90_000,
+      maxBuffer: 8 * 1024 * 1024,
+    });
     return { stdout, stderr, code: 0 };
   } catch (e) {
     const err = e as Error & { code?: number; stderr?: string };
@@ -176,36 +172,36 @@ describe("humanize-cli stdin 模式", () => {
   }, 60_000);
 });
 
-/* ─────────── v0.9.84 --skip-low-risk ───────────
- * 背景：双网关独立评委实测，aiScore≤27 的 20 篇里 7 篇改后反而更像 AI；
- * 但 13 篇是改善的，且典型 AI 腔短稿（上面 AI_TEXT）aiScore 也只有 11。
- * ⇒ 不能默认跳过，只给醒目警告；想要保护的人自己加 --skip-low-risk（opt-in）。
- * 这三条锁住：默认不 breaking、开关真跳过、批量仍产出同名文件且报告可查。
+/* ─────────── v0.9.90 低收益风险默认跳过 ───────────
+ * 背景：本地 GLM 臂 C8（3→13）/C17（28→33）在原文已落人写带时改写反而更像 AI。
+ * v0.9.84 起 --skip-low-risk 是 opt-in；v0.9.90 反转默认——低收益稿默认原样出稿，
+ * --force-low-risk 恢复旧的强制改写。判据仍是 formalPer1k≤8，不变。
+ * 这组锁住：默认跳过、反向开关真强制改写、批量仍产出同名文件且报告可查。
  */
-describe("v0.9.84 --skip-low-risk（人写带可选原样出稿）", () => {
-  it("默认（无开关）：人写带照常改写，stderr 给独立评委实测的醒目警告", async () => {
+describe("v0.9.90 低收益风险默认跳过（--force-low-risk 强制改写）", () => {
+  it("默认（无开关）：人写带原样输出，stderr 明说默认保护未改写", async () => {
     const r = await runCli(["-", "--intensity", "0.9", "--seed", "42"], HUMAN_TEXT);
     expect(r.code).toBe(0);
+    expect(r.stdout.trimEnd()).toBe(HUMAN_TEXT);
+    expect(r.stderr).toContain("原样输出，未改写");
+  }, 60_000);
+
+  it("--force-low-risk：stdin 人写带照常改写（恢复旧默认），stderr 给醒目警告", async () => {
+    const r = await runCli(["-", "--force-low-risk"], HUMAN_TEXT);
+    expect(r.code).toBe(0);
+    expect(r.stdout.trimEnd()).not.toBe(HUMAN_TEXT);
     expect(r.stderr).toContain("人写带");
     expect(r.stderr).toContain("独立评委实测");
-    expect(r.stderr).not.toContain("按 --skip-low-risk 原样输出");
   }, 60_000);
 
-  it("--skip-low-risk：stdin 人写带原样输出，stderr 明说未改写", async () => {
-    const r = await runCli(["-", "--skip-low-risk"], HUMAN_TEXT);
-    expect(r.code).toBe(0);
-    expect(r.stdout.trimEnd()).toBe(HUMAN_TEXT);
-    expect(r.stderr).toContain("按 --skip-low-risk 原样输出");
-  }, 60_000);
-
-  it("批量：仍产出同名文件（内容=原文），--report 记 skippedLowRisk", async () => {
+  it("批量默认：低收益稿产出同名文件（内容=原文），--report 记 skippedLowRisk", async () => {
     const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "quaiwei-lowrisk-"));
     const out = path.join(dir, "out");
     const rep = path.join(dir, "rep.json");
     fs.mkdirSync(out);
     fs.writeFileSync(path.join(dir, "a.txt"), HUMAN_TEXT, "utf8");
     try {
-      const r = await runCli([dir, "--out", out, "--skip-low-risk", "--report", rep], "");
+      const r = await runCli([dir, "--out", out, "--report", rep], "");
       expect(r.code).toBe(0);
       expect(fs.readFileSync(path.join(out, "a.humanized.txt"), "utf8")).toBe(HUMAN_TEXT);
       const j = JSON.parse(fs.readFileSync(rep, "utf8"));
@@ -216,7 +212,24 @@ describe("v0.9.84 --skip-low-risk（人写带可选原样出稿）", () => {
     }
   }, 60_000);
 
-  it("组合判据更准：书面套话命中多的低分稿不再被跳过（真改写）", async () => {
+  it("--force-low-risk 批量：低收益稿照常改写，skippedLowRisk 不置位", async () => {
+    const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "quaiwei-lowyield-"));
+    const out = path.join(dir, "out");
+    const rep = path.join(dir, "rep.json");
+    fs.mkdirSync(out);
+    fs.writeFileSync(path.join(dir, "a.txt"), HUMAN_TEXT, "utf8");
+    try {
+      const r = await runCli([dir, "--out", out, "--force-low-risk", "--report", rep], "");
+      expect(r.code).toBe(0);
+      expect(fs.readFileSync(path.join(out, "a.humanized.txt"), "utf8")).not.toBe(HUMAN_TEXT);
+      const j = JSON.parse(fs.readFileSync(rep, "utf8"));
+      expect(j.totals.skippedLowRisk).toBe(0);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it("组合判据更准：书面套话命中多的低分稿不被跳过（真改写）", async () => {
     const corpus = JSON.parse(
       fs.readFileSync(path.join(ROOT, "scripts", "realcase", "cases.json"), "utf8"),
     ) as { cases: { id: string; text: string }[] };
@@ -230,7 +243,7 @@ describe("v0.9.84 --skip-low-risk（人写带可选原样出稿）", () => {
     fs.writeFileSync(path.join(dir, "b.txt"), rescued, "utf8");
     type Row = { file: string; lowYieldRisk?: boolean; skippedLowRisk?: boolean };
     try {
-      const r = await runCli([dir, "--out", out, "--skip-low-risk", "--report", rep], "");
+      const r = await runCli([dir, "--out", out, "--report", rep], "");
       expect(r.code).toBe(0);
       const j = JSON.parse(fs.readFileSync(rep, "utf8")) as {
         totals: { lowYieldRisk: number };

@@ -113,8 +113,16 @@ export async function chat(
           // 这里给足预算（16000 ≈ 8000 字中文，改写绰绰有余 + 推理空间）
           max_tokens: opts.maxTokens,
           messages,
-          // 推理强度（仅推理模型支持）：OpenRouter 通过 reasoning.effort 传入
-          ...(cfg.reasoningEffort ? { reasoning: { effort: cfg.reasoningEffort } } : {}),
+          // 推理强度（仅推理模型支持）：线格式随网关而异——
+          //   nested（默认，旧行为）：reasoning.effort，OpenRouter 系；
+          //   top-level：reasoning_effort，OFM 中继 glm/glm-5.3-flash 直连只认这个
+          //   （传 nested 会报 1210「不支持关闭思考；请使用 low/high/max」）。
+          // 不配 reasoningEffort 时两种格式都不附加，既有行为逐字不变。
+          ...(cfg.reasoningEffort
+            ? cfg.reasoningEffortFormat === "top-level"
+              ? { reasoning_effort: cfg.reasoningEffort }
+              : { reasoning: { effort: cfg.reasoningEffort } }
+            : {}),
         }),
       });
     } catch (e: unknown) {

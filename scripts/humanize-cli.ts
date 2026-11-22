@@ -68,10 +68,14 @@ import { runHumanize } from "../src/api/llm";
 import { DEFAULT_API, loadPresetKeys, type ApiConfig } from "../src/api/llm-config";
 import { scoreViaDetector, inferZhuqueDefaults, type DetectorConfig } from "../src/api/detector";
 import { readDocxText, writeDocxText } from "../src/docx-io";
-import { applyRegionalVariant, formatRegionalSummary, type RegionalHit } from "../src/engine/regional-zh";
+import {
+  applyRegionalVariant,
+  formatRegionalSummary,
+  type RegionalHit,
+} from "../src/engine/regional-zh";
 import { academicAudit, formatAcademicReport } from "../src/engine/academic-check";
 import { auditStructure, formatStructureReport } from "../src/engine/structure-audit";
-import { parsePinFile, preparePins, restorePins } from "./pin-guard";
+import { autoStructurePins, parsePinFile, preparePins, restorePinsWithRetry } from "./pin-guard";
 import { rewriteDocxInplace } from "../src/docx-inplace";
 import {
   structureMetrics,
@@ -168,12 +172,20 @@ interface Args {
   maxWait: number;
   /** 单次 LLM 请求超时（秒）。0 = 沿用默认 90 秒 */
   llmTimeout: number;
+  /** 推理强度（推理模型专用）：low/medium/high/max/x-high，空 = 不附加 */
+  reasoningEffort: string;
+  /** 推理参数线格式：nested（OpenRouter，默认）/ top-level（OFM GLM 直连） */
+  reasoningEffortFormat: "nested" | "top-level";
   /** v0.9.62 深度模式达标线：LLM 评判 ≤ 此分即收手。0 = 沿用默认（DEEP_TARGET_SCORE） */
   target: number;
   strict: boolean;
   /** v0.9.82：受限句序重排（默认关）。产出是原句排列，"不新增事实"构造上成立 */
   structural: boolean;
-  /** 显式跳过低收益风险稿（默认关，照常改写）。判据见 src/engine/low-yield.ts；默认关=opt-in */
+  /**
+   * v0.9.90：低收益风险稿是否原样出稿。**默认 true**（反转旧默认）——实测本地 GLM 臂
+   * C8（3→13）/C17（28→33）在原文已落人写带时改写反而更像 AI，默认跳过可止住反噬。
+   * `--force-low-risk` 可恢复旧行为（强制改写）。判据 AUC 0.683、短档体裁未分离，见 SKILL.md。
+   */
   skipLowRisk: boolean;
   persona: string;
   report: string;
@@ -263,7 +275,8 @@ const USAGE =
   " [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]" +
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
-  " [--llm-timeout <sec>]" +
+  " [--llm-timeout <sec>] [--reasoning-effort low|medium|high|max|x-high]" +
+  " [--reasoning-format nested|top-level]" +
   " [--voice-sample <本人写作样本.txt>] [--pin <逐字保留清单.txt>] [--docx-inplace]" +
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
@@ -271,19 +284,24 @@ const USAGE =
   " [--audit-structure [--against <改后稿>]]" +
   " [--metrics [--against <对比稿>]]" +
   " [--detector-url <url> [--detector-key <key>] [--detector-path <json.path>] [--detector-scale 0-100|0-1]]..." +
-  " [--recursive] [--jobs <n>] [--dry-run] [--skip-low-risk]\n" +
+  " [--recursive] [--jobs <n>] [--dry-run] [--skip-low-risk] [--force-low-risk]\n" +
   "  输入参数给 - 或整个省略时走标准输入：cat 稿.txt | ai-humanizer --intensity 0.8（正文 stdout，诊断 stderr）\n" +
   "  --base-url 填网关绝对地址（如 https://token.sensenova.cn/v1）。UI 设置里的 /sensenova/v1" +
   " 是同源代理专用写法（代理会剥掉 /sensenova 前缀再转发），CLI 直连勿带这段前缀。\n" +
   "  --llm-timeout <sec>：单次 LLM 请求超时，默认 90 秒（上限 600）。思考型模型 + 长提示词" +
   " 在慢网关上可能要 2~3 分钟，调大它可避免请求被掐断后误报「模型返回空内容」。\n" +
+  "  --reasoning-effort <档>：推理强度（low/medium/high/max/x-high），只作用 --api 推理模型。\n" +
+  "  --reasoning-format nested|top-level：推理参数的线格式。nested=reasoning:{effort}（OpenRouter，" +
+  "默认）；top-level=reasoning_effort（OFM 中继 glm/glm-5.3-flash 直连专用——该模型始终思考，" +
+  "传 nested 报 1210）。配 --reasoning-effort 才生效。\n" +
   "  --detector-url：接**任意**外部检测器（把 {text} POST 过去，按 --detector-path 取分，" +
   "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段；" +
   "**可重复**——给多个 --detector-url 就逐档送检、横向对比（紧跟其后的 key/path/scale 只作用在这一档）。" +
   " 凭证建议走环境变量 QUAIWEI_DETECTOR_KEY，别写进命令行历史。\n" +
   "  --detector-url 指向朱雀官方网关（.../v1/providers/zhuque-text/classify）时自动补 " +
   "softmax_confidence + 0-1 刻度，不必手填；显式给 path/scale 则以你给的为准。\n" +
-  "  --recursive 目录扫描进子目录（默认不进）；--jobs 仅 --api 模式生效（并发路数）；" +
+  "  --recursive 目录扫描进子目录（默认不进）；--jobs 仅 --api 模式生效（并发路数）。" +
+  "\n  本地 GLM 网关（OFM 中继）并发硬上限 3，超过易 502/429——大批量建议 --jobs 2~3。" +
   "  --dry-run 只列出将处理的文件不落盘。目录批量默认跳过已带输出后缀的产物（重跑幂等）。" +
   "\n  --detect-only 审题模式：只给「AI 味痕迹地图」（哪句、为什么命中、怎么改），" +
   "一个字都不改也不落盘，无需 API Key。与 --dry-run（列待处理文件清单）不是一回事。" +
@@ -299,20 +317,23 @@ const USAGE =
   "\n  --variant zh-TW：台湾用词 + 半角标点转全角（默认 none 不动）。" +
   "\n  --structural 受限句序重排（默认关）：强度 ≥0.55 且论说/公文/学术体裁时，" +
   "对守卫全过的相邻句做至多一次交换——产出是原句排列，句多重集逐字不变，" +
-  "\"不新增事实\"构造上成立；叙事/人写体裁不受影响（保留作者结构）。" +
+  '"不新增事实"构造上成立；叙事/人写体裁不受影响（保留作者结构）。' +
   "开启即尝试（不再随机跳过），守卫全过才换；--report 的 structuralApplied 可查本轮是否真的换了。" +
   "**不做简繁转换**——字形请自己过 OpenCC，这里只换词与标点，输入简体、输出简体。" +
   "词表只收无歧义的词（`程序`/`质量`/`文件` 这类一词两义的不换）。" +
   "\n  --academic-check：学术自检。**不落盘**，只打一份带判定的报告（数字/单位、引用键、" +
   "结构、断言词、残留套话）。退出码 0 = READY，2 = NOT READY（有阻断项），1 = 没法跑。" +
   "默认按 academic 文风跑，显式给 --style 则以你给的为准。" +
-  "\n  --skip-low-risk 低收益风险稿**原样出稿、不改写**（默认关，照常改写）。" +
+  "\n  --skip-low-risk 低收益风险稿**原样出稿、不改写**（v0.9.90 起默认开；旧默认是照常改写）。" +
+  "本地 GLM 臂实测 C8（3→13）/C17（28→33）在原文已落人写带时改写反而更像 AI，" +
+  "默认跳过可止住这类反噬；要强制改写给 --force-low-risk。" +
   `判据 = 书面标记密度 formalPer1k≤${LOW_YIELD_FORMAL_PER_1K}/千字（长度归一，不看 aiScore）：` +
   "书面套话稀薄时删套话规则没有作用对象，改写主要只能动断句和用词。" +
   "44 篇误伤基准台归因：旧判据 aiScore≤27 && formalHits≤2 在真人长文上 0 命中" +
   "（formalHits 是长度函数，字数相关系数 0.958）；新判据命中 15/21，" +
   "开启后模拟残余误伤率 57%→14%，该改面板达改率不变。" +
-  "代价：23 篇该改稿里仍误跳 10 篇，双网关配对显示这些稿改写多半更像人 ⇒ 开关继续默认关。" +
+  "代价（如实标注）：23 篇该改稿里仍误跳 10 篇，双网关配对显示这些稿改写多半更像人；" +
+  "判据 AUC 0.683、短档体裁未分离（11-21 扩样结论）⇒ 默认跳过是保守取向，非能力承诺。" +
   "交叉复核 evidence/collateral-cross-2026-11-09/：15 篇短真人稿密度中位 4.6（长真人 6.4）、" +
   "同长度区间 AUC 0.683、长度分层 5.1~6.1 稳定 ⇒ 判据不随长度漂移；但体裁混淆未分离、长 AI 稿未实测，阈值仍属探索性。" +
   "--report 记 lowYieldRisk / skippedLowRisk；引擎层（Web/MCP/API）行为不变。" +
@@ -353,10 +374,12 @@ function parseArgs(argv: string[]): Args {
     maxCalls: 0,
     maxWait: 0,
     llmTimeout: 0,
+    reasoningEffort: "",
+    reasoningEffortFormat: "nested",
     target: 0,
     strict: false,
     structural: false,
-    skipLowRisk: false,
+    skipLowRisk: true,
     persona: "default",
     report: "",
     voiceSamplePath: "",
@@ -408,6 +431,8 @@ function parseArgs(argv: string[]): Args {
     "--max-calls",
     "--max-wait",
     "--llm-timeout",
+    "--reasoning-effort",
+    "--reasoning-format",
     "--persona",
     "--report",
     "--voice-sample",
@@ -519,6 +544,14 @@ function parseArgs(argv: string[]): Args {
         // 0 = 不覆盖（沿用 90 秒）；上限由 resolveRequestTimeoutMs 统一钳到 600 秒
         args.llmTimeout = Math.max(0, Math.floor(num(a[++i], 0)));
         break;
+      case "--reasoning-effort": {
+        const v = (a[++i] ?? "").trim();
+        args.reasoningEffort = ["low", "medium", "high", "max", "x-high"].includes(v) ? v : "";
+        break;
+      }
+      case "--reasoning-format":
+        args.reasoningEffortFormat = a[++i] === "top-level" ? "top-level" : "nested";
+        break;
       case "--target":
         // 1~100：0 与负数留给"不设、走默认"，>100 等于永不达标之外的反效果
         args.target = Math.max(0, Math.min(100, Math.floor(num(a[++i], 0))));
@@ -531,6 +564,10 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--skip-low-risk":
         args.skipLowRisk = true;
+        break;
+      case "--force-low-risk":
+        // v0.9.90：恢复旧默认——强制改写低收益稿（默认已改为跳过）
+        args.skipLowRisk = false;
         break;
       case "--persona":
         args.persona = a[++i] || "default";
@@ -564,6 +601,13 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--jobs":
         args.jobs = Math.max(1, Math.floor(num(a[++i], 1)));
+        // v0.9.90：本地 GLM 网关（OFM 中继）并发硬上限 3，超了易触发 key 池 502/429。
+        // 只警告不拦截——其他网关（SenseNova 等）并发更高没问题。
+        if (args.jobs > 3) {
+          console.error(
+            "   ⚠ --jobs > 3：本地 GLM 网关并发上限为 3，超过易触发 502/429 限流；已照常执行，失败请调低。",
+          );
+        }
         break;
       case "--dry-run":
         args.dryRun = true;
@@ -640,6 +684,10 @@ function buildApiConfig(args: Args): ApiConfig {
   if (args.target > 0) cfg.deepTargetScore = args.target;
   if (args.baseUrl) cfg.baseUrl = args.baseUrl;
   if (args.llmTimeout > 0) cfg.requestTimeoutMs = args.llmTimeout * 1000;
+  if (args.reasoningEffort) {
+    cfg.reasoningEffort = args.reasoningEffort as ApiConfig["reasoningEffort"];
+    cfg.reasoningEffortFormat = args.reasoningEffortFormat;
+  }
   if (args.model) cfg.model = args.model;
   if (args.judgeModel) cfg.judgeModel = args.judgeModel;
   if (args.altModel) cfg.altModel = args.altModel;
@@ -652,7 +700,9 @@ function buildApiConfig(args: Args): ApiConfig {
     try {
       cfg.voiceSample = fs.readFileSync(args.voiceSamplePath, "utf-8").slice(0, 5000);
     } catch {
-      console.error(`✗ 读声口样本失败（--voice-sample ${args.voiceSamplePath}），本次不注入声线画像`);
+      console.error(
+        `✗ 读声口样本失败（--voice-sample ${args.voiceSamplePath}），本次不注入声线画像`,
+      );
     }
   }
   return cfg;
@@ -739,7 +789,8 @@ function briefRegister(r: RegisterReport): { index: number; label: string } {
 
 interface FileReport {
   file: string;
-  ms: number;  charsIn: number;
+  ms: number;
+  charsIn: number;
   charsOut: number;
   detectBefore: number;
   detectAfter: number;
@@ -784,6 +835,8 @@ interface FileReport {
     fallbackToOriginal: boolean;
     missingTokens: number[];
   };
+  /** v0.9.90：pin 失败后是否做过低强度保真重试 */
+  pinRetried?: boolean;
 }
 
 /** 一档检测器的读数：失败时分数为 null、error 记原因 */
@@ -852,7 +905,7 @@ async function runStdinMode(args: Args): Promise<void> {
 
   const t0 = Date.now();
   const before = detectAI(raw).probability;
-  // 低收益风险 + --skip-low-risk 时原样输出；默认照常改写并给警告。判据与批量路径共用同一入口。
+  // v0.9.90：低收益风险默认原样输出（--force-low-risk 才强制改写）。判据与批量路径共用同一入口。
   const stdinAdvice = adviceFor(raw, aiScore(raw).score);
   const stdinLowYield = isLowYieldRisk(raw);
   const stdinSkip = stdinLowYield && args.skipLowRisk;
@@ -879,7 +932,7 @@ async function runStdinMode(args: Args): Promise<void> {
     `✅ stdin：${before}→${after}（${Date.now() - t0}ms，${raw.length}→${out.length} 字）`,
   );
   if (stdinSkip) {
-    console.error(`⏭ 低收益风险：按 --skip-low-risk 原样输出，未改写`);
+    console.error(`⏭ 低收益风险：原样输出，未改写（默认保护；--force-low-risk 可强制改写）`);
   } else {
     if (stdinAdvice.code !== "ok") console.error(`ⓘ ${stdinAdvice.message}`);
     if (stdinLowYield)
@@ -954,7 +1007,9 @@ async function runAcademicCheck(args: Args): Promise<void> {
   }
 
   const audit = academicAudit(raw, candidate);
-  process.stdout.write(`${formatAcademicReport(audit, { style: args.style, intensity: args.intensity, mode })}\n`);
+  process.stdout.write(
+    `${formatAcademicReport(audit, { style: args.style, intensity: args.intensity, mode })}\n`,
+  );
   console.error(
     audit.verdict === "blocked"
       ? `✗ NOT READY：${audit.blockers.length} 个阻断项（退出码 2）`
@@ -1004,7 +1059,10 @@ async function runStructureAudit(args: Args): Promise<void> {
       }
     }
     if (args.against) {
-      targets.push({ label: `对比稿 ${path.basename(args.against)}`, text: await readInputText(args.against) });
+      targets.push({
+        label: `对比稿 ${path.basename(args.against)}`,
+        text: await readInputText(args.against),
+      });
     }
   } catch (e) {
     console.error(`✗ 读输入失败：${(e as Error).message}`);
@@ -1117,8 +1175,7 @@ async function main() {
     .map((d) => {
       // 朱雀官方网关：只给 --detector-url 也自动用官方口径（softmax_confidence / 0-1）。
       // 显式传过 path 或 scale 的以用户为准，避免覆盖自定义检测器。
-      const preset =
-        d.path === "score" && d.scale === "0-100" ? inferZhuqueDefaults(d.url) : null;
+      const preset = d.path === "score" && d.scale === "0-100" ? inferZhuqueDefaults(d.url) : null;
       return {
         enabled: true,
         url: d.url,
@@ -1191,9 +1248,7 @@ async function main() {
       const parsed = parsePinFile(fs.readFileSync(args.pinFile, "utf-8"));
       pinLines = parsed.pins;
       if (parsed.skipped.length)
-        console.log(
-          `   ⓘ 事实钉住清单：跳过 ${parsed.skipped.length} 行（空行/注释/过短/超上限）`,
-        );
+        console.log(`   ⓘ 事实钉住清单：跳过 ${parsed.skipped.length} 行（空行/注释/过短/超上限）`);
       console.log(`   ⓘ 事实钉住：本批每篇尝试保留 ${pinLines.length} 段原文片段`);
     } catch (e) {
       console.error(`✗ 读事实钉住清单失败（--pin ${args.pinFile}）：${(e as Error).message}`);
@@ -1328,9 +1383,7 @@ async function main() {
         const dest = path.join(args.out, name.replace(/\.docx$/i, "") + args.suffix + ".docx");
         const outBytes = new Uint8Array(await rewritten.blob.arrayBuffer());
         fs.writeFileSync(dest, Buffer.from(outBytes));
-        const afterText = await readDocxText(
-          toArrayBuffer(Buffer.from(outBytes)),
-        );
+        const afterText = await readDocxText(toArrayBuffer(Buffer.from(outBytes)));
         const rep: FileReport = {
           file: name,
           ms: Date.now() - t0,
@@ -1368,7 +1421,7 @@ async function main() {
       // v0.9.85：--structural 时先记 false，由 onStructuralApplied 回调置 true。
       // 默认 false 也覆盖「守卫全过但没有可换对」与「--api 深度模式不接结构层」两种情形。
       if (args.structural) rep.structuralApplied = false;
-      // 低收益风险**可选**原样出稿（--skip-low-risk，默认关）。
+      // 低收益风险原样出稿（v0.9.90 默认开，--force-low-risk 可强制改写）。
       // 判定只放 CLI 入口层——引擎层 adviceFor 仍「只提示不改行为」，
       // regression-12samples 的 H1/H2 基线、Web/MCP/API 消费者行为都不受影响。
       // 判据（src/engine/low-yield.ts）：书面标记密度 formalPer1k≤8/千字，长度归一、不看 aiScore。
@@ -1384,8 +1437,12 @@ async function main() {
       rep.lowYieldRisk = lowYieldRisk;
       const didSkip = lowYieldRisk && args.skipLowRisk;
       // v0.9.89：事实钉住——把命中片段换成私用区占位符再送进改写层（引擎/LLM 都看不见它们）。
-      const prep = pinLines.length
-        ? preparePins(raw, pinLines, !!cfg)
+      // v0.9.90：--api 路径自动钉住 frontmatter / 围栏代码块——本地引擎有 format-integrity
+      // 逐字冻结这些结构块，LLM 路径却会把它们当正文重写（C23 实测吞掉 date: 2026-10-18）。
+      // 只在 cfg 存在（真实 LLM 通道）时加；本地引擎不加，避免重复且保持默认行为逐字不变。
+      const effectivePins = cfg ? [...new Set([...pinLines, ...autoStructurePins(raw)])] : pinLines;
+      const prep = effectivePins.length
+        ? preparePins(raw, effectivePins, !!cfg)
         : { text: raw, pins: [] as string[], unmatched: [] as string[] };
       const rewriteInput = prep.text;
       let out: string;
@@ -1430,27 +1487,56 @@ async function main() {
       if (args.variant !== "none" && !didSkip) {
         const regional = applyRegionalVariant(out, args.variant);
         out = regional.text;
-        rep.regional = { variant: args.variant, terms: regional.terms, punctuation: regional.punctuation };
+        rep.regional = {
+          variant: args.variant,
+          terms: regional.terms,
+          punctuation: regional.punctuation,
+        };
         console.log(`${step}   ⓘ 地区校正：${formatRegionalSummary(regional)}`);
       }
-      // 事实钉住还原：任何一段没保住 → 整篇回退原文（宁可不改，也不毁事实）。
+      // 事实钉住还原：任何一段没保住 → v0.9.90 先低强度重试一次，仍失败才整篇回退原文。
+      // （"宁可不改也不毁事实"的契约不变，只是多给一次机会——C21 围栏块原本一次失败就放弃。）
       if (prep.pins.length) {
-        const restored = restorePins(out, prep.pins, !!cfg);
+        // 重试通道只对 LLM 路径开放：用更低强度（0.4）重跑同一段，改写幅度小更容易保住哨兵。
+        // 本地引擎不重试（它的 format-integrity 本就逐字保护，pin 失败是确定性错误，重试无用）。
+        const retryRewrite = cfg
+          ? async (): Promise<string> => {
+              const r2 = await runHumanize(
+                rewriteInput,
+                Math.min(args.intensity, 0.4),
+                cfg,
+                undefined,
+                args.zhuque,
+              );
+              // 用重试结果覆盖记账字段，保证报告与最终产出一致
+              rep.engine = r2.engine;
+              rep.usedApi = r2.usedApi;
+              rep.roundScores = r2.roundScores;
+              rep.note = r2.note;
+              rep.degrade = r2.degrade;
+              return r2.text;
+            }
+          : null;
+        const rr = await restorePinsWithRetry(out, prep.pins, !!cfg, retryRewrite);
+        if (rr.retried) {
+          rep.pinRetried = true;
+          console.log(`${step}   ↻ ${name}：钉住内容没保住，低强度重试一次`);
+        }
         rep.pins = {
-          requested: pinLines.length,
+          requested: effectivePins.length,
           applied: prep.pins.length,
           unmatched: prep.unmatched.length,
           fallbackToOriginal: false,
-          missingTokens: restored.missing,
+          missingTokens: rr.missing,
         };
-        if (restored.missing.length) {
+        if (rr.missing.length) {
           out = raw;
           rep.pins.fallbackToOriginal = true;
           console.log(
-            `${step}   ⚠ ${name}：${restored.missing.length} 段钉住内容没保住，整篇回退原文`,
+            `${step}   ⚠ ${name}：${rr.missing.length} 段钉住内容没保住（含重试），整篇回退原文`,
           );
         } else {
-          out = restored.text;
+          out = rr.out;
         }
       }
       rep.charsOut = out.length;
@@ -1463,7 +1549,7 @@ async function main() {
       console.log(
         `${step}✅ ${name}：${rep.detectBefore}→${rep.detectAfter}（${rep.ms}ms，${raw.length}→${out.length} 字）→ ${path.basename(dest)}`,
       );
-      if (didSkip) console.log(`   ⏭ 低收益风险：按 --skip-low-risk 原样出稿，未改写`);
+      if (didSkip) console.log(`   ⏭ 低收益风险：原样出稿，未改写（默认保护）`);
       // v0.9.66：外部检测器（任意厂商）——原文与产出各送一次，记前后分。
       // 失败只记原因、不中断：检测器额度/网络问题不该让整批去味白跑。
       // v0.9.71：多档时**逐档**送检，横向对比同一篇在不同检测器下的分数。
@@ -1547,7 +1633,7 @@ async function main() {
   const skippedLow = reps.filter((r) => r.skippedLowRisk).length;
   console.log(
     `完成：${ok} 成功 / ${fail} 失败 → ${args.out}` +
-      (skippedLow ? `（其中 ${skippedLow} 篇按 --skip-low-risk 原样出稿、未改写）` : ""),
+      (skippedLow ? `（其中 ${skippedLow} 篇低收益风险原样出稿、未改写）` : ""),
   );
   // v0.9.32：收尾汇总。detect 是**本地代理分**（与引擎同源词表），只作趋势参考——
   // SKILL.md 里"同源指标非外部真值"的边界同样适用于这行。
@@ -1588,6 +1674,7 @@ async function main() {
             structuralApplied: reps.filter((r) => r.structuralApplied).length,
             pinApplied: reps.filter((r) => r.pins && !r.pins.fallbackToOriginal).length,
             pinFallback: reps.filter((r) => r.pins?.fallbackToOriginal).length,
+            pinRetried: reps.filter((r) => r.pinRetried).length,
             charsIn: sum0(reps, (r) => r.charsIn),
             charsOut: sum0(reps, (r) => r.charsOut),
             msTotal: sum0(reps, (r) => r.ms),
