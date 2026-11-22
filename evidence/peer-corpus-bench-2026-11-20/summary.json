@@ -1,0 +1,233 @@
+{
+  "generatedAt": "2026-11-20T09:47:33.735Z",
+  "corpus": {
+    "swaylq/humanize-chinese": {
+      "files": 7,
+      "rows": 70,
+      "seeds": [
+        42,
+        1,
+        7,
+        2026,
+        20261015
+      ],
+      "intensities": [
+        0.6,
+        0.9
+      ]
+    },
+    "HC3-Chinese/psychology": {
+      "pairs": 116,
+      "rows": 232,
+      "seed": 42,
+      "intensity": 0.9
+    }
+  },
+  "hardFidelity": {
+    "totalRows": 302,
+    "failRows": 18,
+    "failPct": 6,
+    "byKind": {
+      "human-blog": 6,
+      "chatgpt": 6,
+      "human": 6
+    },
+    "byReason": {
+      "missingNumbers": 0,
+      "changedUnits": 0,
+      "lostAscii": 0,
+      "lostUrls": 0,
+      "collapse": 18
+    },
+    "observationOnly": {
+      "paraChangedRows": 54,
+      "note": "段落数变化是插短段落设计的预期行为，同类项目自己也允许 ±2，不计缺陷"
+    }
+  },
+  "scoreTrend": {
+    "note": "aiScore 是本项目自评分，只作相对方向；不可当绝对刻度（同文复测 MAE 14.7）",
+    "hc3Human": {
+      "n": 116,
+      "avgIn": 13.3,
+      "avgOut": 4.9,
+      "avgDelta": -8.4,
+      "dropPct": 73.3
+    },
+    "hc3Ai": {
+      "n": 116,
+      "avgIn": 10.1,
+      "avgOut": 4.8,
+      "avgDelta": -5.3,
+      "dropPct": 71.6
+    },
+    "peerSamples": {
+      "n": 70,
+      "changedPct": 100,
+      "avgDelta": -31.1
+    }
+  },
+  "worstFails": [
+    {
+      "id": "real_blog_plain.txt",
+      "kind": "human-blog",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「我下笔的习惯还是工程师的习惯」是原文「我下笔的习惯还是工程师的习惯——先想怎么实现」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "real_blog_plain.txt",
+      "kind": "human-blog",
+      "seed": 7,
+      "intensity": 0.6,
+      "issues": [
+        "内容腰斩:「我下笔的习惯还是工程师的习惯」是原文「我下笔的习惯还是工程师的习惯——先想怎么实现」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "real_blog_plain.txt",
+      "kind": "human-blog",
+      "seed": 7,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「我下笔的习惯还是工程师的习惯」是原文「我下笔的习惯还是工程师的习惯——先想怎么实现」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "real_blog_plain.txt",
+      "kind": "human-blog",
+      "seed": 2026,
+      "intensity": 0.6,
+      "issues": [
+        "内容腰斩:「我下笔的习惯还是工程师的习惯」是原文「我下笔的习惯还是工程师的习惯——先想怎么实现」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "real_blog_plain.txt",
+      "kind": "human-blog",
+      "seed": 2026,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「我下笔的习惯还是工程师的习惯」是原文「我下笔的习惯还是工程师的习惯——先想怎么实现」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "real_blog_plain.txt",
+      "kind": "human-blog",
+      "seed": 20261015,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「我下笔的习惯还是工程师的习惯」是原文「我下笔的习惯还是工程师的习惯——先想怎么实现」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-3-ai",
+      "kind": "chatgpt",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「以及你是否愿意承担可能」是原文「以及你是否愿意承担可能因此产生的任何负面影响」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-5-human",
+      "kind": "human",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「比如说上班后」是原文「比如说上班后拖延可以让你获得一种智商上的优越感」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-7-ai",
+      "kind": "chatgpt",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「它可能会」是原文「它可能会导致人们感到疲乏和沮丧」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-31-ai",
+      "kind": "chatgpt",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「保持良好的生活习惯」是原文「保持良好的生活习惯有助于缓解焦虑和抑郁」被截断后的残留，谓语已丢失,「如果您感」是原文「如果您感到自己无法应对焦虑和抑郁」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-47-ai",
+      "kind": "chatgpt",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「应当考虑他们的专业」是原文「应当考虑他们的专业经验和培训背景」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-52-human",
+      "kind": "human",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「都是自己做得不好才」是原文「都是自己做得不好才导致的一样」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-52-ai",
+      "kind": "chatgpt",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「识别你的阻碍」是原文「识别你的阻碍可以帮助你找到应对方法」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-56-human",
+      "kind": "human",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「- 讨厌父母」是原文「- 讨厌父母——有时是一种误解」被截断后的残留，谓语已丢失,「- 讨厌吃饭」是原文「- 讨厌吃饭——把食物和其他不好的情况联系到一起」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-64-human",
+      "kind": "human",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「平时生活也一直在学习和看书」是原文「平时生活也一直在学习和看书……一个决定辞了十几年」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-81-ai",
+      "kind": "chatgpt",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「长时间的刷题也可能会」是原文「长时间的刷题也可能会导致疲劳和压力」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-89-human",
+      "kind": "human",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「也是沉迷其中妻离子散…」是原文「也是沉迷其中妻离子散……不怕一万」被截断后的残留，谓语已丢失,「不可自拔」是原文「不可自拔……不说那些不靠谱的小疗法」被截断后的残留，谓语已丢失"
+      ]
+    },
+    {
+      "id": "hc3-109-human",
+      "kind": "human",
+      "seed": 42,
+      "intensity": 0.9,
+      "issues": [
+        "内容腰斩:「将它转化为力量与兴奋”」是原文「将它转化为力量与兴奋”——贝爷」被截断后的残留，谓语已丢失"
+      ]
+    }
+  ]
+}

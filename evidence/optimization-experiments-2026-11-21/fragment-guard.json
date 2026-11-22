@@ -1,0 +1,48 @@
+{
+  "source": "DetectRL-ZH dev machine 样本本地引擎改写（碎句约束实验）",
+  "sampleN": 300,
+  "seeds": [
+    42,
+    1,
+    7
+  ],
+  "baselineAuc": 0.6143,
+  "guards": [
+    {
+      "maxGrowth": null,
+      "label": "无约束",
+      "covered": 1,
+      "auc": 0.2645,
+      "meanDelta": -13.79
+    },
+    {
+      "maxGrowth": 0.5,
+      "label": "≤50%",
+      "covered": 0.483,
+      "auc": 0.5196,
+      "meanDelta": -3.99
+    },
+    {
+      "maxGrowth": 0.25,
+      "label": "≤25%",
+      "covered": 0.12,
+      "auc": 0.6009,
+      "meanDelta": -0.56
+    },
+    {
+      "maxGrowth": 0.1,
+      "label": "≤10%",
+      "covered": 0.013,
+      "auc": 0.6111,
+      "meanDelta": -0.14
+    },
+    {
+      "maxGrowth": 0,
+      "label": "≤0%",
+      "covered": 0,
+      "auc": 0.6143,
+      "meanDelta": 0
+    }
+  ],
+  "verdictNote": "若严格约束(≤0.1)仍显著降分且 AUC 更接近 0.5，才值得提上线；否则证明降分全靠碎句骗"
+}

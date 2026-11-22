@@ -55,6 +55,10 @@ def parse_args():
     p.add_argument("--model", default=MODEL_DEFAULT)
     p.add_argument("--model-a", default=None, help="A 席模型（默认取 --model）。真双席应异源，如 qodercn/dfmodel")
     p.add_argument("--model-b", default=None, help="B 席模型（默认取 --model）。真双席应异源，如 glm-5.3-flash")
+    p.add_argument("--reasoning-effort-a", default=None, choices=["low", "high", "max"],
+                   help="A 席 reasoning_effort（GLM 始终思考模型必须传 low/high/max，否则 1210）")
+    p.add_argument("--reasoning-effort-b", default=None, choices=["low", "high", "max"],
+                   help="B 席 reasoning_effort（同上；默认不传，保持旧行为）")
     p.add_argument("--seats", default="AB", help="A / B / AB")
     p.add_argument("--url-a", default=os.environ.get("QUAIWEI_EVAL_URL_A", "http://127.0.0.1:8080"))
     p.add_argument("--url-b", default=os.environ.get("QUAIWEI_EVAL_URL_B", "http://192.168.151.151:18080"))
@@ -132,6 +136,10 @@ class Runner:
             "temperature": 0,
             "max_tokens": max_tokens,
         }
+        # GLM 始终思考模型（glm-5.3-flash 直连通道）不传 reasoning_effort 会 1210。
+        # 只在显式指定时注入，默认不传 ⇒ 归档复现口径不变。
+        if up.get("reasoning_effort"):
+            payload["reasoning_effort"] = up["reasoning_effort"]
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         last = ""
         for attempt in range(4):
@@ -150,7 +158,7 @@ class Runner:
                     text = (msg.get("reasoning_content") or "").strip()
                 return text, None
             except urllib.error.HTTPError as e:
-                last = "HTTP " + str(e.code)
+                last = "HTTP " + str(e.code) + " " + e.read().decode("utf-8", "replace")[:300]
                 time.sleep(4 * (attempt + 1) if e.code == 429 else 2 * (attempt + 1))
             except Exception as e:
                 last = type(e).__name__ + ": " + str(e)[:80]
@@ -214,6 +222,15 @@ class Runner:
                 # 与模型是否同源无关；单席实测甲被选率 0.826，必须反序才能用。
                 seats = "AB"
                 avail = {"A": (self.args.url_a, key_a), "B": (self.args.url_a, key_a)}
+                # 同源镜像时 B 席必须继承 A 的 reasoning_effort，否则 GLM 始终思考模型
+                # 在 B 席会 1210（A 席注入了 low、B 席没注入 → 同一模型两个结果）
+                if self.args.reasoning_effort_a and not self.args.reasoning_effort_b:
+                    self.args.reasoning_effort_b = self.args.reasoning_effort_a
+                # 同理 B 席模型也要继承 A 席：否则 model_b=None 会回退到默认 MODEL_DEFAULT
+                # （无 provider 前缀），18326 中继报「model must use provider/model format」。
+                if self.args.model_a and not self.args.model_b:
+                    self.args.model_b = self.args.model_a
+                    self.models_by_seat["B"] = self.args.model_a
             else:
                 avail = {"A": (self.args.url_a, key_a), "B": (self.args.url_b, key_b)}
             missing = [f"QUAIWEI_EVAL_KEY_{s}" for s in seats if not avail[s][1]]
@@ -221,7 +238,8 @@ class Runner:
                 sys.exit("缺少凭证：" + " / ".join(missing) + "（只走环境变量，不落盘）")
             upstreams = [
                 {"seat": s, "url": avail[s][0].rstrip("/"), "key": avail[s][1],
-                 "model": self.models_by_seat[s]}
+                 "model": self.models_by_seat[s],
+                 "reasoning_effort": getattr(self.args, f"reasoning_effort_{s.lower()}")}
                 for s in seats
             ]
             desc = " · ".join(f"{u['seat']}={u['model']}" for u in upstreams)
@@ -271,9 +289,13 @@ class Runner:
             "elapsedSec": round(time.time() - self.t0, 1),
         }
         self.report.write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"\n配对 {n} 票 | B 臂被选「更像人」{b_win} 票 = {summary['bWinRate']}")
-        print(f"席位 A {by_seat['A']['bWin']}/{by_seat['A']['n']} · B {by_seat['B']['bWin']}/{by_seat['B']['n']}")
-        print(f"双席一致 {summary['seatAgreement']['rate']} | 甲被选率 {summary['firstArmChosen']} | p={summary['pValue']:.2g}")
+        # 注意口径：PAIR_SYS 问的是「哪段更像 AI」，所以 bWin = B 臂被选「更像 AI」的票数，
+        # 反过来的 (n - b_win) 才是「B 更像人」。旧打印写成「更像人」是笔误，2026-11-21 更正。
+        print(f"\n配对 {n} 票 | B 臂被选「更像 AI」{b_win} 票 = {summary['bWinRate']}；"
+              f"反向即 B『更像人』{n - b_win} 票 = {round(1 - summary['bWinRate'], 3)}")
+        print(f"席位 A(更像AI) {by_seat['A']['bWin']}/{by_seat['A']['n']} · B {by_seat['B']['bWin']}/{by_seat['B']['n']}")
+        print(f"双席一致 {summary['seatAgreement']['rate']} | 甲被选率 {summary['firstArmChosen']} | "
+              f"p(B更像AI)={summary['pValue']:.2g}；p(B更像人)={binom_sf(n - b_win, n):.2g}")
         print("报告：" + str(self.report))
 
 

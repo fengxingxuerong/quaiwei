@@ -1,0 +1,160 @@
+{
+ "model": "glm/glm-5.3-flash",
+ "modelsBySeat": {
+  "A": "glm/glm-5.3-flash",
+  "B": "glm/glm-5.3-flash"
+ },
+ "seats": "AB",
+ "cases": 21,
+ "pairs": 42,
+ "bWin": 8,
+ "bWinRate": 0.19,
+ "bySeat": {
+  "A": {
+   "n": 21,
+   "bWin": 3
+  },
+  "B": {
+   "n": 21,
+   "bWin": 5
+  }
+ },
+ "firstArmChosen": 0.452,
+ "seatAgreement": {
+  "pairs": 21,
+  "rate": 0.905
+ },
+ "pValue": 0.9999924513995211,
+ "errors": 0,
+ "perCase": [
+  {
+   "id": "C1-work-summary",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C10-tiny-input",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C11-admin-notice",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "C12-paper-abstract",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C13-manual-steps",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C14-finance-flash",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C15-policy-qa",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C16-prospectus-risk",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C17-verdict-labor",
+   "bWinVotes": 2,
+   "votes": 2,
+   "winner": "b"
+  },
+  {
+   "id": "C18-tender-spec",
+   "bWinVotes": 2,
+   "votes": 2,
+   "winner": "b"
+  },
+  {
+   "id": "C19-kids-essay",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C2-opinion-wechat",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C20-speech-opening",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C22-markdown-struct",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C23-frontmatter-indent",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C3-tech-popular",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C5-news-release",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "C6-academic-abstract",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C7-story-dialogue",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C8-social-post",
+   "bWinVotes": 2,
+   "votes": 2,
+   "winner": "b"
+  },
+  {
+   "id": "C9-mixed-links",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  }
+ ],
+ "armA": "eval-work\\corpus-local-glm-clean",
+ "armB": "eval-work\\arms-local-glm\\09",
+ "elapsedSec": 132.5
+}

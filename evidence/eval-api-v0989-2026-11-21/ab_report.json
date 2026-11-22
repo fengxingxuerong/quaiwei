@@ -1,0 +1,172 @@
+{
+ "model": "glm-5.3-flash",
+ "modelsBySeat": {
+  "A": "glm-5.3-flash",
+  "B": "glm-5.3-flash"
+ },
+ "seats": "AB",
+ "cases": 23,
+ "pairs": 46,
+ "bWin": 2,
+ "bWinRate": 0.043,
+ "bySeat": {
+  "A": {
+   "n": 23,
+   "bWin": 1
+  },
+  "B": {
+   "n": 23,
+   "bWin": 1
+  }
+ },
+ "firstArmChosen": 0.5,
+ "seatAgreement": {
+  "pairs": 23,
+  "rate": 0.913
+ },
+ "pValue": 0.9999999999993321,
+ "errors": 0,
+ "perCase": [
+  {
+   "id": "C1-work-summary",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C2-opinion-wechat",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C3-tech-popular",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C4-product-copy",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C5-news-release",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C6-academic-abstract",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C7-story-dialogue",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C8-social-post",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "C9-mixed-links",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C10-tiny-input",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C11-admin-notice",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C12-paper-abstract",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C13-manual-steps",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C14-finance-flash",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C15-policy-qa",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C16-prospectus-risk",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C17-verdict-labor",
+   "bWinVotes": 1,
+   "votes": 2,
+   "winner": "split"
+  },
+  {
+   "id": "C18-tender-spec",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C19-kids-essay",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C20-speech-opening",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C21-fenced-code-doc",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C22-markdown-struct",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  },
+  {
+   "id": "C23-frontmatter-indent",
+   "bWinVotes": 0,
+   "votes": 2,
+   "winner": "a"
+  }
+ ],
+ "armA": "eval-work\\in",
+ "armB": "eval-work\\arms-api-v0989\\09",
+ "elapsedSec": 0.0
+}

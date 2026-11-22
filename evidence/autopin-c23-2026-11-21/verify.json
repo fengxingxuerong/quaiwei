@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-21T10:23:19.351Z",
+  "model": "glm/glm-5.3-flash",
+  "seedText": "C23",
+  "bare": {
+    "frontmatterSurvived": true,
+    "hasDate": true,
+    "head": "---\ntitle: 接入改造说明\ndate: 2026-10-18\n---\n\n这次改造的几个要点：\n\n- 接口层彻底重写了一遍。\n    旧接口先留着，给了一个版本的兼容期。\n- 监控指标也补上了。"
+  },
+  "autoPin": {
+    "pinsExtracted": 1,
+    "pinHead": "---\ntitle: 接入改造说明\ndate: 2026-10-18\n---",
+    "missingTokens": [],
+    "fallbackNeeded": false,
+    "frontmatterSurvived": true,
+    "hasDate": true,
+    "head": "---\ntitle: 接入改造说明\ndate: 2026-10-18\n---\n\n这次改造主要有以下几点：\n\n- 首先是接口层，做了全面重构。\n    旧接口会保留一个版本的兼容期。\n- 其次是监控，指"
+  }
+}

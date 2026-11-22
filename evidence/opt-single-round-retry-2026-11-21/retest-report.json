@@ -1,0 +1,141 @@
+{
+  "ts": "2026-11-21T12:33:01.266Z",
+  "args": {
+    "input": "eval-work/opt-retest/in",
+    "out": "eval-work/opt-retest/out",
+    "intensity": 0.9,
+    "zhuque": false,
+    "style": "plain",
+    "variant": "none",
+    "academicCheck": false,
+    "auditStructure": false,
+    "metrics": false,
+    "against": "",
+    "styleExplicit": false,
+    "suffix": ".humanized",
+    "seed": 20260905,
+    "api": true,
+    "baseUrl": "http://127.0.0.1:18326/v1",
+    "model": "glm/glm-5.3-flash",
+    "apiKey": "",
+    "judgeModel": "",
+    "altModel": "",
+    "deep": false,
+    "contest": 1,
+    "maxCalls": 0,
+    "maxWait": 0,
+    "llmTimeout": 300,
+    "reasoningEffort": "low",
+    "reasoningEffortFormat": "top-level",
+    "target": 0,
+    "strict": false,
+    "structural": false,
+    "skipLowRisk": false,
+    "persona": "default",
+    "report": "eval-work/opt-retest/report.json",
+    "voiceSamplePath": "",
+    "pinFile": "",
+    "docxInplace": false,
+    "outFormat": "follow",
+    "explain": false,
+    "recursive": false,
+    "jobs": 1,
+    "dryRun": false,
+    "stdin": false,
+    "help": false,
+    "detectOnly": false,
+    "detectors": [],
+    "detectorUrl": "",
+    "detectorKey": "",
+    "detectorPath": "score",
+    "detectorScale": "0-100"
+  },
+  "totals": {
+    "files": 3,
+    "ok": 3,
+    "fail": 0,
+    "skippedSuffix": 0,
+    "lowYieldRisk": 3,
+    "skippedLowRisk": 0,
+    "structuralApplied": 0,
+    "pinApplied": 0,
+    "pinFallback": 0,
+    "charsIn": 676,
+    "charsOut": 654,
+    "msTotal": 290135
+  },
+  "reports": [
+    {
+      "file": "C17-verdict-labor.txt",
+      "ms": 103688,
+      "charsIn": 291,
+      "charsOut": 305,
+      "detectBefore": 28,
+      "detectAfter": 32,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\opt-retest\\out\\C17-verdict-labor.humanized.txt"
+    },
+    {
+      "file": "C4-product-copy.txt",
+      "ms": 113523,
+      "charsIn": 267,
+      "charsOut": 232,
+      "detectBefore": 36,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\opt-retest\\out\\C4-product-copy.humanized.txt"
+    },
+    {
+      "file": "C8-social-post.txt",
+      "ms": 72924,
+      "charsIn": 118,
+      "charsOut": 117,
+      "detectBefore": 3,
+      "detectAfter": 9,
+      "registerBefore": {
+        "index": 0,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "（提示：输入 AI 味已较低，本轮收益有限；重复/串联去味不建议）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 0,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\opt-retest\\out\\C8-social-post.humanized.txt"
+    }
+  ]
+}

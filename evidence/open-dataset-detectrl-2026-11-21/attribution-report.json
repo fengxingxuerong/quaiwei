@@ -1,0 +1,73 @@
+{
+  "source": "DetectRL-ZH dev 长文档(≥742字)",
+  "threshold": 742,
+  "n": 700,
+  "human": 208,
+  "machine": 492,
+  "breakdown": [
+    {
+      "field": "score",
+      "humanMedian": 13,
+      "machineMedian": 8,
+      "humanMean": 13.519,
+      "machineMean": 10.996,
+      "auc": 0.398
+    },
+    {
+      "field": "formulaicHits",
+      "humanMedian": 0,
+      "machineMedian": 1,
+      "humanMean": 0.707,
+      "machineMean": 1.122,
+      "auc": 0.592
+    },
+    {
+      "field": "burstiness",
+      "humanMedian": 0.53,
+      "machineMedian": 0.49,
+      "humanMean": 0.555,
+      "machineMean": 0.498,
+      "auc": 0.388
+    },
+    {
+      "field": "avgLen",
+      "humanMedian": 32.9,
+      "machineMedian": 24.8,
+      "humanMean": 35.61,
+      "machineMean": 25.675,
+      "auc": 0.202
+    },
+    {
+      "field": "sentenceCount",
+      "humanMedian": 26,
+      "machineMedian": 34,
+      "humanMean": 27.298,
+      "machineMean": 35.159,
+      "auc": 0.756
+    },
+    {
+      "field": "brokenHits",
+      "humanMedian": 0,
+      "machineMedian": 0,
+      "humanMean": 0.01,
+      "machineMean": 0.049,
+      "auc": 0.52
+    },
+    {
+      "field": "structureHits",
+      "humanMedian": 0,
+      "machineMedian": 0,
+      "humanMean": 2.596,
+      "machineMean": 0.805,
+      "auc": 0.451
+    },
+    {
+      "field": "typoHits",
+      "humanMedian": 0,
+      "machineMedian": 0,
+      "humanMean": 0,
+      "machineMean": 0,
+      "auc": 0.5
+    }
+  ]
+}

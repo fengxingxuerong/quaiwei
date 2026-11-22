@@ -1,0 +1,31 @@
+{
+  "source": "DetectRL-ZH dev · machine 样本本地引擎改写",
+  "humanN": 1100,
+  "machineSampleN": 300,
+  "longThreshold": 742,
+  "longSampleN": 58,
+  "longHumanN": 208,
+  "intensity": 0.9,
+  "aucBefore": 0.6153,
+  "aucAfterMedian": 0.2971,
+  "aucBeforeLong": 0.3815,
+  "aucAfterLongMedian": 0.3317,
+  "afterBySeed": [
+    {
+      "seed": 42,
+      "aucAll": 0.2971,
+      "aucLong": 0.3291
+    },
+    {
+      "seed": 1,
+      "aucAll": 0.2968,
+      "aucLong": 0.3333
+    },
+    {
+      "seed": 7,
+      "aucAll": 0.2987,
+      "aucLong": 0.3317
+    }
+  ],
+  "interpretation": "AUC 越接近 0.5 = 人机越难分（工具越有效）；<0.5 = 判反"
+}

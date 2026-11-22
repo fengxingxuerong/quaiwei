@@ -1,0 +1,87 @@
+{
+  "source": "NLPCC-2025 Task1 / DetectRL-ZH dev.json (github.com/NLP2CT/NLPCC-2025-Task1)",
+  "n": 2800,
+  "human": 1100,
+  "machine": 1700,
+  "auc": 0.5749,
+  "medScoreHuman": 12,
+  "medScoreMachine": 15,
+  "meanScoreHuman": 14,
+  "meanScoreMachine": 18.3,
+  "medCharsHuman": 457,
+  "medCharsMachine": 615,
+  "bands": [
+    {
+      "name": "短(<398)",
+      "n": 698,
+      "human": 432,
+      "machine": 266,
+      "medChars": 323,
+      "auc": 0.615,
+      "medScoreHuman": 14,
+      "medScoreMachine": 20
+    },
+    {
+      "name": "中短(398-558)",
+      "n": 701,
+      "human": 272,
+      "machine": 429,
+      "medChars": 470,
+      "auc": 0.759,
+      "medScoreHuman": 10,
+      "medScoreMachine": 23
+    },
+    {
+      "name": "中长(558-742)",
+      "n": 701,
+      "human": 188,
+      "machine": 513,
+      "medChars": 643,
+      "auc": 0.603,
+      "medScoreHuman": 11,
+      "medScoreMachine": 15
+    },
+    {
+      "name": "长(≥742)",
+      "n": 700,
+      "human": 208,
+      "machine": 492,
+      "medChars": 874,
+      "auc": 0.398,
+      "medScoreHuman": 13,
+      "medScoreMachine": 8
+    }
+  ],
+  "thresholdSweep": [
+    {
+      "threshold": 20,
+      "tpr": 0.384,
+      "fpr": 0.293
+    },
+    {
+      "threshold": 27,
+      "tpr": 0.26,
+      "fpr": 0.111
+    },
+    {
+      "threshold": 35,
+      "tpr": 0.153,
+      "fpr": 0.036
+    },
+    {
+      "threshold": 45,
+      "tpr": 0.059,
+      "fpr": 0.008
+    },
+    {
+      "threshold": 55,
+      "tpr": 0.016,
+      "fpr": 0.001
+    },
+    {
+      "threshold": 65,
+      "tpr": 0.006,
+      "fpr": 0.001
+    }
+  ]
+}

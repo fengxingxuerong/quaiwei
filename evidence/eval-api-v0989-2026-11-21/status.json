@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-11-21T09:25:22.028Z",
+  "head": "6981501f1bc98cca9da6663de39f792ae82cde2f",
+  "version": "0.9.89",
+  "gateway": {
+    "url": "http://127.0.0.1:18326/v1",
+    "model": "deepseek-auto/lobsterai/glm-5.3-flash",
+    "keySource": "OFM relay settings (env, not persisted)",
+    "seed": 20260905,
+    "jobs": 3,
+    "llmTimeout": 300
+  },
+  "arms": {
+    "09": {
+      "usedApi": 23,
+      "total": 23,
+      "ok": true,
+      "summary": {
+        "files": 23,
+        "ok": 23,
+        "fail": 0,
+        "skippedSuffix": 0,
+        "lowYieldRisk": 10,
+        "skippedLowRisk": 0,
+        "structuralApplied": 0,
+        "pinApplied": 0,
+        "pinFallback": 0,
+        "charsIn": 5507,
+        "charsOut": 5945,
+        "msTotal": 247024
+      }
+    },
+    "06": {
+      "usedApi": 2,
+      "total": 23,
+      "ok": false,
+      "note": "21/23 本地回退（网关 502），不可用于评测"
+    }
+  },
+  "fidelity": {
+    "method": "addedNumericFacts + missingNumericFacts on 09 arm",
+    "checked": 23,
+    "passed": 22,
+    "failed": [
+      "C23-frontmatter-indent: 丢数字 2026/10/18（frontmatter 被 LLM 吞掉）"
+    ],
+    "c16": "通过：无新增 5.6 派生数（11-13 的失败未复现）"
+  },
+  "blocked": null,
+  "pairEval": {
+    "status": "done",
+    "method": "GLM mirror (glm/glm-5.3-flash, reasoning_effort=low, B seat flipped)",
+    "pairs": 46,
+    "bWinAsAI": 2,
+    "bWinAsHuman": 44,
+    "humanRate": 0.957,
+    "pValue": 1.5e-11,
+    "seatAgreement": 0.913,
+    "firstArmChosen": 0.5,
+    "errors": 0,
+    "note": "single GLM judge, same-source mirror; directional only"
+  }
+}

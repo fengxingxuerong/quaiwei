@@ -1,0 +1,46 @@
+{
+  "local(探索)": {
+    "baseline": {
+      "overall": 0.7188,
+      "long": 0.5826,
+      "longN": 53
+    },
+    "norm": {
+      "overall": 0.7205,
+      "long": 0.5848,
+      "longN": 53
+    },
+    "capped": {
+      "overall": 0.681,
+      "long": 0.5714,
+      "longN": 53
+    },
+    "inverted": {
+      "overall": 0.6788,
+      "long": 0.5409,
+      "longN": 53
+    }
+  },
+  "DetectRL-ZH(验证)": {
+    "baseline": {
+      "overall": 0.5749,
+      "long": 0.4845,
+      "longN": 1232
+    },
+    "norm": {
+      "overall": 0.6154,
+      "long": 0.5248,
+      "longN": 1232
+    },
+    "capped": {
+      "overall": 0.5851,
+      "long": 0.5398,
+      "longN": 1232
+    },
+    "inverted": {
+      "overall": 0.7459,
+      "long": 0.7366,
+      "longN": 1232
+    }
+  }
+}
