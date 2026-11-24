@@ -33,12 +33,12 @@ describe("humanizeBestOf（多候选择优）", () => {
     expect(ratio).toBeLessThanOrEqual(1.4);
   });
 
-  it("zhuqueMode/style 选项透传给引擎", () => {
+  it("enhancementMode/style 选项透传给引擎", () => {
     const r = humanizeBestOf(AI_TEXT, {
       seed: 5,
       candidates: 2,
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       style: "casual",
     });
     expect(r.text.trim().length).toBeGreaterThan(0);
@@ -83,7 +83,7 @@ describe("humanizeBestOf：候选数自适应与空输入兜底", () => {
     // 引擎在默认路径下**不再加料**，ratio 降到 1.352（实测）——**淘汰守卫不再触发**。
     //
     // 已穷举验证「仍然可触发」的路径，结果全部为 0（artifacts/_probe-ratio3.ts）：
-    //   style=academic / casual、zhuqueMode、genre=humanHand/narrative、
+    //   style=academic / casual、enhancementMode、genre=humanHand/narrative、
     //   intensity=1、style=academic+genre=main+intensity=1、重复 3/5/10 遍、
     //   短句×8、公文化长句 —— **无一触发**。
     //   （顺带记录：dialogue 语体下 ratio=1.024，因为对话路径是切句压缩，净变短。）
@@ -93,7 +93,12 @@ describe("humanizeBestOf：候选数自适应与空输入兜底", () => {
     // ⚠️ 若将来引擎重新引入会拉长文本的注入（例如在 main 下恢复碎片注入），
     //    `rejected` 会重新 > 0；届时把断言改回 `>= 1` 即可。
     const text = "首先，我们要高度重视。其次，我们要认真落实。最后，我们要确保成效。".repeat(5);
-    const r = humanizeBestOf(text, { seed: 1, candidates: 6, intensity: 0.9, zhuqueMode: true });
+    const r = humanizeBestOf(text, {
+      seed: 1,
+      candidates: 6,
+      intensity: 0.9,
+      enhancementMode: true,
+    });
 
     expect(r.rejected).toBeGreaterThanOrEqual(0);
     expect(r.rejected).toBeLessThan(r.tried); // 至少留一个进择优，不许全军覆没

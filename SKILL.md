@@ -3,7 +3,7 @@ name: qu-ai-wei
 display_name: 趣AI味 QuAiWei
 display_name_zh: 趣AI味 QuAiWei
 display_name_en: QuAiWei Humanizer
-description: 趣AI味 QuAiWei（简体中文去 AI 味）——调用本仓库自带的本地离线引擎（零成本、不联网）或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后 AI 味评分与逐条痕迹报告。当用户要求「降 AI 率 / 去 AI 味 / 去 AIGC 痕迹 / 让这段更像人写的 / 自检朱雀类检测」时使用。
+description: 趣AI味 QuAiWei（简体中文去 AI 味）——调用本仓库自带的本地离线引擎（零成本、不联网）或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后 AI 味评分与逐条痕迹报告。当用户要求「降 AI 率 / 去 AI 味 / 去 AIGC 痕迹 / 让这段更像人写的 / 本地自检」时使用。
 description_zh: 趣AI味 QuAiWei（简体中文去 AI 味）——本地离线引擎或可选 LLM 深度闭环，把 AI 写的中文改得更像人写的，并输出前后评分与痕迹报告。
 description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
@@ -47,7 +47,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 |---|---|---|
 | `--out <dir>` | 目录 | 输出目录（不给则写到输入旁） |
 | `--intensity <0~1>` | 默认 0.6 | 去味强度滑块；要更强再显式给 0.9 |
-| `--zhuque` | 开关 | 朱雀增强（反指纹特征注入） |
+| `--enhancement` | 开关 | 表达增强（方言、插入语、句式片段等） |
 | `--style` | `plain` \| `casual` \| `academic` | 文风，默认 `plain`；**论文/公文必须给 `academic` 或 `plain`** |
 | `--seed <n>` | 默认 20260905 | 本地引擎种子，给定即可复现 |
 | `--suffix <s>` | 默认 `.humanized` | 输出文件后缀 |
@@ -94,16 +94,14 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 （Claude Code、Claude Desktop、Cursor 等）**优先走这条路**——agent 拿到的是改后正文，
 不必自己按规则复述一遍。
 
-MCP 字段：`intensity` / `style` / `seed` / `zhuque` / `variant`（zh-TW） / `structural` /
+MCP 字段：`intensity` / `style` / `seed` / `enhancement` / `variant`（zh-TW） / `structural` /
 `protect`（自定义保护术语，字符串数组——论文题目、人名、产品名传进来，引擎一字不动）；
 `detect_ai` 另可选 `detectorUrl`（外部检测器送检，拿真实刻度的分；不传就完全离线）。
 仍不支持的：`--api`（LLM 深度模式）、批量目录，走 CLI。装法与边界见 `docs/mcp-server.md`。
 
 ## 边界（**不要越界承诺**）
 
-1. **不承诺通过任何检测器**。内置评分是本地启发式**代理分**，与朱雀等官方分**无标定关系**；
-   v0.9.83 起 aiScore→官方分的换算线已随标定子系统整体移除（18 点人工抄录、凭证认证 0/18，
-   换算不可自证），界面不再给出任何官方分预测。
+1. **不承诺通过任何检测器**。内置评分是本地启发式**代理分**，与外部检测结果没有标定关系。
 2. **不要用"去味前后的分数差"判断安不安全**：本地检测器与去味引擎共用一套词表，
    分数必然变好看——这是同源指标，不是外部真值。要真值只能拿真实检测器跑。
 3. **本地引擎是"换词不换骨"**：不打散段落结构与句序，而结构规律性恰是检测器重点；
@@ -114,8 +112,7 @@ MCP 字段：`intensity` / `style` / `seed` / `zhuque` / `variant`（zh-TW） / 
    语体变化几乎不影响分数，只有恰好命中词表才影响。
    真人文本本身分布 `8 8 10 11 20 20 29 31 32 32 35 37 38 39 43 51 54 57 59 68 95`（中位 35，
    最高 95）⇒ **低分 ≠ 像人写**，绝对值只在同一篇稿子的前后对比里有意义。
-5. **人写稿别去味**：确认是纯人写原稿就直接交付——历史送检观察里越去味官方分反而略升；
-   引擎的「纯人写稿」体裁只保留作者结构，不做套话改写。
+5. **人写稿别过度去味**：确认是纯人写原稿就直接交付；引擎的「纯人写稿」体裁只保留作者结构，不做套话改写。
 6. 需要 100% 过检、或要求保留精确格式（表格/公式/加粗）的，**转人工处理**，别硬跑。
 
 ## 交付前自查

@@ -56,9 +56,9 @@
  */
 import { describe, it, expect } from "vitest";
 import { VOCAB, VOCAB_ENTRIES } from "./humanize-vocab";
-// DIALECT_VOCAB 的定义处在 humanize-zhuque.ts（humanize-data 只是转导出，
+// DIALECT_VOCAB 的定义处在 humanize-enhancement.ts（humanize-data 只是转导出，
 // 但转出口在 humanize-vocab 里不存在——直接引源文件，少一跳少一个歧义）
-import { DIALECT_VOCAB } from "./humanize-zhuque";
+import { DIALECT_VOCAB } from "./humanize-enhancement";
 import { GUARD_AFTER, GUARD_BEFORE } from "./humanize-guard";
 import { humanize } from "./humanize";
 

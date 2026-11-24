@@ -31,7 +31,7 @@ function ols(P: Pt[], label: string) {
   const sig = Math.sqrt(ssr / Math.max(1, N - 2));
   const x40 = (40 - b) / a;
   console.log(`\n== ${label}  n=${N} ==`);
-  console.log(`y(朱雀%) = ${a.toFixed(3)} * aiScore + ${b.toFixed(3)}`);
+  console.log(`y(本地%) = ${a.toFixed(3)} * aiScore + ${b.toFixed(3)}`);
   console.log(`R²=${R2.toFixed(4)}   S.E.=${sig.toFixed(3)}   x40(过人阈值)=${x40.toFixed(2)}`);
   console.log('id'.padEnd(10) + '  x      y     yH      e');
   for (const r of rs) {
@@ -54,7 +54,7 @@ for (const r of [r1, r2, r3]) {
   console.log(r.label.padEnd(24) + ` ${r.a.toFixed(3).padStart(5)} ${r.b.toFixed(2).padStart(7)} ${r.R2.toFixed(4).padStart(7)} ${r.sig.toFixed(2).padStart(5)} ${r.x40.toFixed(2).padStart(6)}`);
 }
 
-console.log('\n--- 过人阈值(朱雀≤40%) 等价所需 aiScore (负号意味着"按本斜率预测即使 aiScore=0 也过不了") ---');
+console.log('\n--- 过人阈值(本地≤40%) 等价所需 aiScore (负号意味着"按本斜率预测即使 aiScore=0 也过不了") ---');
 for (const r of [r1, r2, r3]) {
   const passable = r.x40 >= 0 && r.x40 <= 100;
   console.log(`  ${r.label.padEnd(24)} x40=${r.x40.toFixed(2)}  ${passable ? '✅ 可实现：aiScore ≤ ' + r.x40.toFixed(0) : '⚠️ 斜率太低/截距太高，x40不在 [0,100] 内；截距上限=' + (r.a * 0 + r.b).toFixed(1) + '%'}`);

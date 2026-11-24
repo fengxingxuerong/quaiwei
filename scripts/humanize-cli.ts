@@ -14,7 +14,7 @@
  *
  * 用法：
  *   npx tsx scripts/humanize-cli.ts <input-dir-or-file> [--out <dir>] [--intensity 0.6]
- *       [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]
+ *       [--enhancement] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]
  *       [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]
  *       [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]
  *       [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]
@@ -24,7 +24,7 @@
  *       [--recursive] [--jobs <n>] [--dry-run]
  *
  * 示例：
- *   npx tsx scripts/humanize-cli.ts ./docs-txt --out ./out --intensity 0.9 --zhuque
+ *   npx tsx scripts/humanize-cli.ts ./docs-txt --out ./out --intensity 0.9 --enhancement
  *   npx tsx scripts/humanize-cli.ts ./docs-txt --explain   # 每篇改完附「为什么这么改」清单
  *   npx tsx scripts/humanize-cli.ts ./word-docs --out ./out          # .docx 进 .docx 出
  *   npx tsx scripts/humanize-cli.ts ./word-docs --out-format txt     # 强制落成 .txt
@@ -66,7 +66,7 @@ import { explainChanges, formatExplain, type ExplainItem } from "../src/engine/e
 import { formatReview, reviewText, type ReviewReport } from "../src/engine/review";
 import { runHumanize } from "../src/api/llm";
 import { DEFAULT_API, loadPresetKeys, type ApiConfig } from "../src/api/llm-config";
-import { scoreViaDetector, inferZhuqueDefaults, type DetectorConfig } from "../src/api/detector";
+import { scoreViaDetector, type DetectorConfig } from "../src/api/detector";
 import { readDocxText, writeDocxText } from "../src/docx-io";
 import {
   applyRegionalVariant,
@@ -154,7 +154,7 @@ interface Args {
   input: string;
   out: string;
   intensity: number;
-  zhuque: boolean;
+  enhancement: boolean;
   style: "casual" | "plain" | "academic";
   suffix: string;
   /** v0.9.15：本地引擎种子。此前硬编码 20260905 且不可改，批量结果无法与 UI 对齐复现。 */
@@ -266,13 +266,13 @@ interface Args {
   detectorKey: string;
   /** 响应里分数的 JSON 点路径，默认 score */
   detectorPath: string;
-  /** 分数刻度，默认 0-100（朱雀那类是 0-1） */
+  /** 分数刻度，默认 0-100 */
   detectorScale: "0-100" | "0-1";
 }
 
 const USAGE =
   "用法: ai-humanizer <input-dir-or-file> [--out <dir>] [--intensity 0.6]" +
-  " [--zhuque] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]" +
+  " [--enhancement] [--style casual|plain|academic] [--suffix .humanized] [--seed 20260905]" +
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
   " [--llm-timeout <sec>] [--reasoning-effort low|medium|high|max|x-high]" +
@@ -298,8 +298,6 @@ const USAGE =
   "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段；" +
   "**可重复**——给多个 --detector-url 就逐档送检、横向对比（紧跟其后的 key/path/scale 只作用在这一档）。" +
   " 凭证建议走环境变量 QUAIWEI_DETECTOR_KEY，别写进命令行历史。\n" +
-  "  --detector-url 指向朱雀官方网关（.../v1/providers/zhuque-text/classify）时自动补 " +
-  "softmax_confidence + 0-1 刻度，不必手填；显式给 path/scale 则以你给的为准。\n" +
   "  --recursive 目录扫描进子目录（默认不进）；--jobs 仅 --api 模式生效（并发路数）。" +
   "\n  本地 GLM 网关（OFM 中继）并发硬上限 3，超过易 502/429——大批量建议 --jobs 2~3。" +
   "  --dry-run 只列出将处理的文件不落盘。目录批量默认跳过已带输出后缀的产物（重跑幂等）。" +
@@ -353,7 +351,7 @@ function parseArgs(argv: string[]): Args {
     input: "",
     out: "",
     intensity: 0.6,
-    zhuque: false,
+    enhancement: false,
     style: "plain",
     variant: "none",
     academicCheck: false,
@@ -476,8 +474,8 @@ function parseArgs(argv: string[]): Args {
       case "--intensity":
         args.intensity = Math.max(0, Math.min(1, num(a[++i], 0.6)));
         break;
-      case "--zhuque":
-        args.zhuque = true;
+      case "--enhancement":
+        args.enhancement = true;
         break;
       case "--style":
         args.style = (a[++i] as Args["style"]) || "plain";
@@ -914,7 +912,7 @@ async function runStdinMode(args: Args): Promise<void> {
     : humanize(raw, {
         intensity: args.intensity,
         seed: args.seed,
-        zhuqueMode: args.zhuque,
+        enhancementMode: args.enhancement,
         style: args.style,
         structural: args.structural,
       });
@@ -1000,7 +998,7 @@ async function runAcademicCheck(args: Args): Promise<void> {
     candidate = humanize(raw, {
       intensity: args.intensity,
       seed: args.seed,
-      zhuqueMode: args.zhuque,
+      enhancementMode: args.enhancement,
       style,
       structural: args.structural,
     });
@@ -1172,18 +1170,13 @@ async function main() {
    */
   const detectorCfgs: DetectorConfig[] = args.detectors
     .filter((d) => d.url.trim() !== "")
-    .map((d) => {
-      // 朱雀官方网关：只给 --detector-url 也自动用官方口径（softmax_confidence / 0-1）。
-      // 显式传过 path 或 scale 的以用户为准，避免覆盖自定义检测器。
-      const preset = d.path === "score" && d.scale === "0-100" ? inferZhuqueDefaults(d.url) : null;
-      return {
-        enabled: true,
-        url: d.url,
-        apiKey: d.key || process.env.QUAIWEI_DETECTOR_KEY || "",
-        scorePath: preset?.scorePath ?? d.path,
-        scale: (preset?.scale ?? d.scale) as "0-100" | "0-1",
-      };
-    });
+    .map((d) => ({
+      enabled: true,
+      url: d.url,
+      apiKey: d.key || process.env.QUAIWEI_DETECTOR_KEY || "",
+      scorePath: d.path,
+      scale: d.scale,
+    }));
 
   // v0.9.81：学术自检优先于批量流程——它不落盘，只出判定
   if (args.academicCheck) {
@@ -1344,7 +1337,7 @@ async function main() {
     );
   } else {
     console.log(
-      `批量去味：${files.length} 个文件 | 强度 ${args.intensity} | 朱雀增强 ${args.zhuque ? "开" : "关"} | 文风 ${args.style}`,
+      `批量去味：${files.length} 个文件 | 强度 ${args.intensity} | 表达增强 ${args.enhancement ? "开" : "关"} | 文风 ${args.style}`,
     );
     if (args.jobs > 1)
       console.log("   ⓘ 本地引擎是单线程 CPU 模式，--jobs 仅对 --api 生效，已忽略");
@@ -1376,7 +1369,7 @@ async function main() {
             humanize(para, {
               intensity: args.intensity,
               seed: args.seed,
-              zhuqueMode: args.zhuque,
+              enhancementMode: args.enhancement,
               style: args.style,
             }),
         });
@@ -1459,7 +1452,7 @@ async function main() {
               `   ${step}${name} ${stage ?? ""}第 ${round} 轮${score === null ? "" : ` 评分 ${score}`}`,
             );
           },
-          args.zhuque,
+          args.enhancement,
           undefined, // genre 交给引擎自动判定，与 UI「自动」一致
         );
         out = r.text;
@@ -1472,7 +1465,7 @@ async function main() {
         out = humanize(rewriteInput, {
           intensity: args.intensity,
           seed: args.seed,
-          zhuqueMode: args.zhuque,
+          enhancementMode: args.enhancement,
           style: args.style,
           structural: args.structural,
           onStructuralApplied: (applied) => {
@@ -1506,7 +1499,7 @@ async function main() {
                 Math.min(args.intensity, 0.4),
                 cfg,
                 undefined,
-                args.zhuque,
+                args.enhancement,
               );
               // 用重试结果覆盖记账字段，保证报告与最终产出一致
               rep.engine = r2.engine;

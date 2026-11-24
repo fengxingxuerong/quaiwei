@@ -123,7 +123,7 @@ describe("本地引擎输出质量（v0.8.4 反指纹回归）", () => {
     // ⚠️ 用 split/join 不用 replaceAll：本项目 target 是 ES2020，没有 replaceAll。
     const stripSource = (out: string) => out.split(src).join("").split("取得了").join("");
     for (let seed = 0; seed < 20; seed++) {
-      const out = humanize(src, { intensity: 0.9, seed, zhuqueMode: seed % 2 === 0 });
+      const out = humanize(src, { intensity: 0.9, seed, enhancementMode: seed % 2 === 0 });
       expect(out, `seed=${seed}：${out}`).not.toContain("了了");
       // 只查「原文里没有、产出里冒出来」的「得了」——那才是替身撞车
       const extra = stripSource(out);

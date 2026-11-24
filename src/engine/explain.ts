@@ -32,7 +32,7 @@ import {
   INTERJECTIONS,
 } from "./humanize-vocab";
 import { MECH_CLICHE_REWRITE, PAD_WORDS } from "./humanize-text";
-import { OPINION_PHRASES, PARENTHETIC_NOTES } from "./humanize-zhuque";
+import { OPINION_PHRASES, PARENTHETIC_NOTES } from "./humanize-enhancement";
 
 /**
  * v0.9.34：注入登记表 —— 把引擎**注入侧**的三张表聚合过来，让反查层能归因。
@@ -105,7 +105,7 @@ const REASON: Record<ExplainKind, { reason: string; basis: string }> = {
   inject: {
     reason: "加入口语化成分，打断机器那种均匀节奏",
     basis:
-      "humanize-zhuque.ts 的 OPINION_PHRASES / humanize-vocab.ts 的 INTERJECTIONS（句首注入表）；命中登记表的为确定归因，未命中的仍是形态推断",
+      "humanize-enhancement.ts 的 OPINION_PHRASES / humanize-vocab.ts 的 INTERJECTIONS（句首注入表）；命中登记表的为确定归因，未命中的仍是形态推断",
   },
   structure: {
     reason: "整句重写或结构调整（切句/重排）—— 具体是哪道流程做的，反查不出来",

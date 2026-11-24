@@ -10,7 +10,7 @@ import {
 import { AI_SCORE_HUMAN_MAX } from "./humanize-metrics";
 
 /**
- * 真值表来自 docs/external-judge-findings.md（2026-09-22 外部席位 step-3.5-flash 复评）
+ * 真值表来自 2026-09-22 外部席位复评
  * 与 CHANGELOG v0.9.14 §22 的深度模式真机重测（闭环评委分）。
  * 这批数是本模块阈值唯一的来源，改阈值必须回来对着这张表重算。
  */
@@ -97,7 +97,7 @@ describe("scoreConflict · 边界与不报的情形", () => {
 
 describe("scoreConflict · 文案", () => {
   it("必须点名是哪个外部通道说的，不能只写“两把尺分歧”", () => {
-    for (const src of ["judge", "detector", "official"] as const) {
+    for (const src of ["judge", "detector"] as const) {
       const r = scoreConflict(2, 90, src);
       expect(r?.message).toContain(SOURCE_ZH[src]);
       expect(r?.source).toBe(src);
@@ -125,7 +125,7 @@ describe("pickConflict", () => {
     message: "",
   };
   const severe: ScoreConflict = {
-    source: "official",
+    source: "detector",
     local: 2,
     external: 70,
     gap: 68,

@@ -19,7 +19,7 @@
  * 不是按「签名长什么样」，而是按**根因在哪一层**——
  * 因为修复动作是按层决定的：
  *
- *   词表层    → 改 `humanize-vocab.ts` / `humanize-zhuque.ts` 的数据
+ *   词表层    → 改 `humanize-vocab.ts` / `humanize-enhancement.ts` 的数据
  *   守卫层    → 改 `humanize-guard.ts`（GUARD_AFTER / GUARD_BEFORE / 类别规则）
  *   替换层    → 改 `replaceVocab` 里的 clash* 判据
  *   切分层    → 改 `fragmentCanStand` / `boostBurstinessByCutting`

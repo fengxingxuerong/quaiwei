@@ -105,7 +105,7 @@ describe("detectAI（本地 14 特征检测）", () => {
       expect(r.levelText).toBe("人工特征");
       expect(r.confidence).toBe(56); // dist=|28-32|=4 → 50+5.6 → 56
       expect(r.warnings).toEqual([
-        "字数 0，低于朱雀的 350 字门槛；短文本特征不稳，判定仅供参考",
+        "字数 0，短文本特征不稳，判定仅供参考",
         "句子太少，节奏类特征不可靠",
       ]);
       expect(r.stats).toEqual({ chars: 0, sentences: 0, paragraphs: 0, ttr: 0, sentenceCV: 0 });

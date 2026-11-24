@@ -79,7 +79,7 @@ describe("mechanicalShuffle（机械扰动主入口）", () => {
     const srcChars = aiText.replace(/\s/g, "").length;
     const out = mechanicalShuffle(aiText, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "main",
       seed: 20260925,
     });

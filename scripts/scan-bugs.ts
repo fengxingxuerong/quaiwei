@@ -670,10 +670,10 @@ let v6 = 0,
 }
 
 // ============================================================
-// v0.6.0 朱雀增强模式回归：zhuqueMode 不得引入已知病句/坏搭配
+// v0.6.0 表达增强模式回归：enhancementMode 不得引入已知病句/坏搭配
 // ============================================================
 {
-  const zhuqueProbes: [string, string, RegExp][] = [
+  const enhancementProbes: [string, string, RegExp][] = [
     ["级联使劲点", "以高质量发展为抓手。", /使劲点/],
     ["获得感截断", "增强人民群众的获得感。", /(?<!获)得感/],
     ["增强人民截断", "增强人民群众的安全感。", /加人民/],
@@ -686,14 +686,14 @@ let v6 = 0,
     ],
     ["垫词跨段重复", "值得注意的是，第一段。值得注意的是，第二段。", /要我说[，。].*要我说[，。]/s],
   ];
-  for (const [name, input, bad] of zhuqueProbes) {
+  for (const [name, input, bad] of enhancementProbes) {
     for (const it of [0.3, 0.6, 0.9]) {
       for (const seed of SEEDS_20) {
-        const out = humanize(input, { intensity: it, seed, zhuqueMode: true });
+        const out = humanize(input, { intensity: it, seed, enhancementMode: true });
         if (bad.test(out)) {
           logDetail(`❌ v0.6[${name}] 强度${it} seed${seed}: ${out.slice(0, 60)}`);
           zq++;
-          pushV("zhuque-mode", name, it, seed, {
+          pushV("enhancement-mode", name, it, seed, {
             pattern: bad.source,
             snippet: out.slice(0, 200),
             input: input.slice(0, 200),
@@ -703,7 +703,7 @@ let v6 = 0,
     }
   }
   console.log(
-    zq === 0 ? "✅ v0.6.0 朱雀增强模式 7 组探针全部通过" : `v0.6.0 朱雀模式共 ${zq} 次违规`,
+    zq === 0 ? "✅ v0.6.0 表达增强模式 7 组探针全部通过" : `v0.6.0 本地模式共 ${zq} 次违规`,
   );
 }
 

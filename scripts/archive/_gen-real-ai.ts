@@ -1,15 +1,15 @@
 /**
  * scripts/_gen-real-ai.ts —— 生成「真实 AI 基线文本」（临时）
  *
- * 目的：手写 AI 味样本被朱雀判人类（4/4），需要真实 LLM 输出做基线，
- * 验证「朱雀能否抓到真 AI 文本」，后续才能测改写迁移效果。
+ * 目的：手写 AI 味样本被本地判人类（4/4），需要真实 LLM 输出做基线，
+ * 验证「本地能否抓到真 AI 文本」，后续才能测改写迁移效果。
  * 用 deepseek-v4-flash 默认参数正常写作，不加任何风格指令。
  */
 import fs from "fs";
 import { chat } from "../src/api/llm-chat";
 import { DEFAULT_API, loadPresetKeys, effectiveKeys } from "../src/api/llm-config";
 
-const OUT = "C:/Users/Admin（无密码）/Documents/Loomy Workspace/QuAiWei去AI味测试/out-zhuque";
+const OUT = "C:/Users/Admin（无密码）/Documents/Loomy Workspace/QuAiWei去AI味测试/out-enhancement";
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });

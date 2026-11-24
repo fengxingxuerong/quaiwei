@@ -39,7 +39,7 @@ const PLAIN_QA_HEADS = [
   "有没有反例",
 ];
 
-/** casual 池的问句头（朱雀增强路径用） */
+/** casual 池的问句头（表达增强路径用） */
 const CASUAL_QA_HEADS = [
   "为啥这么说",
   "真的假的",
@@ -250,7 +250,7 @@ describe("v0.9.51 新签名：致辞 / 诉讼文书 / 参数表", () => {
     const out = humanize(EXPO, {
       intensity: 0.6,
       seed: 20260905,
-      zhuqueMode: true,
+      enhancementMode: true,
       style: "plain",
     });
     // 不断言"三个全被换"（那绑死了 OPENERS 表的 rng 落点），断言"没有三个都冻住"——
@@ -307,11 +307,11 @@ describe("端到端：该拦的不注入，该留的保留", () => {
     expect(injected, "20 个 seed 全部零注入——门控把观点文的人味装置也废了").toBeGreaterThan(0);
   });
 
-  it("⑩朱雀增强路径同样受门控（①调用点）", () => {
+  it("⑩表达增强路径同样受门控（①调用点）", () => {
     for (let seed = 1; seed <= 8; seed++) {
-      const out = humanize(C1, { intensity: 0.9, seed, zhuqueMode: true });
+      const out = humanize(C1, { intensity: 0.9, seed, enhancementMode: true });
       for (const q of [...PLAIN_QA_HEADS, ...CASUAL_QA_HEADS]) {
-        expect(out, `seed=${seed} zhuqueMode：公文里漏出自问自答「${q}」`).not.toContain(q);
+        expect(out, `seed=${seed} enhancementMode：公文里漏出自问自答「${q}」`).not.toContain(q);
       }
     }
   });

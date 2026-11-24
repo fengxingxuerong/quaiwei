@@ -17,7 +17,7 @@ import {
 import { fingerprintCheck, humanize } from "../engine/humanize";
 import { restoreMixedSpacing } from "../engine/humanize-shuffle";
 import { buildRevisionPrompt } from "./llm-prompts";
-import { ZHUQUE_DETECT_SYSTEM } from "./zhuque-semantic";
+import { QUALITY_RUBRIC } from "./quality-rubric";
 import { humanizeViaApiDeep } from "./llm-humanize";
 import { DEFAULT_API } from "./llm-config";
 
@@ -145,8 +145,8 @@ describe("buildRevisionPrompt（篇章层定向修法）", () => {
   });
 });
 
-describe("深度闭环 × 朱雀检测员提示词对齐", () => {
-  it("评分请求使用 ZHUQUE_DETECT_SYSTEM，修订请求带定向修法", async () => {
+describe("深度闭环 × 质量评判员提示词对齐", () => {
+  it("评分请求使用 QUALITY_RUBRIC，修订请求带定向修法", async () => {
     const cfg = { ...DEFAULT_API, enabled: true, apiKey: "test-key" };
     const systems: string[] = [];
     const users: string[] = [];
@@ -164,7 +164,7 @@ describe("深度闭环 × 朱雀检测员提示词对齐", () => {
         let content = "改写后的文本，人工智能改变了生活。就这样。";
         const sys = systems[systems.length - 1] ?? "";
         if (sys.includes("质检员")) content = "PASS";
-        else if (sys.includes("复刻检测员")) content = "论点骨架工整\n42";
+        else if (sys === QUALITY_RUBRIC) content = "论点骨架工整\n42";
         return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -173,8 +173,8 @@ describe("深度闭环 × 朱雀检测员提示词对齐", () => {
     );
     const r = await humanizeViaApiDeep("原文内容。", cfg, undefined, 10, 2);
     expect(r.text).not.toBe("");
-    // 评分阶段走的是朱雀检测员提示词（篇章层），不是通用检测员
-    expect(systems.some((s) => s === ZHUQUE_DETECT_SYSTEM)).toBe(true);
+    // 评分阶段走的是质量评判员提示词（篇章层），不是通用检测员
+    expect(systems.some((s) => s === QUALITY_RUBRIC)).toBe(true);
     // 评判痕迹「论点骨架工整」命中篇章修法，第 2 轮修订请求应携带「对应修法」
     expect(users.some((u) => u.includes("对应修法") && u.includes("段落重新切分"))).toBe(true);
     expect(r.roundScores).toEqual([42, 42]);
@@ -213,7 +213,7 @@ describe("深度闭环调用预算（v0.8.5）", () => {
         const sys: string = body.messages?.[0]?.content ?? "";
         let content = "改写后的文本，人工智能改变了生活。就这样。";
         if (sys.includes("质检员")) content = "PASS";
-        else if (sys.includes("复刻检测员")) content = "论点骨架工整\n42";
+        else if (sys === QUALITY_RUBRIC) content = "论点骨架工整\n42";
         return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -397,7 +397,7 @@ describe("processCandidate（修复成功路径）", () => {
         let content = "PASS"; // 质检默认放行
         if (sys.includes("改写专家"))
           content = "改写稿：营收增长23%，海外占比提升。"; // 修好了
-        else if (sys.includes("复刻检测员")) content = "句长过于均匀\n18"; // 评分行
+        else if (sys === QUALITY_RUBRIC) content = "句长过于均匀\n18"; // 评分行
         return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -414,9 +414,9 @@ describe("processCandidate（修复成功路径）", () => {
     // 交付的是修复稿，而不是被本地硬门槛打回的数字篡改稿
     expect(r.shuffled).toContain("23%");
     expect(r.shuffled).not.toContain("32%");
-    // 评委评的也必须是最终交付那一稿。判别词要取检测员提示词独有的「复刻检测员」：
-    // "质检员"提示词含"检测员"字样，而改写专家提示词里也提到"朱雀"，两者都会串台
-    const judge = reqs.find((q) => q.sys.includes("复刻检测员"));
+    // 评委评的也必须是最终交付那一稿。判别词要取检测员提示词独有的「质量评判员」：
+    // "质检员"提示词含"检测员"字样，而改写专家提示词里也提到"本地"，两者都会串台
+    const judge = reqs.find((q) => q.sys === QUALITY_RUBRIC);
     expect(judge?.user).toContain("23%");
     expect(judge?.user).not.toContain("32%");
     expect(r.score).toBe(18);
@@ -680,13 +680,13 @@ describe("inflationIssues：增殖守卫（truncationIssues 缺的半边）", ()
       "值得注意的是，随着人工智能技术的发展，相关工具应运而生。综上所述，效率得到了提升。",
       "张总：这个季度的指标完成得怎么样了？李工：主流程已经联调完毕。",
     ]) {
-      for (const [intensity, zhuque] of [
+      for (const [intensity, enhancement] of [
         [0.6, false],
         [0.9, true],
         [1, true],
       ] as [number, boolean][]) {
         for (let seed = 0; seed < 8; seed++) {
-          const o = humanize(src, { intensity, zhuqueMode: zhuque, seed });
+          const o = humanize(src, { intensity, enhancementMode: enhancement, seed });
           expect(inflationIssues(src, o)).toEqual([]);
         }
       }

@@ -9,7 +9,7 @@ import { splitSentences } from "./humanize-text";
 // 由 humanize.ts（核心替换）、humanize-metrics.ts（评分/指纹）、humanize-shuffle.ts（机械扰动）
 // 三方共用，故下沉到此层，避免模块间循环依赖。全部纯函数、零副作用。
 
-/** 文风预设：控制朱雀增强特征的开关门控 */
+/** 文风预设：控制表达增强特征的开关门控 */
 export type RewriteStyle = "casual" | "plain" | "academic";
 
 /** 去味参数：核心替换、机械扰动与评分共用 */
@@ -18,10 +18,10 @@ export interface HumanizeOptions {
   intensity?: number;
   /** 随机种子，固定后结果可复现 */
   seed?: number;
-  /** 朱雀增强模式：开启后激活额外对抗特征（方言、插入语、句式片段、主观意见、标点不规整等），
-   *  针对 AI 文本检测器（朱雀/知网等）的统计特征做定向干扰。强度 ≥0.5 时自动启用。 */
-  zhuqueMode?: boolean;
-  /** 文风预设：casual=自然口语（朱雀特征全开）/ plain=平实书面（禁方言/网络梗，保留结构操作）
+  /** 表达增强模式：开启后激活额外对抗特征（方言、插入语、句式片段、主观意见、标点不规整等），
+   *  针对 AI 文本检测器（本地/知网等）的统计特征做定向干扰。强度 ≥0.5 时自动启用。 */
+  enhancementMode?: boolean;
+  /** 文风预设：casual=自然口语（表达特征全开）/ plain=平实书面（禁方言/网络梗，保留结构操作）
    *  / academic=学术体（禁方言/网络梗/主观意见，保留结构操作）。 */
   style?: RewriteStyle;
   /**
@@ -44,7 +44,7 @@ export interface HumanizeOptions {
   /**
    * v3 P7 引擎级体裁联动：
    *  · main/narrative/dialogue：引擎自动/显式识别后，对应调 avgLen/burst 阈值、P3 结构门控强度
-   *  · humanHand：纯人写原稿，强制强度 ≤0.48、关闭朱雀增强、跳过自问自答/错别字等（负斜率，越去味越升官%）
+   *  · humanHand：纯人写原稿，强制强度 ≤0.48、关闭表达增强、跳过自问自答/错别字等（负斜率，越去味越升官%）
    *  · undefined（默认）：由 classifyGenre(text) 自动在 main/narrative/dialogue 三选内判定
    */
   genre?: "main" | "narrative" | "dialogue" | "humanHand";
@@ -139,7 +139,7 @@ export interface StageTrace {
 /**
  * 句长变异系数最低阈值（节奏兜底与指纹体检共用）。
  * v0.9.1：0.45→0.40。0.45 是旧极短语气锚引擎时代标定的，v0.9.8 废除极短锚后
- * 引擎实际稳定做到 CV≈0.35~0.45（少语气词 vs 低 CV 的设计权衡）。朱雀官方口径
+ * 引擎实际稳定做到 CV≈0.35~0.45（少语气词 vs 低 CV 的设计权衡）。外部口径
  * 的绝对判据（std∈[4.5,8.5]=AI特征带）已在 fingerprintCheck 独立检查，
  * CV 检查是补充判据——0.40 反映新引擎真实能力，仍能抓到 std<4.5 且 CV<0.40 的
  * 真正均匀文本。
@@ -150,7 +150,7 @@ export const MIN_BURSTINESS_CV = 0.4;
    v0.9.4 P2 跨轮垫词饱和守卫
    ========================================================= */
 /**
- * 口语插话/碎片句头共享表：shuffle 碎片、朱雀模板、方言替换产物的并集。
+ * 口语插话/碎片句头共享表：shuffle 碎片、本地模板、方言替换产物的并集。
  * 背景：实测把去味输出再次喂回引擎（串联迭代），垫词 12→22→28→35 线性堆积、
  * 字数注水 +89% 而自检分横盘——三个注入点各自只管"本轮限额"，对输入里
  * 已有的垫词无记忆。守卫口径：文本已有垫词达到上限后，本轮不再注入新的。

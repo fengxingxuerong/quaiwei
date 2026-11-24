@@ -7,9 +7,6 @@
  */
 import type { ScoreBreakdown } from "./engine/humanize";
 
-/** 朱雀网页版检测文本长度门槛：送检前给出提示，去味本身不受影响 */
-export const ZHUQUE_MIN_CHARS = 350;
-
 /** handleHumanize 结果对象里文案需要的最小形状（避免耦合完整 RunResult 类型） */
 export interface HumanizeNoteResult {
   engine?: string;
@@ -21,13 +18,10 @@ export interface HumanizeNoteResult {
 
 export interface BuildHumanizeNoteArgs {
   r: HumanizeNoteResult;
-  input: string;
   /** 本地 AI 检测对照：原文 */
   din: { levelText: string; probability: number };
   /** 本地 AI 检测对照：去味稿 */
   dout: { levelText: string; probability: number };
-  /** 朱雀口径报告（只取占比与档位文案） */
-  zr: { ratios: { ai: number }; labelText: string };
   /** 外部检测器自动送检追加段（含前导 " · "），无则不追加 */
   detectorNote?: string;
 }
@@ -38,14 +32,7 @@ export interface BuildHumanizeNoteArgs {
  * 付了调用，看到的是假话；长文分块混拼时 usedApi 仍是 true，更分不出这稿
  * 是谁写的。engine 字段驱动（v0.9.15）。
  */
-export function buildHumanizeNote({
-  r,
-  input,
-  din,
-  dout,
-  zr,
-  detectorNote,
-}: BuildHumanizeNoteArgs): string {
+export function buildHumanizeNote({ r, din, dout, detectorNote }: BuildHumanizeNoteArgs): string {
   let msg: string;
   if (r.engine === "llm") {
     msg = r.roundScores?.length ? "已使用 API 深度去味" : "已使用 API（LLM）去味";
@@ -60,12 +47,7 @@ export function buildHumanizeNote({
   if (r.bestOf) {
     msg += ` · 多候选择优：${r.bestOf.tried} 稿中挑最优（淘汰 ${r.bestOf.rejected} 稿，中选种子 ${r.bestOf.seed}）`;
   }
-  const visibleLen = input.replace(/\s/g, "").length;
-  if (visibleLen < ZHUQUE_MIN_CHARS) {
-    msg += ` · 提示：朱雀检测要求不少于 ${ZHUQUE_MIN_CHARS} 字（当前 ${visibleLen} 字），去味本身不受影响`;
-  }
   msg += ` · 本地检测：${din.levelText}(${din.probability}%) → ${dout.levelText}(${dout.probability}%)`;
-  msg += ` · 朱雀口径：AI特征占比 ${zr.ratios.ai}%（${zr.labelText}）`;
   if (detectorNote) msg += detectorNote;
   return msg;
 }

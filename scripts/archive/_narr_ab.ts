@@ -16,7 +16,7 @@ for (const it of [0.6, 0.8, 1.0]) {
   let sum = 0;
   let max = 0;
   for (let seed = 1; seed <= 20; seed++) {
-    const out = humanize(NARR, { intensity: it, zhuqueMode: true, genre: "narrative", seed });
+    const out = humanize(NARR, { intensity: it, enhancementMode: true, genre: "narrative", seed });
     const s = aiScore(out);
     sum += s.score;
     if (s.score > max) {

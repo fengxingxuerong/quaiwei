@@ -18,7 +18,7 @@ for (const genre of ["main", "narrative", "humanHand"] as const) {
   for (const style of ["academic", "casual"] as const) {
     const out = humanize(USER_TEXT_WITH_DIALECT, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre,
       style,
       seed: 1,

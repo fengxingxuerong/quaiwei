@@ -22,7 +22,7 @@ const check = (name, arr, firstNeedle, lastNeedle) => {
 check("A1 常量", A1, "REPLACE_VOCAB_BASE", "DROP_CONNECTIVE_INTENSITY_THRESHOLD");
 check("A2 替换规则", A2, "REPLACE_VOCAB_CANDIDATES", "]);");
 check("B1 场景块", B1, "SCENE_BLOCK_LINE_RE = /", "SCENE_BLOCK_LINE_RE = /");
-check("B2 朱雀增强", B2, "applyZhuqueFeatures", "}");
+check("B2 表达增强", B2, "applyExpressionFeatures", "}");
 
 // 顶层声明清单（排除待搬区间内的）
 const declRe = /^(?:export\s+)?(?:const|let|function|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/;
@@ -53,7 +53,7 @@ const KEYWORDS = new Set(["const", "let", "var", "function", "return", "export",
 
 for (const [label, arr] of [
   ["A(1a rules)", [...A1, ...A2]],
-  ["B(1b zhuque)", [...B1, ...B2]],
+  ["B(1b enhancement)", [...B1, ...B2]],
 ]) {
   const used = new Set();
   for (const l of arr) {

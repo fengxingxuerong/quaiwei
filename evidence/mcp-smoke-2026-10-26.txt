@@ -117,8 +117,6 @@ npx eslint         → exit 0（src/mcp、regional-zh、academic-check、smoke-m
 npm test                                                  → 2384 passed / 121 files（12~16 秒）
 npm run test:realcase                                     → 硬缺陷 0 / 软提示 0 · 1.7 秒 · exit 0
 npm run sweep:format                                      → 4080 次运行 · 2.4 秒 · exit 0
-npm run test:calib                                        → 0.8 秒 · exit 0（未顶红）
-npm run test:evidence                                     → 0.8 秒 · 认证 0/18、无硬伤
 npm run build:cli && npm run smoke:mcp                    → 0.9 + 0.6 秒 · 冒烟 8/8
 npx vitest run src/engine/number-fidelity.test.ts \
   src/engine/score-conflict.test.ts                       → 48 passed
@@ -129,7 +127,7 @@ npx vitest run src/engine/regional-zh.test.ts             → 16 passed
 - 初稿把 `sweep:format` / `test:realcase` 写成"分钟级"，实测 2.4 秒 / 1.7 秒——已改成本机实测值；
 - `npm install` 没计过时，改成"未计时"，没编造秒数。
 
-页面里"已知失败"一节的 6 条全部带出处（外评文档、README 顶部、`test:evidence` 输出、本文件上一节）。
+页面里"已知失败"一节的 6 条全部带出处（外评记录、README 顶部、本文件上一节）。
 
 ---
 
@@ -251,7 +249,6 @@ npm run test:cov      → Stmt 97.6% / Branch 94.5% / Func 98.5% / Lines 98.4%�
 npm run check:regex   → 无「字符类提前闭合」写法
 npm run test:regress  → fails=0 dfFails=0 v4=0 fp=0 …
 npm run test:quality  → 强度 1.0 零泄漏、零省略号、词表配对全通
-npm run check:ledger  → HEAD 18 行 → 待提交 18 行，只追加 0 行
 ```
 
 唯一红着的仍是 `check:version`：`electron-app/package.json` 与 CHANGELOG 停在 0.9.80、
@@ -275,7 +272,7 @@ npm run check:ledger  → HEAD 18 行 → 待提交 18 行，只追加 0 行
 
 ## 第四轮：网页版接入 + 浏览器验收
 
-「台湾用词」开关进网页版（专业视图，与「朱雀增强」同一排 chip）。
+「台湾用词」开关进网页版（专业视图，与「表达增强」同一排 chip）。
 判定逻辑没变：挂在 `humanize` 之后做后处理，默认 `none` 时一段代码都不执行。
 
 ### 真浏览器验收（Playwright 1.64.1 + 本机 Chrome，dev server 5173）

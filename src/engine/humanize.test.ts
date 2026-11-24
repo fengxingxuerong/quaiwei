@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   humanize,
-  applyZhuqueFeatures,
+  applyExpressionFeatures,
   adviceFor,
   aiScore,
   humanizeWithScore,
@@ -29,7 +29,7 @@ describe("humanize 引擎", () => {
 
   it("超短文本透传（v0.9.4：实测「短。」被管线清成空串，数据丢失）", () => {
     expect(humanize("短。")).toBe("短。");
-    expect(humanize("好的", { intensity: 0.9, zhuqueMode: true })).toBe("好的");
+    expect(humanize("好的", { intensity: 0.9, enhancementMode: true })).toBe("好的");
     // 10 字及以上的正常短句不受守卫影响（不做内容断言，只断非空且包含原词根）
     const out = humanize("这句话有十个字以上了吗", { seed: 1 });
     expect(out.length).toBeGreaterThan(0);
@@ -41,9 +41,9 @@ describe("humanize 引擎", () => {
     const sample = `值得注意的是，在当今社会，随着人工智能技术的快速发展，AI 写作工具应运而生。
 首先，它能够提升效率。通过自动化的方式，减少重复劳动。其次，它降低了门槛。普通人也能生成可用的文本。最后，它改变了行业。许多岗位被重新定义。
 综上所述，这项技术至关重要。它不仅影响当下，还塑造未来。唯有主动拥抱变化，方能行稳致远。`;
-    const r1 = humanize(sample, { intensity: 0.9, seed: 20260905, zhuqueMode: true });
-    const r2 = humanize(r1, { intensity: 0.9, seed: 20260905, zhuqueMode: true });
-    const r3 = humanize(r2, { intensity: 0.9, seed: 20260905, zhuqueMode: true });
+    const r1 = humanize(sample, { intensity: 0.9, seed: 20260905, enhancementMode: true });
+    const r2 = humanize(r1, { intensity: 0.9, seed: 20260905, enhancementMode: true });
+    const r3 = humanize(r2, { intensity: 0.9, seed: 20260905, enhancementMode: true });
     // 饱和守卫：第 2 轮起注入被抑制，垫词数不再单调上涨（允许 ±2 抖动）
     expect(countPadHeads(r2)).toBeLessThanOrEqual(countPadHeads(r1) + 2);
     expect(countPadHeads(r3)).toBeLessThanOrEqual(countPadHeads(r2) + 2);
@@ -68,7 +68,7 @@ describe("humanize 引擎", () => {
       ["为您的使用安全保驾护航", "安全护住"], // 保驾护航→护住 丢搭配
     ];
     for (const [input, bad] of cases) {
-      const out = humanize(input, { intensity: 0.9, seed: 20260905, zhuqueMode: true });
+      const out = humanize(input, { intensity: 0.9, seed: 20260905, enhancementMode: true });
       expect(out).not.toContain(bad);
     }
   });
@@ -76,7 +76,7 @@ describe("humanize 引擎", () => {
   it("双语气词折叠：呀呀/嘛嗯式堆叠不复现（v0.9.5 P4）", () => {
     const sample =
       "值得注意的是，随着技术的发展，很多事物都在变化。综上所述，我们需要认真对待。这不仅关乎当下，也关乎未来。值得深思。";
-    const out = humanize(sample, { intensity: 0.9, seed: 20260905, zhuqueMode: true });
+    const out = humanize(sample, { intensity: 0.9, seed: 20260905, enhancementMode: true });
     expect(out).not.toMatch(/([哦呵啧呣诶呀嘛呢吧啊嗯])\1/); // 相邻重复（呀呀/嘛嘛）
     expect(out).not.toMatch(/([哦呵啧呣诶呀嘛呢吧啊嗯])[哦呵啧呣诶呀嘛呢吧啊嗯]+[。，]/); // 相邻异形（嘛嗯/呢呵）
   });
@@ -390,8 +390,8 @@ describe("标点相撞与搭配病句（UI 实测发现，v0.9.14）", () => {
 从长远来看，建立完善的监管体系，推动可持续发展，具有十分重要的意义。
 因此，我们需要在实践中逐步优化相关流程，进而实现更高质量的发展。`;
 
-  const run = (intensity: number, zhuqueMode: boolean, seed: number) =>
-    humanize(SAMPLE, { intensity, zhuqueMode, seed });
+  const run = (intensity: number, enhancementMode: boolean, seed: number) =>
+    humanize(SAMPLE, { intensity, enhancementMode, seed });
 
   const SEEDS = Array.from({ length: 40 }, (_, i) => 20260800 + i);
 
@@ -511,12 +511,12 @@ describe("观点垫词注入：剧本格式守卫与去重", () => {
   /** 散文文本，探针确认 seed=3/5/7/8/99 会稳定产出垫词 */
   const PROSE =
     "这套方案的整体思路是清楚的。具体的执行步骤也已经列好了。后续跟踪要看数据反馈才靠谱。另外要注意排期安排不能太紧。资源也要提前协调好免得中途卡住。风险点需要单独列出来跟进。";
-  /** 垫词池（humanize-zhuque.ts OPINION_PHRASES）——全是「我觉得」型第一人称短语 */
+  /** 垫词池（humanize-enhancement.ts OPINION_PHRASES）——全是「我觉得」型第一人称短语 */
   const PAD =
     /(我觉得|我个人觉得|我感觉|我认为|在我看来|以我的经验|据我观察|按我的理解|我的看法是|我个人的看法|我寻思着|我琢磨着|老实说)/;
-  // injectOpinion/injectFragments 只在 applyZhuqueFeatures 的 casual 门控内被调用
-  // （行 999-1005），不在 humanize() 主链路——所以直接调 applyZhuqueFeatures。
-  const inject = (t: string, seed: number) => applyZhuqueFeatures(t, 1, seed, "casual");
+  // injectOpinion/injectFragments 只在 applyExpressionFeatures 的 casual 门控内被调用
+  // （行 999-1005），不在 humanize() 主链路——所以直接调 applyExpressionFeatures。
+  const inject = (t: string, seed: number) => applyExpressionFeatures(t, 1, seed, "casual");
 
   it("剧本格式行原样保留：说话人标签前不得出现任何垫词", () => {
     // 探针 seed=3 会给散文行注入「我寻思着」；同样内容带上说话人标签后必须不再注入
@@ -587,7 +587,7 @@ describe("学术体冻结表：口语替身在 academic 下不得生效", () => 
 /* ─────────── v0.9.22 adviceFor：低风险输入的「其实不用去味」提示 ───────────
  *
  * 这个函数此前**一次都没被调用过**。它守的是一条反直觉的产品口径：
- * 本项目的标定结论是「纯人写稿越去味官方朱雀分反而略升」（H0=15% → H1/H2=17~19%），
+ * 本项目的标定结论是「纯人写稿越去味官方本地代理分反而略升」（H0=15% → H1/H2=17~19%），
  * 所以对已落在人写带的输入只**给提示、不改行为**——
  * 真跳过处理会让 regression-12samples 的 H1/H2 基线瞬间爆红。
  *

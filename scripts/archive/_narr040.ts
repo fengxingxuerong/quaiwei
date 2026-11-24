@@ -6,7 +6,7 @@ const NARR = `那天下午雨下得很大，我撑着伞走在回家的路上。
 
 console.log("叙事 0.40 档各 seed：");
 for (let seed = 1; seed <= 5; seed++) {
-  const out = humanize(NARR, { intensity: 0.4, zhuqueMode: true, genre: "narrative", seed });
+  const out = humanize(NARR, { intensity: 0.4, enhancementMode: true, genre: "narrative", seed });
   const s = aiScore(out);
   console.log(`  seed=${seed} → ${s.score} (句式${s.structureHits} 病词${s.brokenHits} avgLen${s.avgLen})`);
   if (s.score > 20) console.log(`     ${out.replace(/\n+/g, " / ").slice(0, 200)}`);
@@ -14,7 +14,7 @@ for (let seed = 1; seed <= 5; seed++) {
 
 console.log("\n叙事 0.35 档各 seed（对照）：");
 for (let seed = 1; seed <= 5; seed++) {
-  const out = humanize(NARR, { intensity: 0.35, zhuqueMode: true, genre: "narrative", seed });
+  const out = humanize(NARR, { intensity: 0.35, enhancementMode: true, genre: "narrative", seed });
   const s = aiScore(out);
   console.log(`  seed=${seed} → ${s.score} (句式${s.structureHits})`);
 }

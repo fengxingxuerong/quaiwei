@@ -7,10 +7,10 @@ const n = (t: string) => t.split(/\n{2,}/)[0].split(/(?<=[。！？])/).filter(B
 
 console.log("同一段文本 · 不同调用形态：");
 for (const it of [0.3, 0.5, 0.6, 0.9]) {
-  const a = humanize(P1, { intensity: it, zhuqueMode: false, genre: "narrative", seed: 1 });
-  const b = humanize(P1 + "\n\n" + P2LONG, { intensity: it, zhuqueMode: false, genre: "narrative", seed: 1 });
+  const a = humanize(P1, { intensity: it, enhancementMode: false, genre: "narrative", seed: 1 });
+  const b = humanize(P1 + "\n\n" + P2LONG, { intensity: it, enhancementMode: false, genre: "narrative", seed: 1 });
   console.log(`  ${it.toFixed(1)}: 单段第1段=${n(a)}句   双段第1段=${n(b)}句`);
 }
 console.log("\n无 genre（自动识别）双段：");
-const c = humanize(P1 + "\n\n" + P2LONG, { intensity: 0.9, zhuqueMode: false, seed: 1 });
+const c = humanize(P1 + "\n\n" + P2LONG, { intensity: 0.9, enhancementMode: false, seed: 1 });
 console.log(`  自动识别第1段=${n(c)}句`);

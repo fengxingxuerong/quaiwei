@@ -1,8 +1,8 @@
 /**
  * 趣AI味 · 多场景功能测试
- * 5 类代表性文本 × 3 档强度 × 指纹体检 + 忠实度 + 朱雀增强
+ * 5 类代表性文本 × 3 档强度 × 指纹体检 + 忠实度 + 表达增强
  */
-import { humanize, aiScore, humanizeWithScore, fingerprintCheck, checkFidelityLocal, applyZhuqueFeatures } from "../src/engine/humanize.ts";
+import { humanize, aiScore, humanizeWithScore, fingerprintCheck, checkFidelityLocal, applyExpressionFeatures } from "../src/engine/humanize.ts";
 
 interface Case {
   name: string;
@@ -61,7 +61,7 @@ let totalFingerprintIssues = 0;
 let totalFidelityIssues = 0;
 
 console.log("=".repeat(80));
-console.log("  趣AI味 · 多场景功能测试（5 类文本 × 3 强度 × 指纹/忠实/朱雀）");
+console.log("  趣AI味 · 多场景功能测试（5 类文本 × 3 强度 × 指纹/忠实/本地）");
 console.log("=".repeat(80));
 
 for (const c of cases) {
@@ -112,23 +112,23 @@ for (const c of cases) {
     }
   }
 
-  // 朱雀增强对比（强度 0.7）
-  console.log("\n  ── 朱雀增强模式（强度 0.7）──");
+  // 表达增强对比（强度 0.7）
+  console.log("\n  ── 表达增强模式（强度 0.7）──");
   const base = humanize(c.text, { intensity: 0.7, seed: 42 });
-  const zq = applyZhuqueFeatures(base, 0.7, 42, "casual");
+  const zq = applyExpressionFeatures(base, 0.7, 42, "casual");
   const baseScore = aiScore(base);
   const zqScore = aiScore(zq);
-  console.log(`    普通去味：${baseScore.score} → 朱雀增强：${zqScore.score}${zqScore.score <= baseScore.score ? " ✅" : " ⚠️"}`);
+  console.log(`    普通去味：${baseScore.score} → 表达增强：${zqScore.score}${zqScore.score <= baseScore.score ? " ✅" : " ⚠️"}`);
   const zqFp = fingerprintCheck(zq);
   if (zqFp.issues.length > 0) {
-    console.log(`    朱雀增强指纹：${zqFp.issues.map((i) => i.name).join("、")}`);
+    console.log(`    表达增强指纹：${zqFp.issues.map((i) => i.name).join("、")}`);
   } else {
-    console.log(`    ✅ 朱雀增强指纹体检通过`);
+    console.log(`    ✅ 表达增强指纹体检通过`);
   }
-  // 朱雀增强不应引入病句
+  // 表达增强不应引入病句
   let zqBad = 0;
   for (const [, re] of badPatterns) if (re.test(zq)) zqBad++;
-  console.log(`    朱雀增强病句：${zqBad === 0 ? "✅ 零病句" : `❌ ${zqBad} 处`}`);
+  console.log(`    表达增强病句：${zqBad === 0 ? "✅ 零病句" : `❌ ${zqBad} 处`}`);
 
   // 输出截断预览
   console.log(`\n  去味预览（强度 0.7）：${base.slice(0, 120)}…`);

@@ -18,7 +18,7 @@ const AI_TEXTS: Array<[string, string]> = [
 
 for (const [label, text] of AI_TEXTS) {
   const before = aiScore(text);
-  const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre: "main", seed: 7 });
+  const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre: "main", seed: 7 });
   const after = aiScore(out);
   const ok = after.formulaicHits <= Math.max(1, Math.floor(before.formulaicHits * 0.3));
   console.log(`  ${label}: 套话 ${before.formulaicHits} → ${after.formulaicHits}  ${ok ? "✅" : "⚠️"}   (aiScore ${before.score}→${after.score})`);

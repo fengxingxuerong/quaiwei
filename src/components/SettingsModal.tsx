@@ -7,7 +7,7 @@ import {
   DEEP_TARGET_SCORE,
   SENSENOVA_PRESET,
 } from "../api/llm";
-import { DetectorConfig, DEFAULT_DETECTOR, ZHUQUE_OFFICIAL_DETECTOR } from "../api/detector";
+import { DetectorConfig, DEFAULT_DETECTOR } from "../api/detector";
 import { hasSecureStore } from "../store";
 import {
   loadDetectorPresets,
@@ -21,7 +21,7 @@ import { extractVoiceProfile, VOICE_SAMPLE_MIN } from "../engine/voice-profile";
 interface SettingsModalProps {
   api: ApiConfig;
   detector: DetectorConfig;
-  zhuqueMode: boolean;
+  enhancementMode: boolean;
   pplEnabled: boolean;
   local: LocalSettings;
   /** v0.9.15：自定义保护术语原文（换行/逗号分隔），实时注入 term-protect */
@@ -30,7 +30,7 @@ interface SettingsModalProps {
   onSave: (
     api: ApiConfig,
     detector: DetectorConfig,
-    zhuqueMode: boolean,
+    enhancementMode: boolean,
     pplEnabled: boolean,
     local: LocalSettings,
     protectedTerms: string,
@@ -53,7 +53,7 @@ const STYLE_OPTIONS: { value: RewriteStyle; label: string }[] = [
 export function SettingsModal({
   api,
   detector,
-  zhuqueMode,
+  enhancementMode,
   pplEnabled,
   local,
   protectedTerms,
@@ -63,7 +63,7 @@ export function SettingsModal({
   // 草稿态：模态内编辑不立即持久化，点「保存」统一落盘，避免半保存的中间态
   const [draftApi, setDraftApi] = useState<ApiConfig>(api);
   const [draftDetector, setDraftDetector] = useState<DetectorConfig>(detector);
-  const [draftZhuque, setDraftZhuque] = useState<boolean>(zhuqueMode);
+  const [draftEnhancement, setDraftEnhancement] = useState<boolean>(enhancementMode);
   const [draftPpl, setDraftPpl] = useState<boolean>(pplEnabled);
   const [draftLocal, setDraftLocal] = useState<LocalSettings>(local);
   const [draftTerms, setDraftTerms] = useState<string>(protectedTerms);
@@ -489,24 +489,23 @@ export function SettingsModal({
           开严格保真时还会加做事实复核。回译轮不计分。
         </p>
 
-        <div className="modal-divider">朱雀增强（可选 · 反检测特征）</div>
+        <div className="modal-divider">表达增强（可选）</div>
         <p className="modal-tip">
-          叠加方言词汇、句中插入语、主观意见短语、括号自语、句式片段等特征， 干扰 AI
-          文本检测器的统计空间。强度 ≥0.5 时效果更明显。送检朱雀前建议开启。
+          叠加方言词汇、句中插入语、主观意见短语、括号自语、句式片段等特征。强度 ≥0.5 时效果更明显。
         </p>
         <label className="row">
-          <span>朱雀增强模式</span>
+          <span>表达增强模式</span>
           <input
             type="checkbox"
-            checked={draftZhuque}
-            onChange={(e) => setDraftZhuque(e.target.checked)}
+            checked={draftEnhancement}
+            onChange={(e) => setDraftEnhancement(e.target.checked)}
           />
         </label>
 
         <div className="modal-divider">困惑度体检（第 8 项 · 本地 ONNX 小模型）</div>
         <p className="modal-tip">
-          用本地小模型近似朱雀官方点名的「困惑度」指标：均值过低＝对语言模型过于可预测，
-          曲线过平＝全文置信度缺乏人类起伏。首次使用需下载约 100MB 模型，之后完全离线。
+          用本地小模型检查文本可预测性与置信度起伏：均值过低＝对语言模型过于可预测，
+          曲线过平＝全文置信度缺乏起伏。首次使用需下载约 100MB 模型，之后完全离线。
           关闭后指纹体检只跑前 7 项。
         </p>
         <label className="row">
@@ -564,29 +563,8 @@ export function SettingsModal({
           placeholder={"量子跃迁式改革\n张三丰算法\n我的产品名"}
         />
 
-        <div className="modal-divider">对标检测器（可选 · 如朱雀）</div>
+        <div className="modal-divider">外部检测器（可选）</div>
         <p className="modal-tip">把 {`{text}`} POST 到你的检测器接口，从返回 JSON 按路径取分数。</p>
-        <p className="modal-tip" style={{ marginTop: -6 }}>
-          <b>朱雀官方 API</b>（2026-09 起已开放，走腾讯云 EdgeOne Makers 内置模型{" "}
-          <code>@makers/zhuque-text</code>）：在 EdgeOne 控制台 <b>Makers → Models → API Key</b>{" "}
-          建一个 Key 填到下面即可，<b>不需要自建网关</b>——域名是固定的。每月 50 万 token{" "}
-          免费，只支持文本。点「填入朱雀默认值」配好路径和刻度，再自己勾「启用检测器」。
-        </p>
-        <label className="row">
-          <span>朱雀预设</span>
-          <button
-            className="ghost sm"
-            onClick={() =>
-              updateDetector({
-                url: ZHUQUE_OFFICIAL_DETECTOR.url,
-                scorePath: ZHUQUE_OFFICIAL_DETECTOR.scorePath,
-                scale: ZHUQUE_OFFICIAL_DETECTOR.scale,
-              })
-            }
-          >
-            填入朱雀默认值
-          </button>
-        </label>
         {/* v0.9.67：多档预设——换检测器不用整段重填 URL/点路径/刻度 */}
         <label className="row">
           <span>我的预设</span>
@@ -702,7 +680,7 @@ export function SettingsModal({
           <button
             className="primary"
             onClick={() =>
-              onSave(draftApi, draftDetector, draftZhuque, draftPpl, draftLocal, draftTerms)
+              onSave(draftApi, draftDetector, draftEnhancement, draftPpl, draftLocal, draftTerms)
             }
           >
             保存

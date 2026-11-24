@@ -3,7 +3,7 @@
  *
  * 背景（生态位）：2026 年主流「去 AI 味」用法是给 Claude Code / Cursor 装一份
  * Markdown 规则 skill（blader/humanizer 44k★ 那一类），而本项目的规则深度
- * （50+ 组替换词表、四体裁旋钮、守卫正则、朱雀标定依据）此前锁在 TypeScript
+ * （50+ 组替换词表、四体裁旋钮、守卫正则、本地标定依据）此前锁在 TypeScript
  * 引擎里，agent 零感知。本生成器把引擎资产渲染成 `skills/humanizer-rules/`
  * 下的 Markdown，让 agent 零安装直接按规则改。
  *
@@ -82,7 +82,7 @@ const GENRE_META: Record<EffectiveGenre, { label: string; hint: string }> = {
   },
   humanHand: {
     label: "人写原稿",
-    hint: "纯人写。**负斜率**：越去味官方分反而升——轻度即可（≤0.48），或直接用原文",
+    hint: "纯人写。建议直接交付或仅做轻度编辑（≤0.48）",
   },
 };
 
@@ -169,16 +169,16 @@ function renderGenres(): string {
     "# 四体裁旋钮（GenreKnobs）",
     "",
     "> 由 scripts/gen-skill-rules.ts 从 src/engine/humanize.ts 生成，勿手改。",
-    "> 数值来自 v2/v3 OLS 12 点标定 + 朱雀对抗回放，不是拍的。",
+    "> 数值来自 v2/v3 OLS 12 点标定 + 本地对抗回放，不是拍的。",
     "",
-    "| 体裁 | 判定线索 | 平均句长目标 | 节奏目标(burst) | 强度上限 | 朱雀增强 | 自问自答 |",
+    "| 体裁 | 判定线索 | 平均句长目标 | 节奏目标(burst) | 强度上限 | 表达增强 | 自问自答 |",
     "| --- | --- | --- | --- | --- | --- | --- |",
   ];
   for (const g of GENRE_ORDER) {
     const k = getGenreKnobs(g);
     lines.push(
       `| ${GENRE_META[g].label} | ${GENRE_META[g].hint} | ${k.avgLenTarget} | ${k.burstTarget} | ` +
-        `${k.intensityCap} | ${k.disableZhuque ? "强制关" : "按强度"} | ${k.skipSelfQA ? "禁" : "可"} |`,
+        `${k.intensityCap} | ${k.disableEnhancement ? "强制关" : "按强度"} | ${k.skipSelfQA ? "禁" : "可"} |`,
     );
   }
   lines.push(
@@ -187,9 +187,9 @@ function renderGenres(): string {
     "",
     "- **avgLenTarget**：论说文压到 23 字是因为长句最容易出「规整三部曲」；叙事/对话天然短句多，",
     "  目标依次放宽；人写原稿设 36 = 基本不硬切，怕破坏原稿节奏。",
-    "- **burstTarget**（句长变异系数下限）：越高越要求长短句交错。论说文要 ≥0.63 才过得去朱雀，",
+    "- **burstTarget**（句长变异系数下限）：越高越要求长短句交错。论说文要 ≥0.63 才过得去本地，",
     "  因为它最怕「句式高度均匀」。",
-    "- **intensityCap**：只有人写原稿有 0.48 硬顶——v2 标定该体裁斜率为负，越改官方分越高。",
+    "- **intensityCap**：人写原稿有 0.48 硬顶，避免对已有作者声口做过度改写。",
     "- **humanHand 不要自动判定**：纯人写稿必须用户显式声明，误判成 AI 稿去味等于帮倒忙。",
     "",
   );
@@ -226,7 +226,7 @@ function renderGuards(): string {
 function renderSkillEntry(): string {
   return `---
 name: humanizer-rules
-description: 中文 AI 文本去味规则集。改写成人口语、消除 AI 腔（套话/模板腔/机械排比/升华腔/病句），适配论说/叙事/对话/人写四体裁。当用户要求去 AI 味、降 AI 率、拟人化、润色 AI 生成的文案/论文/通稿/公众号文时使用。规则来自 QuAiWei 引擎（朱雀标定）。
+description: 中文 AI 文本去味规则集。改写成人口语、消除 AI 腔（套话/模板腔/机械排比/升华腔/病句），适配论说/叙事/对话/人写四体裁。当用户要求去 AI 味、降 AI 率、拟人化、润色 AI 生成的文案/论文/通稿/公众号文时使用。规则来自 QuAiWei 引擎（本地标定）。
 ---
 
 # 中文去 AI 味规则（QuAiWei 引擎规则集）

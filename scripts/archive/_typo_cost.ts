@@ -38,7 +38,7 @@ for (const [name, text, genre] of CASES) {
   let scoreSum = 0;
   const samples: string[] = [];
   for (let seed = 1; seed <= 10; seed++) {
-    const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre, seed });
+    const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre, seed });
     const s = aiScore(out);
     scoreSum += s.score;
     const found = TYPO_SIGNS.filter((t) => out.includes(t));

@@ -45,8 +45,8 @@ for (const [name, src, genre] of [
   const o = countHeadPad(src);
   console.log(`\n【${name}】原文: 句首垫词 ${o.n}/${o.total}`);
   for (const style of ["casual", "plain", "academic"] as const) {
-    // 关掉朱雀层，只看本地引擎
-    const localOnly = humanize(src, { intensity: 0.9, zhuqueMode: false, genre, style, seed: 7 });
+    // 关掉本地层，只看本地引擎
+    const localOnly = humanize(src, { intensity: 0.9, enhancementMode: false, genre, style, seed: 7 });
     const l = countHeadPad(localOnly);
     const s = aiScore(localOnly);
     console.log(`  ${style.padEnd(9)} 本地引擎: 句首垫词 ${l.n}/${l.total}  aiScore=${String(s.score).padStart(3)} 句式=${String(s.structureHits).padStart(3)} 病词=${s.brokenHits}`);
@@ -54,7 +54,7 @@ for (const [name, src, genre] of [
   }
 
   // INTERJECTIONS 表命中统计
-  const localCasual = humanize(src, { intensity: 0.9, zhuqueMode: false, genre, style: "casual", seed: 7 });
+  const localCasual = humanize(src, { intensity: 0.9, enhancementMode: false, genre, style: "casual", seed: 7 });
   const hit = INTERJECTIONS.filter((w) => localCasual.includes(w));
   console.log(`  INTERJECTIONS 命中: ${hit.length}/${INTERJECTIONS.length}  ${hit.join("/")}`);
   const padHit = PAD_WORDS.filter((w) => localCasual.includes(w));

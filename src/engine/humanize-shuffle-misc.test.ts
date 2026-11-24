@@ -117,7 +117,7 @@ describe("injectSelfQA（自问自答注入）", () => {
     expect(first).toEqual(second);
   });
 
-  // v0.9.27 P0：两个调用点（applyZhuqueFeatures / structuralShuffleParagraph）
+  // v0.9.27 P0：两个调用点（applyExpressionFeatures / structuralShuffleParagraph）
   // 各自 budget=1 且互不共享状态 ⇒ 同一段被塞 2 整句模板，实测长度比 119% 而 detectAI 不降。
   // 判据放在文本上（"已经有了就不再塞"），因此第二次调用必须原样返回。
   it("跨调用点预算：第二次调用（文本里已有模板）原样返回，不再叠加", () => {

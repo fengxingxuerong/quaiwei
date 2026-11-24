@@ -25,8 +25,8 @@
 为 P7-E（对话体剧本跳过自问自答注入）写行为固化测试。第一版断言很朴素：
 
 ```typescript
-it("对话体剧本场景块：applyZhuqueFeatures 跳过自问自答注入", () => {
-  const withSkip = applyZhuqueFeatures(DIALOG_SCRIPT, 0.9, 42, "casual", { skipSceneInject: true });
+it("对话体剧本场景块：applyExpressionFeatures 跳过自问自答注入", () => {
+  const withSkip = applyExpressionFeatures(DIALOG_SCRIPT, 0.9, 42, "casual", { skipSceneInject: true });
   expect(withSkip).toContain("【场景：公司会议室，下午三点】");
   expect(withSkip.split("\n").length).toBe(linesBefore);   // 行数守恒
 });
@@ -64,9 +64,9 @@ injectDialect 等 casual    SCENE_BLOCK_PARA_RE       整段被当作普通段�
                                                                           Paragraph 内部还有一份）
 ```
 
-关键洞察：**检测器依赖的特征（段首位置）不是它声称要检测的对象（场景块内容）的稳定属性**。「坦白讲」这个垫词来自 `PAD_WORDS` 词表（humanize-zhuque.ts），它本该出现在任何位置——但一旦出现在段首，就把一个合法的场景块"伪装"成了普通段落。
+关键洞察：**检测器依赖的特征（段首位置）不是它声称要检测的对象（场景块内容）的稳定属性**。「坦白讲」这个垫词来自 `PAD_WORDS` 词表（humanize-enhancement.ts），它本该出现在任何位置——但一旦出现在段首，就把一个合法的场景块"伪装"成了普通段落。
 
-更隐蔽的是第④环：`applyZhuqueFeatures` 和 `structuralShuffleParagraph` 各自维护了一份场景块检测逻辑（后者还带着自己的 `^` 锚定正则副本）。即使修好了前者，后者依然会漏。
+更隐蔽的是第④环：`applyExpressionFeatures` 和 `structuralShuffleParagraph` 各自维护了一份场景块检测逻辑（后者还带着自己的 `^` 锚定正则副本）。即使修好了前者，后者依然会漏。
 
 ### 1.3 修复方案的两次迭代
 
@@ -130,7 +130,7 @@ it("多段文本保留段落换行", () => {
 第一段第一句，说点事情嘛行。呵。。第二段第一句，再说点别的诶诶。。对哦。。
 ```
 
-两段被焊成了一行。排除法很快锁定范围：该样本未开 `zhuqueMode`，当天改动的人设增强路径根本不会执行——这是一个**更早引入、从未被全量测试覆盖过的历史缺陷**。输出中的「呵。」「对哦。」正是 `boostBurstinessIfLow` 的极短锚词表成员，顺带指认了凶手。
+两段被焊成了一行。排除法很快锁定范围：该样本未开 `enhancementMode`，当天改动的人设增强路径根本不会执行——这是一个**更早引入、从未被全量测试覆盖过的历史缺陷**。输出中的「呵。」「对哦。」正是 `boostBurstinessIfLow` 的极短锚词表成员，顺带指认了凶手。
 
 ### 2.2 根因：共享原语的隐性契约
 
@@ -192,7 +192,7 @@ export function clampAvgSentenceLenUnder25(text: string, targetAvg = 25, maxCuts
 
 ### 2.5 为什么 24 项回归套件没拦住它
 
-12 样本回归（A.Metrics + B.E2E）的样本恰好全部是单段文本。单段输入下 `text.includes("\n\n")` 为 false，缺陷完全不触发。指标层面 aiScore 变化率 0%，一切正常。**回归套件保护的是已知的数值漂移，不保护未被样本覆盖的结构维度**。段落结构正是朱雀检测的语义指纹维度之一，此缺陷意味着线上所有多段落用户的输出都在被静默压扁。
+12 样本回归（A.Metrics + B.E2E）的样本恰好全部是单段文本。单段输入下 `text.includes("\n\n")` 为 false，缺陷完全不触发。指标层面 aiScore 变化率 0%，一切正常。**回归套件保护的是已知的数值漂移，不保护未被样本覆盖的结构维度**。段落结构正是AI 检测的语义指纹维度之一，此缺陷意味着线上所有多段落用户的输出都在被静默压扁。
 
 ---
 

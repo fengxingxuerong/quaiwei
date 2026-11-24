@@ -57,14 +57,14 @@ describe("structuralShuffleParagraph（P0~P3 编排主链路）", () => {
     expect(structuralShuffleParagraph(p, rngMid, 0.9)).toBe(p);
   });
 
-  it("论说段 + 朱雀增强：三部曲触发词被清除、内容词保留、非空", () => {
+  it("论说段 + 表达增强：三部曲触发词被清除、内容词保留、非空", () => {
     // 每句含强词（研究表明/数据显示）保证 expoScore ≥ 0.55 → runP3
     const p =
       "首先，研究表明这套方案在成本上相当划算。" +
       "其次，数据显示产线的良率一直都比较稳定。" +
       "最后，从交付周期来看节奏也完全能保证。" +
       "以上就是这次汇报的全部内容了。";
-    const out = structuralShuffleParagraph(p, rngMid, 0.9, { zhuqueMode: true });
+    const out = structuralShuffleParagraph(p, rngMid, 0.9, { enhancementMode: true });
     expect(out.length).toBeGreaterThan(0);
     expect(out).not.toMatch(/^[首先]/m); // 无行以触发词起头
     expect(out).not.toContain("首先，");

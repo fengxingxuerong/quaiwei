@@ -31,7 +31,7 @@
 | 输入 | 50.8 | — |
 | `genre` | 50.8 | 0 |
 | `para` | 58.5 | **+7.7** |
-| `zhuque` / `structure` / `dedupe` | 58.5 | 0 |
+| `enhancement` / `structure` / `dedupe` | 58.5 | 0 |
 | `rhythm` | 74.9 | **+16.4** |
 | `derivs` / `antifp` | 74.9 | 0 |
 | `clamp` | 88.6 | **+13.7** |

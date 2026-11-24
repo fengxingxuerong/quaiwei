@@ -33,7 +33,7 @@ for (const c of CASES) {
     const arr: number[] = [];
     for (const it of [0.6, 0.7, 0.8, 0.9]) {
       for (let seed = 1; seed <= 20; seed++) {
-        arr.push(aiScore(humanize(c.text, { intensity: it, seed, genre: c.genre, style, zhuqueMode: true })).score);
+        arr.push(aiScore(humanize(c.text, { intensity: it, seed, genre: c.genre, style, enhancementMode: true })).score);
       }
     }
     const avg = arr.reduce((x, y) => x + y, 0) / arr.length;

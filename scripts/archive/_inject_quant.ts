@@ -51,7 +51,7 @@ for (const [gname, src, genre] of [
   ["论说", EXPO, "main"],
 ] as const) {
   console.log(`【${gname}】原文: score=${aiScore(src).score} 字数=${src.length}`);
-  const out = humanize(src, { intensity: 0.9, zhuqueMode: true, genre, seed: 7 });
+  const out = humanize(src, { intensity: 0.9, enhancementMode: true, genre, seed: 7 });
   const r = report("0.9档-casual", out);
   console.log(
     `  0.9档: score=${r.score} 字数=${r.len} ` +
@@ -59,7 +59,7 @@ for (const [gname, src, genre] of [
   );
   // 逐档对比
   for (const i of [0.35, 0.4, 0.5, 0.7, 0.9]) {
-    const o = humanize(src, { intensity: i, zhuqueMode: true, genre, seed: 7 });
+    const o = humanize(src, { intensity: i, enhancementMode: true, genre, seed: 7 });
     const rr = report(`i=${i}`, o);
     console.log(
       `  i=${i}: score=${String(rr.score).padStart(3)} 垫词=${rr.pad} 碎片=${rr.frag} 语气词=${rr.part} 插入语=${rr.paren} 句式分=${String(rr.struct).padStart(3)}`,
@@ -71,7 +71,7 @@ for (const [gname, src, genre] of [
 console.log("=== 注入器逐个关闭的效果（论说，0.9 档）===\n");
 // 通过 style 间接控制：casual 开全部；plain 关方言/碎片/括号/自问自答；academic 只留最少
 for (const style of ["casual", "plain", "academic"] as const) {
-  const out = humanize(EXPO, { intensity: 0.9, zhuqueMode: true, genre: "main", style, seed: 7 });
+  const out = humanize(EXPO, { intensity: 0.9, enhancementMode: true, genre: "main", style, seed: 7 });
   const r = report(style, out);
   console.log(
     `  ${style.padEnd(9)}: score=${String(r.score).padStart(3)} 垫词=${r.pad} 碎片=${r.frag} 语气词=${r.part} 插入语=${r.paren} 句式分=${String(r.struct).padStart(3)}`,

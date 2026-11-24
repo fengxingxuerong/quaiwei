@@ -25,7 +25,7 @@ for (const t of AIS) {
   const arr: number[] = [];
   for (const it of [0.6, 0.7, 0.8, 0.9]) {
     for (let seed = 1; seed <= 20; seed++) {
-      arr.push(aiScore(humanize(t.text, { intensity: it, seed, genre: "main", zhuqueMode: true })).score);
+      arr.push(aiScore(humanize(t.text, { intensity: it, seed, genre: "main", enhancementMode: true })).score);
     }
   }
   const ok = arr.filter((x) => x < 29).length;
@@ -47,7 +47,7 @@ for (const t of POLL) {
   let max = -1;
   for (const it of [0.6, 0.7, 0.8, 0.9]) {
     for (let seed = 1; seed <= 20; seed++) {
-      const a = aiScore(humanize(t.text, { intensity: it, seed, genre: "main", zhuqueMode: true })).score;
+      const a = aiScore(humanize(t.text, { intensity: it, seed, genre: "main", enhancementMode: true })).score;
       if (a > before + 1) up++;
       if (a > max) max = a;
     }
@@ -67,7 +67,7 @@ for (const t of NARR) {
   let max = -1;
   for (const it of [0.6, 0.7, 0.8, 0.9]) {
     for (let seed = 1; seed <= 20; seed++) {
-      const a = aiScore(humanize(t.text, { intensity: it, seed, genre: t.genre, zhuqueMode: true })).score;
+      const a = aiScore(humanize(t.text, { intensity: it, seed, genre: t.genre, enhancementMode: true })).score;
       if (a > max) max = a;
     }
   }

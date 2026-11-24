@@ -31,16 +31,11 @@
 |---|---|---|
 | [eval-dual-2026-11-06.md](eval-dual-2026-11-06.md) | **证据·唯一可引用口径** | 双网关独立评委 23 篇全量配对盲测（v0.9.83）：配对强制选择 **40/46 = 87.0%**、绝对分 76.2→68.9、旧单席结论作废清单、局限与版本边界。154 条原始记录在 `evidence/eval-dual-2026-11-06/`，复现脚本 `scripts/eval-dual/`，数字由 `scripts/eval-dual-consistency.test.ts` 从 JSONL 重算自证 |
 | [eval-qodercn-dfmodel-2026-11-07.md](eval-qodercn-dfmodel-2026-11-07.md) | 证据（跨模型谱系复核） | 用 QoderCN `qodercn/dfmodel` 单席重跑 23 篇双判据：配对胜率 **82.6% / 87.5%** 复现「方向有效」，绝对分降幅 **0.0** 再证伪；含与 11-06 基线对比表、单席口径局限与网关桩警告。原始记录 `evidence/eval-dfmodel-2026-11-07/`，复现脚本 `scripts/eval-dual/` |
-| [external-judge-findings.md](external-judge-findings.md) | 证据 | 外评证据：本地 aiScore 在论说/叙事上严重低报 AI 味（v0.9.54 起「分数冲突提示」的由来） |
-| [fingerprint-and-zhuque-calibration.md](fingerprint-and-zhuque-calibration.md) | 证据（历史档案） | AI 指纹检测与朱雀分映射标定的**演进史**。换算线/账本已随标定子系统于 v0.9.83 整体移除，本文只作档案留读；§5 的 PPL 口径仍被 `src/engine/humanize-metrics.ts` 引用 |
 | [judge-anchor-calibration.md](judge-anchor-calibration.md) | 证据 | glm-5.2 严评锚点问题与评判模型的宽严校准 |
 | [model-compare-2026-10-24.md](model-compare-2026-10-24.md) | 证据 | 5 个可用模型的改写效果对比（同一篇稿、真实 CLI 路径）：事实保真 / 套话残留 / 耗时 / 互补性，附各位置选型建议。复现用 `npm run compare:models` |
 | [number-fidelity-2026-10-25.md](number-fidelity-2026-10-25.md) | 证据 | 数字保真这条线的判据演进（0.9.75→0.9.77）：真实丢数据的出处、为什么只查「数量型」、三次自我否定、各路径检查矩阵、已知局限（单位不校验） |
 | [format-fidelity-2026-10-26.md](format-fidelity-2026-10-26.md) | 证据 | 格式保真从「形态正则」升级为**23 条结构不变式**：用户路径 `humanize()` 4080 次运行全绿、两个真缺陷（setext 下划线被拆、结构行续行被拆）的根因与修法、一次自我否定（12 样本棘轮拦回）、机械扰动入口无格式盾的已知边界。复现用 `npm run sweep:format` |
-| [zhuque-gap-analysis.md](zhuque-gap-analysis.md) | 证据 | 趣AI味 vs 真实朱雀的差距分析与补全清单 |
 | [十篇小说测试报告-2026-10-28.md](十篇小说测试报告-2026-10-28.md) | 实测报告 | 10 篇 × 1 万字 AI 小说规模测试（v0.9.81）：本地两档 / LLM 深度 / MCP / 审题 / 学术出口读数，含网关 429 限流导致的分块回退、本地引擎碎句化与两处坏替身。复现命令在文末 |
-
-> `zhuque-official-resubmit-plan.md` 已随朱雀标定子系统于 v0.9.83 删除（送检分批计划失去了执行载体）。
 
 ## 历史快照（结论已被后续版本覆盖，别照做）
 
@@ -48,12 +43,9 @@
 |---|---|---|---|
 | [2026-08-26-postmortem-genre-linkage-engine-defects.md](2026-08-26-postmortem-genre-linkage-engine-defects.md) | 复盘 | P7 体裁联动改造中两个隐藏缺陷的发现与修复 | 当时的分支与判定函数已重构 |
 | [2026-09-30-sentence-defects-report.md](2026-09-30-sentence-defects-report.md) | 缺陷报告 | 本地引擎三类病句（动补/动宾不兼容替换、介词降级、主谓被切断） | 三类已在 v0.9.5x 修复并有 `scan-bugs` 探针复测 |
-| [deep-mode-evidence-audit.md](deep-mode-evidence-audit.md) | 复核 | 深度模式能力·证据现状复核（2026-09-20） | 深度闭环此后重写了多轮（0.9.5x） |
 | [realcase-findings-2026-10-15.md](realcase-findings-2026-10-15.md) | 实测报告 | 23 篇真实案例 · intensity 0.9 | 已是 `npm run test:realcase` 的日常门禁，本文件是单次切片 |
 | [优化测试报告-2026-10-14.md](优化测试报告-2026-10-14.md) | 实测报告 | 全方面优化测试（v0.9.40 口径） | 版本已推进到 0.9.7x |
 | [工程体检报告-2026-10-17.md](工程体检报告-2026-10-17.md) | 体检 | 结构/门禁/覆盖率体检 | 其中的拆分项已执行（见下） |
-| [优化空间勘查-2026-10-03.md](优化空间勘查-2026-10-03.md) | 对标 | 同类开源项目对标与优化空间 | 竞品表以 README 最新版为准 |
-| [对比测试报告_v0.8.md](对比测试报告_v0.8.md) | 对标 | v0.8 去 AI 味能力增强对比 | 已相差十余个版本 |
 | [竞品周报-2026-10-26.md](竞品周报-2026-10-26.md) | 对标 | 同类项目 10-19~10-26 的提交/建仓异动、对齐清单与不对齐理由 | 一周快照，star 是存量不是增量，结论随周变 |
 
 ## 已执行的方案（留作边界记录）

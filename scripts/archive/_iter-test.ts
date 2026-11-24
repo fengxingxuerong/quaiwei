@@ -39,12 +39,12 @@ async function localChain(file: string, rounds: number) {
   fs.mkdirSync(dir, { recursive: true });
   let text = fs.readFileSync(file, "utf-8");
   const name = path.basename(file, ".txt");
-  console.log(`实验A：本地引擎串联迭代 ×${rounds}（0.9 + 朱雀，seed 20260905）`);
+  console.log(`实验A：本地引擎串联迭代 ×${rounds}（0.9 + 本地，seed 20260905）`);
   console.log("轮次 | 自检分 | 垫词 | 语气词 | 字数");
   const m0 = metrics(text);
   console.log(`原文 | ${m0.score} | ${m0.fillerCount} | ${m0.particles} | ${m0.chars}`);
   for (let r = 1; r <= rounds; r++) {
-    text = humanize(text, { intensity: 0.9, seed: 20260905, zhuqueMode: true, style: "casual" });
+    text = humanize(text, { intensity: 0.9, seed: 20260905, enhancementMode: true, style: "casual" });
     const m = metrics(text);
     console.log(`第${r}轮 | ${m.score} | ${m.fillerCount} | ${m.particles} | ${m.chars}`);
     fs.writeFileSync(path.join(dir, `${name}.r${r}.txt`), text, "utf-8");

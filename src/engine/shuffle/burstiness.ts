@@ -151,7 +151,7 @@ export function boostBurstinessIfLow(
         .split(/\n\n+/)
         .map((p) => (isScenePara(p) ? p : boostBurstinessInBlock(p, rng, targetCv, maxCuts)))
         .join("\n\n");
-  // v0.8.4 兜底清扫：管线里 IfLow 会被多次调用（朱雀增强 + P5 清尾），跨调用仍可能
+  // v0.8.4 兜底清扫：管线里 IfLow 会被多次调用（表达增强 + P5 清尾），跨调用仍可能
   // 拼出「哦。哦。」「是啊。是啊。」式相邻极短句复读——复读本身就是机器指纹
   // （fingerprintCheck 垫词复读同类项），逐字符统计类特征一抓一个准。相邻同串只留一个。
   return result.replace(/([\u4e00-\u9fa5]{1,4}[。！？])(?:\s*)\1+/g, "$1");
@@ -298,7 +298,7 @@ function boostBurstinessInBlock(
       if (!fresh.length) break;
       const a = fresh[Math.floor(rng() * fresh.length)];
       usedAnchors.add(a);
-      // 跨调用防复读：IfLow 在管线里会被调用多次（朱雀增强 + P5 清尾），每次调用
+      // 跨调用防复读：IfLow 在管线里会被调用多次（表达增强 + P5 清尾），每次调用
       // 的 usedAnchors 都是新建的——上一调用可能已在本块尾挂过同一锚。不依赖
       // 调用内状态，直接实测文本尾：尾端已有同核锚点就跳过这个候选。
       const core = a.replace(/。$/, "");

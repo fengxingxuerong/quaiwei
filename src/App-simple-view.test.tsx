@@ -23,10 +23,10 @@ const INPUT_TEXT =
 
 /**
  * 专业档才有的入口（简洁档必须一个都不出现）。
- * 「朱雀增强」是 label.mode-tag（文本里带 emoji，getByText 精确匹配不到）⇒ 用选择器。
+ * 「表达增强」是 label.mode-tag（文本里带 emoji，getByText 精确匹配不到）⇒ 用选择器。
  */
 const PRO_ONLY: { text?: string; sel?: string }[] = [
-  { sel: "label.mode-tag" }, // 朱雀增强
+  { sel: "label.mode-tag" }, // 表达增强
   { text: "导出 .txt" },
   { text: "导出 .docx" },
   { text: "对比" },
@@ -34,7 +34,6 @@ const PRO_ONLY: { text?: string; sel?: string }[] = [
   { text: "历史" },
   { text: "指纹体检" },
   { text: "本地检测" },
-  { text: "朱雀检测" },
 ];
 
 /** 简洁档主流程必须有 */

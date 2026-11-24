@@ -13,17 +13,15 @@ import { academicAudit, type AcademicAudit } from "./engine/academic-check";
 import type { FingerprintReport, ScoreBreakdown } from "./engine/humanize";
 import { registerIndex, type RegisterReport } from "./engine/register-metrics";
 import { detectAI, type DetectReport } from "./engine/detector";
-import { detectZhuque } from "./engine/zhuque";
 import { DetectorConfig, scoreViaDetector } from "./api/detector";
-import { semanticAvailable } from "./api/zhuque-semantic";
 import {
   loadApi,
   loadIntensity,
   saveIntensity,
   loadDetector,
   saveDetector,
-  loadZhuqueMode,
-  saveZhuqueMode,
+  loadEnhancementMode,
+  saveEnhancementMode,
   loadStructuralMode,
   saveStructuralMode,
   loadVariant,
@@ -50,7 +48,14 @@ import {
 import { setProtectedTerms } from "./engine/term-protect";
 import { parseApiConfigLink, readApiConfigParam } from "./api-config-link";
 import { explainChanges, type ExplainItem } from "./engine/explain";
-import { copyText } from "./api/zhuque";
+import {
+  importFileToText,
+  makeDatedName,
+  downloadBlob,
+  exportDocxBlob,
+  makeTxtBlob,
+  copyText,
+} from "./app-fileio";
 import { SettingsModal } from "./components/SettingsModal";
 import { ScoreBadge } from "./components/ScoreBadge";
 import { TextPane } from "./components/TextPane";
@@ -58,8 +63,6 @@ import { DiffView } from "./components/DiffView";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { FingerprintPanel } from "./components/FingerprintPanel";
 import { BenchmarkPanel } from "./components/BenchmarkPanel";
-import { ZhuquePanel } from "./components/ZhuquePanel";
-import { CalibLabModal } from "./components/CalibLabModal";
 import { BatchModal } from "./components/BatchModal";
 import { LocalDetectPanel } from "./components/LocalDetectPanel";
 import { ExplainPanel } from "./components/ExplainPanel";
@@ -77,16 +80,7 @@ import {
 import { PipelineTracePanel } from "./components/PipelineTrace";
 import type { PipelineTrace } from "./engine/pipeline-trace";
 import { usePplFlow } from "./hooks/usePplFlow";
-import { useZhuqueLab } from "./hooks/useZhuqueLab";
 import { buildHumanizeNote, formatRestoredNote } from "./app-messages";
-import {
-  importFileToText,
-  makeDatedName,
-  downloadBlob,
-  exportDocxBlob,
-  makeTxtBlob,
-} from "./app-fileio";
-import type { PplFeature } from "./ppl/scorer-core";
 
 type Score = ScoreBreakdown;
 
@@ -142,7 +136,7 @@ export default function App({
   const [input, setInput] = useState(() => restoredDraft?.input ?? "");
   const [output, setOutput] = useState(() => restoredDraft?.output ?? "");
   const [intensity, setIntensity] = useState<number>(loadIntensity());
-  const [zhuqueMode, setZhuqueMode] = useState<boolean>(loadZhuqueMode());
+  const [enhancementMode, setEnhancementMode] = useState<boolean>(loadEnhancementMode());
   // v0.9.82：受限句序重排开关（pro 视图 chip，默认关）。与 --structural / MCP 同一开关
   const [structuralMode, setStructuralMode] = useState<boolean>(loadStructuralMode());
   // v0.9.81：地区用词校正开关（pro 视图里的 chip）。默认 "none"
@@ -159,7 +153,6 @@ export default function App({
   const [judgeScore, setJudgeScore] = useState<number | null>(null);
   const [judgeCritique, setJudgeCritique] = useState<string[]>([]);
   const [detectorScore, setDetectorScore] = useState<number | null>(null);
-  const [zhuqueManualScore, setZhuqueManualScore] = useState<string>("");
   const [judging, setJudging] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -204,12 +197,6 @@ export default function App({
     saveViewMode(v);
   }
 
-  // ---- 困惑度第 8 项 + 朱雀检测/校准实验室编排（自本组件抽出，行为不变） ----
-  // 两个 hook 互有依赖（ppl 特征 → 朱雀面板重算），用 ref 中转打破声明顺序循环：
-  // usePplFlow 先声明（useZhuqueLab 要吃 pplFeature），其 applyPplToZhuque 回调
-  // 经 ref 转发到 useZhuqueLab 的 rerunWithPpl——ref.current 每次渲染刷新，语义等价
-  // 于原实现里闭包直读最新 state。
-  const rerunPplRef = useRef<(f: PplFeature) => void>(() => {});
   const {
     pplEnabled,
     setPplEnabled,
@@ -222,53 +209,8 @@ export default function App({
     runPplFeature,
     ensurePpl,
   } = usePplFlow({
-    applyPplToZhuque: (feature) => rerunPplRef.current(feature),
     getAnalysisTarget: () => (output.trim() ? output : input),
   });
-  const {
-    zq,
-    zqText,
-    zqCalib,
-    zqPaste,
-    zqMsg,
-    zqFeatures,
-    zqSem,
-    zqSemLoading,
-    zqWeight,
-    setZq,
-    setZqText,
-    setZqSem,
-    setZqPaste,
-    setZqMsg,
-    setZqFeatures,
-    setLabMsg,
-    zqOpts,
-    zqTarget,
-    handleZhuque,
-    handleZqCopySubmit,
-    handleZqOpenOfficial,
-    handleZqSaveCalib,
-    handleZqSemantic,
-    handleZqWeight,
-    handleZqClearCalib,
-    handleLabOpen,
-    handleLabGenerate,
-    handleLabFill,
-    handleLabDelete,
-    handleLabClear,
-    handleLabApplyWeight,
-    handleLabSeed,
-    setShowLab,
-    setLabText,
-    labSamples,
-    labText,
-    labMsg,
-    labPaste,
-    showLab,
-    setLabPaste,
-    rerunWithPpl,
-  } = useZhuqueLab({ input, output, api, pplFeature });
-  rerunPplRef.current = rerunWithPpl;
 
   function handleFingerprint() {
     const target = output.trim() ? output : input;
@@ -314,7 +256,7 @@ export default function App({
               : `${stage ?? ""}深度去味第 ${round} 轮完成，本轮评分失败，继续…`,
           );
         },
-        zhuqueMode,
+        enhancementMode,
         genreOverride ?? undefined,
         // v0.9.82：structural 并入第 7 参。两个开关全关时保持旧契约——**整个 undefined**
         //（App.test「短路那半边」锁的就是这个分支，别改成总传对象）
@@ -361,16 +303,11 @@ export default function App({
       setJudgeCritique([]);
       setDetectorScore(null);
       setRoundScores(r.roundScores || []);
-      // 闭环复检：本地 AI 检测（原文 vs 去味稿降档对照）+ 朱雀口径三档占比
+      // 闭环复检：本地 AI 检测（原文 vs 去味稿降档对照）
       const din = detectAI(input);
       const dout = detectAI(r.text);
       setDetectIn(din);
       setDetectOut(dout);
-      setZqSem(null); // 新去味稿：旧语义层结果作废
-      const zt = r.text.trim();
-      setZqText(zt);
-      const zr = detectZhuque(zt, zqOpts(zqCalib));
-      setZq(zr);
       // 结果文案组装已抽纯函数（src/app-messages.ts）：按真实产出引擎如实标注，
       // 回归防护见 src/app-messages.test.ts
       let detectorNote: string | undefined;
@@ -388,7 +325,7 @@ export default function App({
           detectorNote = " · 检测器送检失败：" + (de instanceof Error ? de.message : String(de));
         }
       }
-      const msg = buildHumanizeNote({ r, input, din, dout, zr, detectorNote });
+      const msg = buildHumanizeNote({ r, din, dout, detectorNote });
       setNote(msg + regionalNote);
       // 保存到历史记录
       const entry = makeHistoryEntry(
@@ -462,7 +399,7 @@ export default function App({
   async function handleSaveSettings(
     a: ApiConfig,
     d: DetectorConfig,
-    z: boolean,
+    enhancement: boolean,
     ppl: boolean,
     l: LocalSettings,
     terms: string,
@@ -477,7 +414,7 @@ export default function App({
     } else {
       saveDetector(d);
     }
-    saveZhuqueMode(z);
+    saveEnhancementMode(enhancement);
     savePplEnabled(ppl);
     saveLocal(l);
     saveProtectedTerms(terms);
@@ -485,7 +422,7 @@ export default function App({
     setProtectedTerms(parseProtectedTerms(terms));
     setApi(a);
     setDetector(d);
-    setZhuqueMode(z);
+    setEnhancementMode(enhancement);
     setPplEnabled(ppl);
     setLocal(l);
     setProtectedTermsRaw(terms);
@@ -621,9 +558,6 @@ export default function App({
     setFidelity(null);
     setDetectIn(null);
     setDetectOut(null);
-    setZq(null);
-    setZqSem(null);
-    setZqMsg("");
     setTrace(null);
     setLastRun(null);
     clearDraft(); // 显式清空：草稿随之丢弃，下次打开是干净的
@@ -707,7 +641,7 @@ export default function App({
           <span className="logo">⚡</span>
           <div>
             <div className="title">趣AI味 · QuAiWei</div>
-            <div className="subtitle">本地引擎离线可用 · 可选接 LLM · 对标朱雀</div>
+            <div className="subtitle">本地引擎离线可用 · 可选接 LLM · 保留事实与格式</div>
           </div>
         </div>
         <div className="topbar-right">
@@ -722,7 +656,7 @@ export default function App({
             <button
               className={!simple ? "on" : ""}
               onClick={() => switchView("pro")}
-              title="追加工程面板：指纹体检、朱雀检测、流水线追踪、历史等"
+              title="追加工程面板：指纹体检、本地检测、流水线追踪、历史等"
             >
               专业
             </button>
@@ -791,10 +725,10 @@ export default function App({
         )}
         {!simple && (
           <label
-            className={`mode-tag ${zhuqueMode ? "active" : ""}`}
-            title="朱雀增强：叠加方言/插入语/句式片段/主观意见/括号自语等反检测特征"
+            className={`mode-tag ${enhancementMode ? "active" : ""}`}
+            title="表达增强：叠加方言/插入语/句式片段/主观意见/括号自语等表达特征"
             style={
-              zhuqueMode
+              enhancementMode
                 ? {
                     color: "#ff5d6c",
                     borderColor: "rgba(255, 93, 108, 0.5)",
@@ -806,14 +740,14 @@ export default function App({
           >
             <input
               type="checkbox"
-              checked={zhuqueMode}
+              checked={enhancementMode}
               onChange={(e) => {
-                setZhuqueMode(e.target.checked);
-                saveZhuqueMode(e.target.checked);
+                setEnhancementMode(e.target.checked);
+                saveEnhancementMode(e.target.checked);
               }}
               style={{ display: "none" }}
             />
-            🛡 朱雀增强
+            🛡 表达增强
           </label>
         )}
         {!simple && (
@@ -908,8 +842,7 @@ export default function App({
         >
           导入
         </button>
-        {/* 以下都是排查/调参入口，简洁档收起：它们在主流程里没有位置，
-            而且「朱雀检测」「指纹体检」这类词对只想改稿的人是噪音。 */}
+        {/* 以下都是排查/调参入口，简洁档收起：它们在主流程里没有位置。 */}
         {!simple && (
           <>
             <button
@@ -959,13 +892,6 @@ export default function App({
             <button className="ghost" onClick={handleLocalDetect} disabled={!inputHasText}>
               本地检测
             </button>
-            <button
-              className="ghost"
-              onClick={handleZhuque}
-              disabled={!inputHasText && !outputHasText}
-            >
-              朱雀检测
-            </button>
           </>
         )}
         <button className="ghost" onClick={handleClear}>
@@ -987,7 +913,7 @@ export default function App({
               <>
                 <span
                   className="result-label"
-                  title="本地规则命中分，只能比较同一篇稿子的前后变化，不能判断朱雀等检测器是否判为人写"
+                  title="本地规则命中分，只能比较同一篇稿子的前后变化，不能据此判断是否像人写"
                 >
                   套话指数
                 </span>
@@ -1090,12 +1016,9 @@ export default function App({
           judgeScore={judgeScore}
           judgeCritique={judgeCritique}
           detectorScore={detectorScore}
-          zhuqueManualScore={zhuqueManualScore}
           onJudge={handleJudge}
           onDetect={handleDetect}
-          onManualScore={setZhuqueManualScore}
           onGenreChange={setGenreOverride}
-          onNote={setNote}
         />
       )}
 
@@ -1144,52 +1067,6 @@ export default function App({
         />
       )}
 
-      {!simple && zq && (
-        <ZhuquePanel
-          text={zqText || zqTarget()}
-          rep={zq}
-          calib={zqCalib}
-          paste={zqPaste}
-          msg={zqMsg}
-          showFeatures={zqFeatures}
-          sem={zqSem}
-          semLoading={zqSemLoading}
-          weight={zqWeight}
-          canRunSemantic={semanticAvailable(api)}
-          onPaste={setZqPaste}
-          onSaveCalib={handleZqSaveCalib}
-          onClearCalib={handleZqClearCalib}
-          onCopySubmit={handleZqCopySubmit}
-          onOpenOfficial={handleZqOpenOfficial}
-          onOpenLab={handleLabOpen}
-          onToggleFeatures={() => setZqFeatures((v) => !v)}
-          onRunSemantic={() => void handleZqSemantic(!!zqSem)}
-          onWeight={handleZqWeight}
-        />
-      )}
-
-      {showLab && (
-        <CalibLabModal
-          samples={labSamples}
-          text={labText}
-          msg={labMsg}
-          pasteMap={labPaste}
-          onText={setLabText}
-          onPaste={(id, v) => setLabPaste((p) => ({ ...p, [id]: v }))}
-          onClose={() => setShowLab(false)}
-          onGenerate={handleLabGenerate}
-          onFill={handleLabFill}
-          onCopy={async (t) => {
-            const ok = await copyText(t);
-            setLabMsg(ok ? "已复制（超 2000 字会按句子边界截断）" : "复制失败，请手动复制");
-          }}
-          onDelete={handleLabDelete}
-          onClear={handleLabClear}
-          onApplyWeight={handleLabApplyWeight}
-          onSeed={handleLabSeed}
-        />
-      )}
-
       {note && <div className="note">{note}</div>}
 
       {batchFiles && (
@@ -1197,7 +1074,7 @@ export default function App({
           files={batchFiles}
           api={api}
           intensity={intensity}
-          zhuqueMode={zhuqueMode}
+          enhancementMode={enhancementMode}
           genre={genreOverride ?? undefined}
           local={local}
           detector={detector}
@@ -1238,7 +1115,7 @@ export default function App({
         <SettingsModal
           api={api}
           detector={detector}
-          zhuqueMode={zhuqueMode}
+          enhancementMode={enhancementMode}
           pplEnabled={pplEnabled}
           local={local}
           protectedTerms={protectedTermsRaw}

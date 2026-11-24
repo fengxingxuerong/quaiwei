@@ -7,7 +7,7 @@
  *   B) style="academic"（注入器关闭）
  * 若 B 组的升分率/最高分显著低于 A 组，则注入器是唯一元凶。
  * 注意：academic 还会顺带关掉其它东西，故额外加一组
- *   C) zhuqueMode=false（完全跳过朱雀层，注入器也不跑）作交叉验证。
+ *   C) enhancementMode=false（完全跳过本地层，注入器也不跑）作交叉验证。
  */
 import { humanize } from "../src/engine/humanize";
 import { aiScore } from "../src/engine/humanize-metrics";
@@ -20,9 +20,9 @@ const CASES: Array<{ id: string; text: string }> = [
 
 type Cfg = { name: string; style?: "casual" | "plain" | "academic"; zh: boolean };
 const CFGS: Cfg[] = [
-  { name: "A:casual+朱雀", style: "casual", zh: true },
-  { name: "B:plain+朱雀", style: "plain", zh: true },
-  { name: "C:academic+朱雀", style: "academic", zh: true },
+  { name: "A:casual+本地", style: "casual", zh: true },
+  { name: "B:plain+本地", style: "plain", zh: true },
+  { name: "C:academic+本地", style: "academic", zh: true },
 ];
 
 for (const c of CASES) {
@@ -36,7 +36,7 @@ for (const c of CASES) {
     const arr: number[] = [];
     for (const it of [0.6, 0.7, 0.8, 0.9]) {
       for (let seed = 1; seed <= 20; seed++) {
-        const out = humanize(c.text, { intensity: it, seed, genre: "main", style: cfg.style, zhuqueMode: cfg.zh });
+        const out = humanize(c.text, { intensity: it, seed, genre: "main", style: cfg.style, enhancementMode: cfg.zh });
         const a = aiScore(out).score;
         arr.push(a);
         if (a > before + 1) up++;

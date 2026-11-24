@@ -6,13 +6,7 @@
  * 换算错一位 = 全盘分数系统性偏差 100 倍，且 UI 上看不出来，必须锁死。
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import {
-  DEFAULT_DETECTOR,
-  ZHUQUE_OFFICIAL_DETECTOR,
-  scoreViaDetector,
-  inferZhuqueDefaults,
-  type DetectorConfig,
-} from "./detector";
+import { DEFAULT_DETECTOR, scoreViaDetector, type DetectorConfig } from "./detector";
 
 const realFetch = globalThis.fetch;
 
@@ -126,7 +120,7 @@ describe("scoreViaDetector（失败路径）", () => {
     await expect(scoreViaDetector("文本", cfg())).rejects.toThrow(/status=failed/);
   });
 
-  it("error 字段非空（朱雀未授权时的真实形态）抛错", async () => {
+  it("error 字段非空时抛错", async () => {
     stubFetch({
       body: { error: { message: "API key not found.", type: "auth_failed", code: "auth_failed" } },
     });
@@ -195,8 +189,7 @@ describe("scoreViaDetector（请求构造）", () => {
 });
 
 describe("非 2xx 的现场材料（2026-09-22 补）", () => {
-  // 起因：拿别家平台的凭证打朱雀官方网关，旧代码只抛「检测器返回 401」，
-  // 网关写在响应体里的原因被整个丢掉，排查全靠猜。这几条钉的是"报错要带现场"。
+  // 旧代码只抛状态码，响应体里的鉴权原因会被丢掉；这几条锁住现场信息。
   it("非 2xx 时把响应体里的原因带进消息，而不是只报状态码", async () => {
     stubFetch({
       ok: false,
@@ -238,55 +231,5 @@ describe("DEFAULT_DETECTOR", () => {
     expect(DEFAULT_DETECTOR.enabled).toBe(false);
     expect(DEFAULT_DETECTOR.url).toBe("");
     expect(DEFAULT_DETECTOR.scale).toBe("0-100");
-  });
-});
-
-describe("ZHUQUE_OFFICIAL_DETECTOR（朱雀官方预设）", () => {
-  it("预设本身就是官方文档口径：固定网关 + softmax_confidence + 0-1 刻度", async () => {
-    expect(ZHUQUE_OFFICIAL_DETECTOR.url).toBe(
-      "https://ai-gateway.edgeone.link/v1/providers/zhuque-text/classify",
-    );
-    expect(ZHUQUE_OFFICIAL_DETECTOR.scorePath).toBe("softmax_confidence");
-    expect(ZHUQUE_OFFICIAL_DETECTOR.scale).toBe("0-1");
-    // 接上就自动送检会静默花掉外部账号的额度，预设不得替用户打开
-    expect(ZHUQUE_OFFICIAL_DETECTOR.enabled).toBe(false);
-  });
-
-  it("拿文档里的真实响应样例能跑出分数（0.0019 → 0 分，且不被失败守卫误杀）", async () => {
-    stubFetch({
-      body: {
-        status: "success",
-        softmax_confidence: 0.19,
-        ratio_confidence: 0,
-        labels_ratio: { "0": 1, "1": 0, "2": 0 },
-        segment_labels: [],
-        usage: { total_tokens: 7 },
-        msg: "",
-        makers_models_usage: { total_tokens: 12 },
-      },
-    });
-    await expect(
-      scoreViaDetector("hello world", { ...ZHUQUE_OFFICIAL_DETECTOR, apiKey: "k" }),
-    ).resolves.toBe(19);
-  });
-});
-
-describe("inferZhuqueDefaults（官方网关 URL 自动补口径）", () => {
-  it("官方网关 URL 命中，给出 softmax_confidence / 0-1", () => {
-    expect(inferZhuqueDefaults(ZHUQUE_OFFICIAL_DETECTOR.url)).toEqual({
-      scorePath: "softmax_confidence",
-      scale: "0-1",
-    });
-  });
-
-  it("带查询串的同路径也命中；自建/第三方路径不命中", () => {
-    expect(
-      inferZhuqueDefaults("http://127.0.0.1:9999/v1/providers/zhuque-text/classify?x=1"),
-    ).toEqual({
-      scorePath: "softmax_confidence",
-      scale: "0-1",
-    });
-    expect(inferZhuqueDefaults("https://det.example.com/score")).toBeNull();
-    expect(inferZhuqueDefaults("")).toBeNull();
   });
 });

@@ -22,7 +22,7 @@ const rows: Array<{ it: number; seed: number; style: "plain" | "casual"; sc: num
 for (const style of ["plain", "casual"] as const) {
   for (const it of [0.6, 0.7, 0.8, 0.9]) {
     for (let seed = 1; seed <= 30; seed++) {
-      const out = humanize(EXPO, { intensity: it, seed, genre: "main", style, zhuqueMode: true });
+      const out = humanize(EXPO, { intensity: it, seed, genre: "main", style, enhancementMode: true });
       rows.push({ it, seed, style, sc: aiScore(out).score, out });
     }
   }
@@ -41,7 +41,7 @@ let narrCount = 0;
 for (const style of ["plain", "casual"] as const) {
   for (const it of [0.6, 0.7, 0.8, 0.9]) {
     for (let seed = 1; seed <= 30; seed++) {
-      const sc = aiScore(humanize(NARR, { intensity: it, seed, genre: "narrative", style, zhuqueMode: true })).score;
+      const sc = aiScore(humanize(NARR, { intensity: it, seed, genre: "narrative", style, enhancementMode: true })).score;
       if (sc > narrMax) narrMax = sc;
       if (sc >= 29) narrCount++;
     }

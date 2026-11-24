@@ -16,7 +16,7 @@ for (const it of [0.6, 0.7, 0.8, 0.9, 1.0]) {
   let max = 0;
   const hitWords: Record<string, number> = {};
   for (let seed = 1; seed <= 10; seed++) {
-    const out = humanize(NARR, { intensity: it, zhuqueMode: true, genre: "narrative", seed });
+    const out = humanize(NARR, { intensity: it, enhancementMode: true, genre: "narrative", seed });
     const s = aiScore(out);
     sum += s.score;
     if (s.score > max) max = s.score;

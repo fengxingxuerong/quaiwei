@@ -122,7 +122,7 @@ type Sample = {
   genre: string;
   level: string;
   intensity: number;
-  zhuqueMode: boolean;
+  enhancementMode: boolean;
   /** E 组输入：送进引擎的原文 */
   sourceText: string;
   /** D 组输入：冻结在仓库里的文本。null = 该档位产物没进仓库（论说 O2/O3 当年现算），D 组跳过 */
@@ -150,13 +150,13 @@ function buildSamples(): Sample[] {
 
   const N0 = byGenreLevel["narrative|原文"];
   const N1 = byGenreLevel["narrative|基础档(0.6)"];
-  const N2 = byGenreLevel["narrative|朱雀档(0.9)"];
+  const N2 = byGenreLevel["narrative|表达增强档(0.9)"];
   const D0 = byGenreLevel["dialogue|原文"];
   const D1 = byGenreLevel["dialogue|基础档(0.6)"];
-  const D2 = byGenreLevel["dialogue|朱雀档(0.9)"];
+  const D2 = byGenreLevel["dialogue|表达增强档(0.9)"];
   const H0 = byGenreLevel["humanHand|纯人写稿(无处理)"];
   const H1 = byGenreLevel["humanHand|基础档(0.6)"];
-  const H2 = byGenreLevel["humanHand|朱雀档(0.9)"];
+  const H2 = byGenreLevel["humanHand|表达增强档(0.9)"];
 
   if (!N0 || !N1 || !N2 || !D0 || !D1 || !D2 || !H0 || !H1 || !H2) {
     console.error("❌ v2 JSON 条目缺失，存在:", Object.keys(byGenreLevel));
@@ -175,7 +175,7 @@ function buildSamples(): Sample[] {
       genre: "叙事文",
       level: "原文",
       intensity: 0,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: N0.text,
       archivedText: N0.text,
       want: "high",
@@ -186,7 +186,7 @@ function buildSamples(): Sample[] {
       genre: "叙事文",
       level: "基础档(0.6)",
       intensity: 0.6,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: N0.text,
       archivedText: N1.text,
       want: "low",
@@ -194,9 +194,9 @@ function buildSamples(): Sample[] {
     {
       id: "N2",
       genre: "叙事文",
-      level: "朱雀档(0.9)",
+      level: "表达增强档(0.9)",
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       sourceText: N0.text,
       archivedText: N2.text,
       want: "low",
@@ -206,7 +206,7 @@ function buildSamples(): Sample[] {
       genre: "对话体",
       level: "原文",
       intensity: 0,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: D0.text,
       archivedText: D0.text,
       want: "high",
@@ -217,7 +217,7 @@ function buildSamples(): Sample[] {
       genre: "对话体",
       level: "基础档(0.6)",
       intensity: 0.6,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: D0.text,
       archivedText: D1.text,
       want: "low",
@@ -225,9 +225,9 @@ function buildSamples(): Sample[] {
     {
       id: "D2",
       genre: "对话体",
-      level: "朱雀档(0.9)",
+      level: "表达增强档(0.9)",
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       sourceText: D0.text,
       archivedText: D2.text,
       want: "low",
@@ -237,7 +237,7 @@ function buildSamples(): Sample[] {
       genre: "纯人写稿",
       level: "纯人写稿(无处理)",
       intensity: 0,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: H0.text,
       archivedText: H0.text,
       want: "low",
@@ -248,7 +248,7 @@ function buildSamples(): Sample[] {
       genre: "纯人写稿",
       level: "基础档(0.6)",
       intensity: 0.6,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: H0.text,
       archivedText: H1.text,
       want: "low",
@@ -256,9 +256,9 @@ function buildSamples(): Sample[] {
     {
       id: "H2",
       genre: "纯人写稿",
-      level: "朱雀档(0.9)",
+      level: "表达增强档(0.9)",
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       sourceText: H0.text,
       archivedText: H2.text,
       want: "low",
@@ -268,7 +268,7 @@ function buildSamples(): Sample[] {
       genre: "论说文",
       level: "原文",
       intensity: 0,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: EXPO_O1_RAW,
       archivedText: EXPO_O1_RAW,
       want: "high",
@@ -279,7 +279,7 @@ function buildSamples(): Sample[] {
       genre: "论说文",
       level: "基础档(0.7)",
       intensity: 0.7,
-      zhuqueMode: false,
+      enhancementMode: false,
       sourceText: EXPO_O1_RAW,
       archivedText: null,
       want: "low",
@@ -287,9 +287,9 @@ function buildSamples(): Sample[] {
     {
       id: "O3",
       genre: "论说文",
-      level: "朱雀档(0.9+P3)",
+      level: "表达增强档(0.9+P3)",
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       sourceText: EXPO_O1_RAW,
       archivedText: null,
       want: "low",
@@ -312,7 +312,7 @@ function emptyLock(): LockV2 {
 }
 
 function noteFor(s: Sample) {
-  return `seed=${CI_SEED}, intensity=${s.intensity}, zhuque=${s.zhuqueMode}, genre=${s.genre}`;
+  return `seed=${CI_SEED}, intensity=${s.intensity}, enhancement=${s.enhancementMode}, genre=${s.genre}`;
 }
 
 /** 读锁。v1（扁平 "N1_e2e"）在内存里迁移成 v2，不落盘——
@@ -579,7 +579,7 @@ export function main(argv: string[] = process.argv.slice(2)): number {
         aiScore(
           humanize(s.sourceText, {
             intensity: s.intensity,
-            zhuqueMode: s.zhuqueMode,
+            enhancementMode: s.enhancementMode,
             seed,
           }),
         ).score,

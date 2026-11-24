@@ -24,7 +24,7 @@ for (const [label, text, genre] of [
   ["人写", HUMAN, "humanHand"],
 ] as const) {
   const b = aiScore(text);
-  const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre, seed: 7 });
+  const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre, seed: 7 });
   const a = aiScore(out);
   console.log(`\n${"=".repeat(72)}`);
   console.log(`${label}  原文=${b.score}  →  0.9档=${a.score}`);

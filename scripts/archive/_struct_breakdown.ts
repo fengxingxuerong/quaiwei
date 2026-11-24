@@ -72,8 +72,8 @@ for (const [name, src, genre] of [
   console.log(`\n${"=".repeat(74)}\n【${name}】`);
   for (const [label, text] of [
     ["原文", src],
-    ["casual 0.9", humanize(src, { intensity: 0.9, zhuqueMode: true, genre, style: "casual", seed: 7 })],
-    ["plain 0.9", humanize(src, { intensity: 0.9, zhuqueMode: true, genre, style: "plain", seed: 7 })],
+    ["casual 0.9", humanize(src, { intensity: 0.9, enhancementMode: true, genre, style: "casual", seed: 7 })],
+    ["plain 0.9", humanize(src, { intensity: 0.9, enhancementMode: true, genre, style: "plain", seed: 7 })],
   ] as const) {
     const b = breakdown(text);
     console.log(`\n${label}: aiScore=${aiScore(text).score}  句式分=${aiScore(text).structureHits}`);

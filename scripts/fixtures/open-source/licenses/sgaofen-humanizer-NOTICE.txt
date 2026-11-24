@@ -1,0 +1,9 @@
+humanizer
+Copyright 2026 Stephen Yu
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+This applies to the code in this repository and to the released model weights.
+
+The model weights are fine-tuned from google/gemma-4-12B
+(https://huggingface.co/google/gemma-4-12B), which Google releases under the
+Apache License, Version 2.0. This project is not affiliated with or endorsed by Google.

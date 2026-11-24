@@ -6,7 +6,7 @@ import {
   SENTENCE_FRAGMENTS,
   OPINION_PHRASES,
   PARENTHETIC_NOTES,
-} from "../src/engine/humanize-zhuque.ts";
+} from "../src/engine/humanize-enhancement.ts";
 import { PAD_HEADS } from "../src/engine/humanize-primitives.ts";
 
 // 清除侧：从 anti-fingerprint.ts 源码抄录（模块内未导出）
@@ -26,10 +26,10 @@ function norm(s: string) {
 }
 
 const INJECT_SOURCES: Record<string, string[]> = {
-  "zhuque.PARENTHETICALS": PARENTHETICALS,
-  "zhuque.SENTENCE_FRAGMENTS": SENTENCE_FRAGMENTS,
-  "zhuque.OPINION_PHRASES": OPINION_PHRASES,
-  "zhuque.PARENTHETIC_NOTES": PARENTHETIC_NOTES,
+  "enhancement.PARENTHETICALS": PARENTHETICALS,
+  "enhancement.SENTENCE_FRAGMENTS": SENTENCE_FRAGMENTS,
+  "enhancement.OPINION_PHRASES": OPINION_PHRASES,
+  "enhancement.PARENTHETIC_NOTES": PARENTHETIC_NOTES,
   "primitives.PAD_HEADS": PAD_HEADS,
 };
 

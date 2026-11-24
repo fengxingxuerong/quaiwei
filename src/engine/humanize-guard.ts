@@ -377,6 +377,11 @@ function judgeGuardBlocks(from: string, context: string, before: string): boolea
   // 过度拦截——"通过各部门协作，效率得到提升"里「提升」离「通过」隔 8 字也被算中，
   // 实测 17/20 被误跳过。动词短语判据要的是**紧邻**，所以在此按词定制。
   if (from === "通过" && VERB_PHRASE_AFTER.test(context)) return true;
+  // 「验证通过」里的「通过」是不及物结果动词，替换成「用」会直接丢结果义。
+  if (from === "通过" && (/^[，。！？；：、]/.test(context) || !context.trim())) return true;
+  // 「不想因此否定」里的「因此」引导原因，不是句间连接词；换成「于是/所以」都会破坏搭配。
+  if (from === "因此" && /(?:不想|不愿|不会|不能|没有|没|未)[^，。！？；]{0,2}$/.test(before))
+    return true;
 
   const pre = GUARD_BEFORE[from];
   if (pre) {

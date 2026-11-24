@@ -6,13 +6,13 @@
  *
  * 领域边界：
  *  - 替换规则（replaceVocab / replaceTemplates / dropLeadingConnectives 等） ← 本文件
- *  - 朱雀增强（injectDialect / injectParentheticals 等） ← 本文件
+ *  - 表达增强（injectDialect / injectParentheticals 等） ← 本文件
  *  - 机械扰动（mechanicalShuffle / crossChunkCleanup 等） ← humanize-shuffle.ts
  *  - 评分/指纹/忠实校验（aiScore / fingerprintCheck 等） ← humanize-metrics.ts
  *  - 共享原语（rng / 统计 / 切分工具） ← humanize-data.ts
  *
  * 本文件不依赖任何第三方库，浏览器 / Node 直接跑。
- * 注意：内置的 AI 味评分只是"朱雀类检测器"的本地启发式代理分，不是官方分。
+ * 注意：内置的 AI 味评分只是"外部检测器"的本地启发式代理分，不是官方分。
  */
 
 import {
@@ -93,8 +93,12 @@ import {
 import { classifyGenre, AutoGenre, suppressSelfQA } from "./classify-genre.ts";
 // v0.9.82：受限句序重排（--structural，默认关；守卫与设计缘由见模块头注释）
 import { structuralSentenceShuffle } from "./structural-shuffle.ts";
-// v0.9.53 拆分阶段 1b：朱雀增强 + 本地引擎单遍主体搬到 humanize-zhuque-apply.ts
-import { applyZhuqueFeatures, humanizeSingle, injectDialect } from "./humanize-zhuque-apply.ts";
+// v0.9.53 拆分阶段 1b：表达增强 + 本地引擎单遍主体搬到 humanize-enhancement-apply.ts
+import {
+  applyExpressionFeatures,
+  humanizeSingle,
+  injectDialect,
+} from "./humanize-enhancement-apply.ts";
 // v0.9.54：围栏代码块整块冻结（判据与区间表都在 text-shield.ts）
 import {
   fencedCodeSpans,
@@ -115,8 +119,8 @@ import {
 export { wouldCascade, DIR_MODIFIER_VERB_CLASH_RE, FORMAL_FORBIDDEN_SUBSTITUTES };
 // scripts/scan-bugs.ts 的未然从句补「了」探针与引擎守卫共用同一条正则（v0.9.53 起住在 humanize-replace.ts）
 export { PURPOSE_LE_RE, NORMATIVE_LE_RE } from "./humanize-replace.ts";
-// 公开 API 面不变：applyZhuqueFeatures / injectDialect 经此 re-export
-export { applyZhuqueFeatures, injectDialect };
+// 公开 API 面不变：applyExpressionFeatures / injectDialect 经此 re-export
+export { applyExpressionFeatures, injectDialect };
 
 // 公开 API 面：这些符号从本文件被 App.tsx / llm.ts / 测试文件导入
 export {
@@ -157,13 +161,13 @@ export type {
  *  · avgLenTarget：论说文是 AI 的重灾区，句子越长越"规整三部曲"→ 压到 23；
  *                 叙事文有大量场景/动作/对话，天然短句多，留到 28 即可；
  *                 对话体台词可能偏长表达，再放宽到 32；
- *                 humanHand 不做硬切段（怕破坏原稿节奏→官分反涨），target 设为无压力的 36。
- *  · burstTarget：论说文最怕"句式高度均匀"，需要极高 CV≥0.63 才能过朱雀；
+ *                 humanHand 不做硬切段（怕破坏原稿节奏），target 设为无压力的 36。
+ *  · burstTarget：论说文最怕"句式高度均匀"，需要极高 CV≥0.63 才能过本地；
  *                 叙事/对话天然节奏起伏大，依次放宽；
  *                 humanHand 只需最低可接受值 0.50，避免过度插入锚点破坏行文。
- *  · intensityCap：只有 humanHand 有强制上限 0.48（v2 标定其斜率为负，越去味官分越高）；
+ *  · intensityCap：只有 humanHand 有强制上限 0.48，避免过度改写已有作者声口；
  *                  其他三体裁无上限，交给用户滑块自由控制。
- *  · disableZhuque：只有 humanHand 强制关闭朱雀增强（负斜率特征，叠加方言/自问自答会官分跳升）。
+ *  · disableEnhancement：只有 humanHand 强制关闭表达增强，避免叠加过多表达特征。
  *  · expoForceP3：只有论说 + 强度≥0.75 才强制 P3（覆盖 expoScore 略低于 0.55 的边缘论说文）。
  *     ⚠️ 叙事 / 人写两档里的 `() => false` 是**永不执行**的（2026-10-05 复核）：
  *     本字段唯一调用点在结构层入口（下方 `if (intensity >= 0.55 && structuralAllowedGenre)` 内），
@@ -179,7 +183,7 @@ export interface GenreKnobs {
   avgLenTarget: number;
   burstTarget: number;
   intensityCap: number; // 硬上限：> 这个值会被 clamp
-  disableZhuque: boolean; // 强制关闭朱雀增强
+  disableEnhancement: boolean; // 强制关闭表达增强
   expoForceP3: (intensity: number) => boolean;
   skipSceneInject: boolean; // 剧本场景块跳过自问自答
   disableTyposAnchor: boolean; // 关闭错别字/第一人称锚点注入（humanHand专用）
@@ -195,7 +199,7 @@ export function getGenreKnobs(genre: EffectiveGenre): GenreKnobs {
         avgLenTarget: 23,
         burstTarget: 0.63,
         intensityCap: 1.0,
-        disableZhuque: false,
+        disableEnhancement: false,
         expoForceP3: (i) => i >= 0.75,
         skipSceneInject: false,
         disableTyposAnchor: false,
@@ -206,7 +210,7 @@ export function getGenreKnobs(genre: EffectiveGenre): GenreKnobs {
         avgLenTarget: 28,
         burstTarget: 0.59,
         intensityCap: 1.0,
-        disableZhuque: false,
+        disableEnhancement: false,
         expoForceP3: () => false,
         skipSceneInject: false,
         disableTyposAnchor: false,
@@ -217,7 +221,7 @@ export function getGenreKnobs(genre: EffectiveGenre): GenreKnobs {
         avgLenTarget: 32,
         burstTarget: 0.57,
         intensityCap: 1.0,
-        disableZhuque: false,
+        disableEnhancement: false,
         expoForceP3: () => false,
         skipSceneInject: true,
         disableTyposAnchor: false,
@@ -229,13 +233,40 @@ export function getGenreKnobs(genre: EffectiveGenre): GenreKnobs {
         avgLenTarget: 36,
         burstTarget: 0.5,
         intensityCap: 0.48,
-        disableZhuque: true,
+        disableEnhancement: true,
         expoForceP3: () => false,
         skipSceneInject: false,
         disableTyposAnchor: true,
         skipSelfQA: true, // v0.9.1：人写原稿不注入插话
       };
   }
+}
+
+const QUOTED_SPAN_RE = /“[^”]*”|"[^"]*"/g;
+
+function restoreQuotedSpans(original: string, rewritten: string): string {
+  const before = [...original.matchAll(QUOTED_SPAN_RE)].map((match) => match[0]);
+  const after = [...rewritten.matchAll(QUOTED_SPAN_RE)];
+  if (!before.length || before.length !== after.length) return rewritten;
+  let cursor = 0;
+  let restored = "";
+  for (let i = 0; i < after.length; i++) {
+    const match = after[i];
+    restored += rewritten.slice(cursor, match.index) + before[i];
+    cursor = match.index + match[0].length;
+  }
+  return restored + rewritten.slice(cursor);
+}
+
+function restoreNumericSeparators(original: string, rewritten: string): string {
+  const originals = new Map<string, string>();
+  for (const match of original.matchAll(/\d+(?:[,，]\d{3})*(?:\.\d+)?%?/g)) {
+    const key = match[0].replace(/[,，.]/g, "");
+    if (!originals.has(key)) originals.set(key, match[0]);
+  }
+  return rewritten.replace(/\d+(?:[，。]\d{3})+(?:\.\d+)?%?/g, (candidate) => {
+    return originals.get(candidate.replace(/[，。]/g, "")) ?? candidate;
+  });
 }
 
 /* ----------------------------- 主流程 ----------------------------- */
@@ -353,10 +384,10 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   // 判据取原始输入 text：签名词理论上可能被管线中途改写，且注入决策本就该看
   // "用户给的是什么稿"。实测分离见 classify-genre.ts 两个签名的注释。
   const officialDoc = suppressSelfQA(text);
-  // P7-D：humanHand 强约束——强度硬钳制到 ≤0.48（该体裁斜率为负，越去味官分越高）
+  // P7-D：humanHand 强约束——强度硬钳制到 ≤0.48，避免过度改写
   const intensity = Math.min(Math.max(0, Math.min(1, opts.intensity ?? 0.6)), knobs.intensityCap);
-  // P7-D：humanHand 强制关闭朱雀增强
-  const zhuqueOn = (opts.zhuqueMode ?? false) && !knobs.disableZhuque;
+  // P7-D：humanHand 强制关闭表达增强
+  const enhancementOn = (opts.enhancementMode ?? false) && !knobs.disableEnhancement;
   // v0.9.54：围栏代码块整块冻结。
   //
   // 原实现 `text.split(/\n+/)` 把**每一行**都当独立段落，再 `join("\n\n")` 把段间距
@@ -469,14 +500,14 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
       result,
     );
 
-  // 朱雀增强模式（全文本级）——P7-D humanHand 强制关闭；P7-E 对话体场景块跳过自问自答
+  // 表达增强模式（全文本级）——P7-D humanHand 强制关闭；P7-E 对话体场景块跳过自问自答
   // v0.9.1：narrative/humanHand 跳过自问自答+碎片注入（"例子呢？"不属于叙事/人写原稿）
   // v0.9.4 P2：垫词饱和守卫——输入已被垫词塞满（多轮处理/高度口语）时不再注入
   const tZq = nowMs();
   let zqRan = false;
-  if (zhuqueOn && intensity >= 0.35 && countPadHeads(text) < PAD_INJECT_CAP) {
+  if (enhancementOn && intensity >= 0.35 && countPadHeads(text) < PAD_INJECT_CAP) {
     // v0.9.8 P0 收敛（七）：兜底风格 casual → plain（与 DEFAULT_API.style 对齐）。
-    result = applyZhuqueFeatures(result, intensity, opts.seed, opts.style ?? "plain", {
+    result = applyExpressionFeatures(result, intensity, opts.seed, opts.style ?? "plain", {
       skipSceneInject: knobs.skipSceneInject,
       skipSelfQA: knobs.skipSelfQA || officialDoc,
     });
@@ -487,8 +518,8 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     let skipped = false;
     if (!zqRan) {
       skipped = true;
-      metric = !zhuqueOn
-        ? "未开启朱雀增强"
+      metric = !enhancementOn
+        ? "未开启表达增强"
         : intensity < 0.35
           ? `强度 ${intensity.toFixed(2)} < 0.35，按设计不注入`
           : `原文垫词已饱和（≥ ${PAD_INJECT_CAP} 处），本轮不再注入`;
@@ -496,8 +527,8 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     emitStage(
       onStage,
       {
-        id: "zhuque",
-        name: skipped ? "朱雀增强（跳过）" : "朱雀增强",
+        id: "enhancement",
+        name: skipped ? "表达增强（跳过）" : "表达增强",
         why: "在改写稿上叠加检测器统计层面的反特征。它只加「人味特征」、不碰语义；跑不跑由开关、强度、垫词饱和三道门控共同决定。",
         charsBefore: text.length,
         metric,
@@ -531,7 +562,7 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
     // P7-B：论说文 + 强度≥0.75 → 强制开启 P3 结构增强（覆盖 expoScore 略低于 0.55 的边缘论说文）
     // P7-E：对话体 → 剧本【场景/人物/背景】块跳过自问自答注入
     const structOpts = {
-      zhuqueMode: zhuqueOn,
+      enhancementMode: enhancementOn,
       expoForceP3: knobs.expoForceP3(intensity),
       skipSceneInject: knobs.skipSceneInject,
       skipSelfQA: knobs.skipSelfQA || officialDoc, // v0.9.1：narrative/humanHand 跳过结构层自问自答；v0.9.49：公文/学术签名同样跳过
@@ -894,6 +925,8 @@ export function humanize(text: string, opts: HumanizeOptions = {}): string {
   if (opts.convergence === true) {
     result = convergeSentenceDensity(text, result).text;
   }
+  result = restoreQuotedSpans(text, result);
+  result = restoreNumericSeparators(text, result);
   if (onStage)
     emitStage(
       onStage,
@@ -928,7 +961,7 @@ export interface HumanizeAdvice {
  * 实测（2026-10-04，5 段自写文本 × 3 档）：aiScore 8 的人写叙事、aiScore 0 的口语随笔
  * 照改不误，且**动了作者原本的断句**（「后来我才知道，那是…」→「后来我才知道。那是…」）。
  *
- * v0.9.84：原注释引用的「纯人写稿越去味官方朱雀分反而略升」标定结论，其标定子系统
+ * v0.9.84：原注释引用的「纯人写稿越去味官方本地代理分反而略升」标定结论，其标定子系统
  * 已在 v0.9.83 整体移除（换算无法自证，见 CHANGELOG v0.9.83 第一节），不再作为产品口径依据。
  * 新证据来自 2026-11-06 双网关 glm-5.3-flash 独立评委全量 23 篇实测：aiScore≤27 的 20 篇里
  * 7 篇改写后反而更像 AI（配对强制选择 40/46 判改写更像人，绝对分均值只降 7.4 分），见 SCORECARD 第 4 节。

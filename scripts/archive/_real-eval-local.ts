@@ -38,7 +38,7 @@ for (const s of SAMPLES) {
   const before = aiScore(s.text);
   console.log(`\n【${s.name}】 字数=${s.text.length} 去味前 aiScore=${before.score}（套话命中=${before.formulaicHits} 句长CV=${before.burstiness.toFixed(2)}）`);
   for (const it of INTENSITIES) {
-    const out = humanize(s.text, { intensity: it, seed: 20260907, zhuqueMode: it >= 0.5 });
+    const out = humanize(s.text, { intensity: it, seed: 20260907, enhancementMode: it >= 0.5 });
     const after = aiScore(out);
     const fp = fingerprintCheck(out);
     const fid = checkFidelityLocal(s.text, out);

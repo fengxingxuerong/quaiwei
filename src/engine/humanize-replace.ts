@@ -4,8 +4,8 @@
  *
  * v0.9.53 拆分阶段 1b 第 2 步（docs/humanize-split-plan.md）：
  * 原为 humanize.ts 内联区块（301–823 行）。实测该层只被
- * humanizeSingle() 与 applyZhuqueFeatures() 调用，humanize() 主流程不直接用——
- * 因此可整体下沉，两个调用方（humanize.ts / humanize-zhuque-apply.ts）单向 import。
+ * humanizeSingle() 与 applyExpressionFeatures() 调用，humanize() 主流程不直接用——
+ * 因此可整体下沉，两个调用方（humanize.ts / humanize-enhancement-apply.ts）单向 import。
  *
  * 依赖方向（无环）：本模块 → humanize-data / humanize-rules / text-shield / term-protect
  */
@@ -55,7 +55,7 @@ import { isProtectedTerm } from "./term-protect.ts";
     正是去味的主力，不能因为"不算分"就否掉。
   教训再记一条：**「替换不改善某个指标」不等于「替换没有价值」**。
   aiScore 是本地代理分，拿它当唯一代价函数会把路线带偏（与 memory 里
-  「aiScore 不与朱雀官方分标定」同源）。
+  「aiScore 不与外部分标定」同源）。
   处置：回到"见一个冻一个"，但必须有**多种子实测证据**才收录，见 INFORMAL_ONLY_KEYS 注释。
 ------------------------------------------------------------------ */
 
@@ -336,7 +336,7 @@ export function replaceOpener(sentence: string, rng: () => number, p: number): s
 
 /** 预编译：冗余动词前缀正则（热路径免循环内重复构造） */
 const RELAX_REDUNDANT_RES = ["进行", "予以", "加以"].map(
-  (pre) => new RegExp("(?<![正在])" + pre + "(?![了到下])([\\u4e00-\\u9fa5]{2,4})", "g"),
+  (pre) => new RegExp("(?<![正在未不没有])" + pre + "(?![了到下])([\\u4e00-\\u9fa5]{2,4})", "g"),
 );
 
 export function relaxRedundantVerb(text: string, rng: () => number, p: number): string {

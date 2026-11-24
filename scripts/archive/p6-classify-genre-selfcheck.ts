@@ -21,7 +21,7 @@ if (fs.existsSync(V2)) {
         : r.genre === "dialogue" ? "dialogue"
         : r.genre === "humanHand" || r.genre === "human" ? "human(manual)"
         : "main";
-      // 对每一个 level 对应一个 case（原文/基础档/朱雀档）
+      // 对每一个 level 对应一个 case（原文/基础档/表达增强档）
       const id = (r.id ?? (r.genre + "|" + r.level)) + "|" + (r.level ?? "L");
       cases.push({ id, expectGenre: g, text: r.text });
     }
@@ -30,9 +30,9 @@ if (fs.existsSync(V2)) {
   }
 }
 
-// 2) v3 Pts：每点有 processedText（来自回归生成）+ 没有的话从 zhuque-v3-out 里读 txt
+// 2) v3 Pts：每点有 processedText（来自回归生成）+ 没有的话从 enhancement-v3-out 里读 txt
 function readOut(id: string): string | null {
-  const dir = path.join(ROOT, "scripts", "zhuque-v3-out");
+  const dir = path.join(ROOT, "scripts", "enhancement-v3-out");
   if (!fs.existsSync(dir)) return null;
   const hit = fs.readdirSync(dir).find(n => n.startsWith(id + "-"));
   return hit ? fs.readFileSync(path.join(dir, hit), "utf8") : null;

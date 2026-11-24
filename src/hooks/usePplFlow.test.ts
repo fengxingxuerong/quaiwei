@@ -81,19 +81,16 @@ describe("usePplFlow：runPplFeature 状态机", () => {
     expect(result.current.pplState).toBe("need-download");
   });
 
-  it("成功 → done，feature/issues 落位，朱雀重算回调被触发", async () => {
+  it("成功 → done，feature/issues 落位", async () => {
     ready();
     computePplFeatureMock.mockResolvedValue(FEATURE);
-    const applyPpl = vi.fn();
-    const { result } = renderHook(() => usePplFlow({ applyPplToZhuque: applyPpl }));
+    const { result } = renderHook(() => usePplFlow());
     await act(async () => {
       await result.current.runPplFeature("文本");
     });
     expect(result.current.pplState).toBe("done");
     expect(result.current.pplFeature?.meanNll).toBe(3.2);
     expect(Array.isArray(result.current.pplIssues)).toBe(true);
-    expect(applyPpl).toHaveBeenCalledTimes(1);
-    expect(applyPpl).toHaveBeenCalledWith(FEATURE);
   });
 
   it("推理抛错 → error 且 feature/issues 清空（静默降级为仅 7 项）", async () => {

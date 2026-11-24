@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { classifyGenre } from "./classify-genre.ts";
-import { humanize, applyZhuqueFeatures } from "./humanize.ts";
+import { humanize, applyExpressionFeatures } from "./humanize.ts";
 import { mechanicalShuffle } from "./humanize-shuffle.ts";
 import { aiScore } from "./humanize-metrics.ts";
 
@@ -65,13 +65,13 @@ describe("P7 引擎级体裁联动", () => {
   it("opts.genre=humanHand：强度被钳制且输出可复现", () => {
     const a = humanize(EXPO_TEXT, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 42,
     });
     const b = humanize(EXPO_TEXT, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 42,
     });
@@ -82,11 +82,11 @@ describe("P7 引擎级体裁联动", () => {
   it("humanHand 降级行为可区分：高强度下与人写稿钳制档不同", () => {
     const clamped = humanize(EXPO_TEXT, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 42,
     });
-    const main = humanize(EXPO_TEXT, { intensity: 0.9, zhuqueMode: true, seed: 42 });
+    const main = humanize(EXPO_TEXT, { intensity: 0.9, enhancementMode: true, seed: 42 });
     // 真降级：main@0.9 会注入自问自答/垫词，humanHand 一律不注入
     expect(clamped).not.toBe(main);
     // 且注入痕迹只能出现在 main 那侧（反向断言，防"两边都不注入"把差异混掉）
@@ -96,13 +96,13 @@ describe("P7 引擎级体裁联动", () => {
   it("humanHand 强度硬钳制到 ≤0.48：0.9 与 0.48 两档输出必须逐字相同", () => {
     const at09 = humanize(EXPO_TEXT, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 42,
     });
     const at048 = humanize(EXPO_TEXT, {
       intensity: 0.48,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 42,
     });
@@ -112,14 +112,14 @@ describe("P7 引擎级体裁联动", () => {
   it("mechanicalShuffle 独立入口也吃 genre 联动", () => {
     const out = mechanicalShuffle(EXPO_TEXT, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "main",
       seed: 7,
     });
     expect(out.length).toBeGreaterThan(0);
     const hh = mechanicalShuffle(HUMAN_TEXT, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 7,
     });
@@ -137,7 +137,7 @@ describe("P7 引擎级体裁联动", () => {
       "有人要抬杠",
     ];
     for (let seed = 1; seed <= 30; seed++) {
-      const skipped = applyZhuqueFeatures(DIALOG_SCRIPT, 0.9, seed, "casual", {
+      const skipped = applyExpressionFeatures(DIALOG_SCRIPT, 0.9, seed, "casual", {
         skipSceneInject: true,
       });
       expect(skipped).toMatch(/【场景：[^】]*下午三点[^】]*】/);
@@ -148,7 +148,7 @@ describe("P7 引擎级体裁联动", () => {
       "数字化转型是企业发展的重要路径。市场竞争日趋激烈。数据资产的价值不断凸显。人才培养是核心课题。战略布局需要长期投入。研发投入决定技术深度。";
     let qaSeen = false;
     for (let seed = 1; seed <= 60 && !qaSeen; seed++) {
-      const out = applyZhuqueFeatures(PLAIN_EXPO, 0.9, seed, "casual");
+      const out = applyExpressionFeatures(PLAIN_EXPO, 0.9, seed, "casual");
       if (QA_MARKERS.some((m) => out.includes(m))) qaSeen = true;
     }
     expect(qaSeen).toBe(true);
@@ -156,7 +156,12 @@ describe("P7 引擎级体裁联动", () => {
 
   it("论说 main 高强度：套话命中与 AI 指纹分均不升（P3 生效间接证据）", () => {
     const rawScore = aiScore(EXPO_TEXT);
-    const out = humanize(EXPO_TEXT, { intensity: 0.9, zhuqueMode: true, genre: "main", seed: 1 });
+    const out = humanize(EXPO_TEXT, {
+      intensity: 0.9,
+      enhancementMode: true,
+      genre: "main",
+      seed: 1,
+    });
     const outScore = aiScore(out);
     expect(outScore.formulaicHits).toBeLessThanOrEqual(rawScore.formulaicHits);
     expect(outScore.score).toBeLessThanOrEqual(rawScore.score);
@@ -174,7 +179,7 @@ describe("P7 引擎级体裁联动", () => {
       "有人要抬杠",
     ];
     for (let seed = 1; seed <= 20; seed++) {
-      const out = humanize(DIALOG_SCRIPT, { intensity: 0.9, zhuqueMode: true, seed });
+      const out = humanize(DIALOG_SCRIPT, { intensity: 0.9, enhancementMode: true, seed });
       for (const m of CASUAL_QA_MARKERS) expect(out).not.toContain(m);
     }
     // 正向断言：论说体裁下自问自答机制应生效。
@@ -184,7 +189,7 @@ describe("P7 引擎级体裁联动", () => {
     // 故正向探针改用两种池的共有形态：疑问句 + 紧随其后的短答句。
     let positiveSeen = false;
     for (let seed = 1; seed <= 40 && !positiveSeen; seed++) {
-      const out = humanize(EXPO_TEXT, { intensity: 0.9, zhuqueMode: true, seed });
+      const out = humanize(EXPO_TEXT, { intensity: 0.9, enhancementMode: true, seed });
       if (/[？?][^。！？!?]{0,20}[。！]/u.test(out)) positiveSeen = true;
     }
     expect(positiveSeen).toBe(true);

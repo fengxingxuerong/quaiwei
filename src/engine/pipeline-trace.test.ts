@@ -21,7 +21,7 @@ describe("pipeline-trace · 观测不得改变输出", () => {
     { intensity: 0.3, seed: 1 },
     { intensity: 0.6, seed: 7 },
     { intensity: 0.9, seed: 42 },
-    { intensity: 0.9, seed: 42, zhuqueMode: true },
+    { intensity: 0.9, seed: 42, enhancementMode: true },
     { intensity: 0.75, seed: 3, genre: "narrative" as const },
     { intensity: 0.75, seed: 3, genre: "dialogue" as const },
     { intensity: 0.5, seed: 11, style: "academic" as const },
@@ -67,7 +67,7 @@ describe("pipeline-trace · 阶段记录是真实执行产物", () => {
       "cliche",
       "halfwidth",
       "para",
-      "zhuque",
+      "enhancement",
       "structure",
       "final",
     ]) {
@@ -191,7 +191,7 @@ describe("aggregateStages · 归并口径", () => {
 /**
  * v0.9.55 工程卫生：补齐「旁路分支」的 trace 记录。
  *
- * 这些分支不会进改写主路径——入口守卫的三种短路、单段落直通、朱雀三道门控的
+ * 这些分支不会进改写主路径——入口守卫的三种短路、单段落直通、本地三道门控的
  * 跳过原因——但它们的 metric 文案会**原样出现在 trace 面板上**，是用户肉眼可见的
  * 观测产物。此前全无用例走到，等于面板上有一半文案没有回归保护。
  */
@@ -220,21 +220,21 @@ describe("pipeline-trace · 旁路分支也留真记录", () => {
     expect(para.metrics.join(" ")).toContain("单段文本");
   });
 
-  it("朱雀跳过三种原因都如实记录：未开启 / 强度不足 / 垫词饱和", () => {
-    // ① 默认不开朱雀增强（zhuqueMode 缺省 false）
+  it("本地跳过三种原因都如实记录：未开启 / 强度不足 / 垫词饱和", () => {
+    // ① 默认不开表达增强（enhancementMode 缺省 false）
     const a = runTracedHumanize(MULTI, { intensity: 0.9, seed: 1 });
-    const zqA = a.trace.stages.find((s) => s.id === "zhuque")!;
+    const zqA = a.trace.stages.find((s) => s.id === "enhancement")!;
     expect(zqA.skipped).toBe(true);
     expect(zqA.metrics.join(" ")).toContain("未开启");
 
-    // ② 开了但强度不足（narrative 的 knobs.disableZhuque=false，可控）
+    // ② 开了但强度不足（narrative 的 knobs.disableEnhancement=false，可控）
     const b = runTracedHumanize(MULTI, {
       intensity: 0.3,
       seed: 1,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "narrative",
     });
-    const zqB = b.trace.stages.find((s) => s.id === "zhuque")!;
+    const zqB = b.trace.stages.find((s) => s.id === "enhancement")!;
     expect(zqB.skipped).toBe(true);
     expect(zqB.metrics.join(" ")).toContain("0.35");
 
@@ -245,10 +245,10 @@ describe("pipeline-trace · 旁路分支也留真记录", () => {
     const c = runTracedHumanize(pad, {
       intensity: 0.9,
       seed: 1,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "narrative",
     });
-    const zqC = c.trace.stages.find((s) => s.id === "zhuque")!;
+    const zqC = c.trace.stages.find((s) => s.id === "enhancement")!;
     expect(zqC.skipped).toBe(true);
     expect(zqC.metrics.join(" ")).toContain("饱和");
   });

@@ -6,7 +6,7 @@ const NARR = `那天下午雨下得很大，我撑着伞走在回家的路上。
 
 回到家，我妈正站在厨房窗前看雨。她头也没回，只说了句锅里热着汤。我把湿外套挂在门后，听见雨点砸在雨棚上的声音，忽然觉得这个下午格外安静。`;
 
-const out = humanize(NARR, { intensity: 0.9, zhuqueMode: true, genre: "narrative", seed: 7 });
+const out = humanize(NARR, { intensity: 0.9, enhancementMode: true, genre: "narrative", seed: 7 });
 console.log("输出:", out);
 console.log("\n明细:", JSON.stringify(aiScore(out)));
 

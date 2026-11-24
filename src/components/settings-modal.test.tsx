@@ -25,7 +25,7 @@ function base(overrides: Partial<Parameters<typeof SettingsModal>[0]> = {}) {
   return {
     api: { ...DEFAULT_API },
     detector: { ...DEFAULT_DETECTOR },
-    zhuqueMode: false,
+    enhancementMode: false,
     pplEnabled: true,
     local: { ...DEFAULT_LOCAL },
     protectedTerms: "",
@@ -93,7 +93,7 @@ describe("SettingsModal（设置弹窗）", () => {
     expect(container.textContent).toContain("声线样本（可选）");
   });
 
-  it("编辑草稿后保存才统一上抛：API Key / 启用 / 温度失焦归一化 / 朱雀增强", () => {
+  it("编辑草稿后保存才统一上抛：API Key / 启用 / 温度失焦归一化 / 表达增强", () => {
     const onSave = vi.fn();
     const p = base({ onSave });
     const { getByPlaceholderText, container, getByText } = render(<SettingsModal {...p} />);
@@ -108,15 +108,15 @@ describe("SettingsModal（设置弹窗）", () => {
     fireEvent.change(temp, { target: { value: "5" } });
     fireEvent.blur(temp);
 
-    // 朱雀增强
-    const zhuque = Array.from(container.querySelectorAll('input[type="checkbox"]')).find((el) =>
-      (el as HTMLInputElement).closest("label")?.textContent?.includes("朱雀增强模式"),
+    // 表达增强
+    const enhancement = Array.from(container.querySelectorAll('input[type="checkbox"]')).find(
+      (el) => (el as HTMLInputElement).closest("label")?.textContent?.includes("表达增强模式"),
     ) as HTMLInputElement;
-    fireEvent.click(zhuque);
+    fireEvent.click(enhancement);
 
     fireEvent.click(getByText("保存"));
     expect(onSave).toHaveBeenCalledTimes(1);
-    const [api, , zhuqueMode] = onSave.mock.calls[0] as [
+    const [api, , enhancementMode] = onSave.mock.calls[0] as [
       ApiConfig,
       DetectorConfig,
       boolean,
@@ -126,7 +126,7 @@ describe("SettingsModal（设置弹窗）", () => {
     expect(api.apiKey).toBe("sk-new-key");
     expect(api.enabled).toBe(true);
     expect(api.temperature).toBe(2);
-    expect(zhuqueMode).toBe(true);
+    expect(enhancementMode).toBe(true);
     // 上抛的是新对象，不污染传入 props
     expect(p.api.apiKey).toBe(DEFAULT_API.apiKey);
   });
@@ -176,19 +176,6 @@ describe("SettingsModal（设置弹窗）", () => {
     expect(api.model).toBe("stealth/ox-alpha");
     expect(api.reasoningEffort).toBe("max");
     expect(api.enabled).toBe(true);
-  });
-
-  it("朱雀检测器预设：官方固定网关 + softmax 路径 + 0-1 刻度，且不替用户开启送检", () => {
-    const onSave = vi.fn();
-    const { getByText } = render(<SettingsModal {...base({ onSave })} />);
-    fireEvent.click(getByText("填入朱雀默认值"));
-    fireEvent.click(getByText("保存"));
-    const det = onSave.mock.calls[0][1] as DetectorConfig;
-    // 预设只填口径不改开关：勾上「启用检测器」等于每次去味都花外部账号的额度
-    expect(det.enabled).toBe(false);
-    expect(det.url).toBe("https://ai-gateway.edgeone.link/v1/providers/zhuque-text/classify");
-    expect(det.scorePath).toBe("softmax_confidence");
-    expect(det.scale).toBe("0-1");
   });
 
   // v0.9.15：setProtectedTerms 此前只有测试在调，UI 零入口。这条钉住「编辑 → 保存上抛」，
@@ -401,17 +388,17 @@ describe("SettingsModal 补盲（逐行覆盖 · 配置行编辑与环境分支�
     expect(local.candidates).toBe(DEFAULT_LOCAL.candidates); // 另一字段没被误改
   });
 
-  it("初始开关反相渲染：朱雀增强开 / 困惑度关 / 多候选择优关 / 候选数跟 props", () => {
+  it("初始开关反相渲染：表达增强开 / 困惑度关 / 多候选择优关 / 候选数跟 props", () => {
     const { container } = render(
       <SettingsModal
         {...base({
-          zhuqueMode: true,
+          enhancementMode: true,
           pplEnabled: false,
           local: { ...DEFAULT_LOCAL, bestOf: false, candidates: 5 },
         })}
       />,
     );
-    expect((rowControl(container, "朱雀增强模式") as HTMLInputElement).checked).toBe(true);
+    expect((rowControl(container, "表达增强模式") as HTMLInputElement).checked).toBe(true);
     expect((rowControl(container, "启用困惑度检查") as HTMLInputElement).checked).toBe(false);
     expect((rowControl(container, "多候选择优") as HTMLInputElement).checked).toBe(false);
     expect((rowControl(container, "候选数（1~30）") as HTMLInputElement).value).toBe("5");

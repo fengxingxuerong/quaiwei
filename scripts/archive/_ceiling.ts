@@ -41,7 +41,7 @@ for (const s of SAMPLES) {
   for (const it of [0.6, 0.7, 0.8, 0.9, 1.0]) {
     const row: string[] = [];
     for (let seed = 1; seed <= 20; seed++) {
-      const out = humanize(s.text, { intensity: it, seed, genre: s.genre, zhuqueMode: true });
+      const out = humanize(s.text, { intensity: it, seed, genre: s.genre, enhancementMode: true });
       const sc = aiScore(out).score;
       row.push(sc.toFixed(0));
       if (sc > max) {
@@ -54,6 +54,6 @@ for (const s of SAMPLES) {
   }
   console.log(`  ★ 最高 = ${max.toFixed(1)}（i=${maxIt}, seed=${maxSeed}）${max >= 29 ? " [仍可爆分]" : " [无法爆分]"}`);
   if (max >= 29) {
-    console.log(`  [爆分样本输出]\n  ${humanize(s.text, { intensity: maxIt, seed: maxSeed, genre: s.genre, zhuqueMode: true })}`);
+    console.log(`  [爆分样本输出]\n  ${humanize(s.text, { intensity: maxIt, seed: maxSeed, genre: s.genre, enhancementMode: true })}`);
   }
 }

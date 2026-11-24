@@ -7,7 +7,7 @@ const EXPO_MULTI = `在今天这个快速发展的时代背景下，数字化转
 const before = aiScore(EXPO_MULTI);
 console.log(`原文 score=${before.score} avgLen=${before.avgLen} 句式=${before.structureHits} 病词=${before.brokenHits} 套话=${before.formulaicHits}`);
 
-const out = humanize(EXPO_MULTI, { intensity: 0.9, zhuqueMode: true, genre: "main", seed: 7 });
+const out = humanize(EXPO_MULTI, { intensity: 0.9, enhancementMode: true, genre: "main", seed: 7 });
 const after = aiScore(out);
 console.log(`输出 score=${after.score} avgLen=${after.avgLen} 句式=${after.structureHits} 病词=${after.brokenHits} 套话=${after.formulaicHits}`);
 console.log("\n" + out.replace(/\n+/g, " ⏎ "));

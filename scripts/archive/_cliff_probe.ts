@@ -15,7 +15,7 @@ const HUMAN = `周末去了趟菜市场。西红柿涨到六块五一斤，摊�
 console.log("细扫 0.36~0.50 每一档");
 for (let i = 36; i <= 50; i++) {
   const it = i / 100;
-  const out = humanize(HUMAN, { intensity: it, zhuqueMode: true, genre: "humanHand", seed: 7 });
+  const out = humanize(HUMAN, { intensity: it, enhancementMode: true, genre: "humanHand", seed: 7 });
   const s = aiScore(out);
   const hasFrag = /(^|[。！？\n]\s*)(就这样|怎么说呢|你懂的|反正就那样|差不多得了|哦对|是啊|行吧)[。！？]/.test(out);
   const hasPad = /(^|[。！？\n]\s*)(说真的|讲真|说白了|其实|坦白讲|我寻思着)[，,]/.test(out);
@@ -24,6 +24,6 @@ for (let i = 36; i <= 50; i++) {
 
 console.log("\n逐段单独跑（定位是哪一段被污染）");
 for (const [i, p] of HUMAN.split(/\n\n+/).entries()) {
-  const out = humanize(p, { intensity: 0.48, zhuqueMode: true, genre: "humanHand", seed: 7 });
+  const out = humanize(p, { intensity: 0.48, enhancementMode: true, genre: "humanHand", seed: 7 });
   console.log(`  段${i + 1}: ${aiScore(out).score}分 | ${out.slice(0, 120)}`);
 }

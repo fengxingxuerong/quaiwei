@@ -5,7 +5,7 @@
  *   humanize-vocab.ts      规则词典 / 连接词 / 软化短语
  *   humanize-guard.ts      固定搭配命中护栏
  *   humanize-text.ts       切句工具与机械清理词表
- *   humanize-zhuque.ts     朱雀增强对抗特征
+ *   humanize-enhancement.ts     表达增强对抗特征
  *   humanize-primitives.ts RNG / 句长统计等共享原语
  *
  * 本文件仅做统一再导出，既有引用方（engine 三模块、scripts/*）无需改动。
@@ -13,5 +13,5 @@
 export * from "./humanize-vocab";
 export * from "./humanize-guard";
 export * from "./humanize-text";
-export * from "./humanize-zhuque";
+export * from "./humanize-enhancement";
 export * from "./humanize-primitives";

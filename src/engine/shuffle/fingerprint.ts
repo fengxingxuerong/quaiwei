@@ -192,7 +192,7 @@ export function preDetectHumanFingerprint(text: string): HumanFingerprintReport 
 
   /* 2026-08-26 v2 预检分层校准
      【H0 纯人写原稿】特征：短占比 10%，leadCV=0.38，人称密度极高(66处/千字)，typos=2 —— 命中 → 降级
-     【N3/D3 叙事对话朱雀档】特征：人称密度极高(97/95)，但段首 CV=0（去味引擎已经把段首打平了）—— 这是"已经去过味的产物"，放过继续反检测
+     【N3/D3 叙事对话表达增强档】特征：人称密度极高(97/95)，但段首 CV=0（去味引擎已经把段首打平了）—— 这是"已经去过味的产物"，放过继续反检测
      【O1 论说原文】特征：人称61，short=0，leadCV=0.09 —— 放过，允许被改造
      关键：加 personPronPerK ≥ 50（高人称密度特征）+ leadCV≥0.25（段首参差，即非机切段首）+ shortRatio ≥ 0.08 三条同时命中 → H0 才命中 */
   const branchA = personPronPerK >= 50 && paraLeadCV >= 0.25 && shortRatio >= 0.08;

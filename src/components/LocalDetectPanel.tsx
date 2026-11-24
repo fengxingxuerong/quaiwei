@@ -31,7 +31,7 @@ export function LocalDetectPanel({
   return (
     <div className="bench">
       <div className="bench-head">
-        本地启发式检测（朱雀风格三档 · 离线规则，非朱雀官方分）
+        本地启发式检测（三档 · 离线规则，仅作相对参考）
         <button className="ghost sm" style={{ marginLeft: 10 }} onClick={onToggleFeatures}>
           {showFeatures ? "收起特征" : "看特征明细"}
         </button>

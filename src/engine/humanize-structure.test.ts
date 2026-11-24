@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { humanize, applyZhuqueFeatures, aiScore } from "./humanize.ts";
+import { humanize, applyExpressionFeatures, aiScore } from "./humanize.ts";
 import { classifyGenre } from "./classify-genre.ts";
 
 /**
@@ -13,7 +13,7 @@ import { classifyGenre } from "./classify-genre.ts";
  *
  * 本文件固化以下不变量，堵住同类回归：
  *   A. 段落守恒：多段输入 → 输出段落数 ≥ 输入段落数（强度 ≥0.4 全档）。
- *   B. 场景块保护：对话剧本多段，高强度 + 朱雀增强，多种子下【场景：…】块头原样保留、
+ *   B. 场景块保护：对话剧本多段，高强度 + 表达增强，多种子下【场景：…】块头原样保留、
  *      台词区不注入自问自答语料。
  *   C. aiScore 不升：多段 × 多体裁去味后本地代理分不高于原文。
  *   D. 人写体裁多段守恒 + 可复现。
@@ -84,13 +84,13 @@ describe("A. 多段段落守恒（postmortem 缺陷二固化）", () => {
 
   for (const [label, text, genre] of cases) {
     for (const intensity of [0.4, 0.7, 0.9] as const) {
-      for (const zhuque of [false, true] as const) {
-        // humanHand 体裁强制关朱雀 + 钳制强度，zhuque 参数无意义，跳过重复组合
-        if (genre === "humanHand" && zhuque) continue;
-        const zFlag = zhuque ? "朱雀开" : "朱雀关";
+      for (const enhancement of [false, true] as const) {
+        // humanHand 体裁强制关本地 + 钳制强度，enhancement 参数无意义，跳过重复组合
+        if (genre === "humanHand" && enhancement) continue;
+        const zFlag = enhancement ? "本地开" : "本地关";
         it(`${label} intensity=${intensity} ${zFlag}：输出段数 ≥ 输入段数`, () => {
           const before = inParas(text);
-          const out = humanize(text, { intensity, zhuqueMode: zhuque, genre, seed: 42 });
+          const out = humanize(text, { intensity, enhancementMode: enhancement, genre, seed: 42 });
           const after = outParas(out);
           expect(after).toBeGreaterThanOrEqual(before);
         });
@@ -104,11 +104,11 @@ describe("A. 多段段落守恒（postmortem 缺陷二固化）", () => {
 describe("B. 对话剧本场景块保护（postmortem 缺陷一固化）", () => {
   // P8 全格式保真承诺：场景块头是元数据，任何注入/机械改写都跳过整行 → 逐字守恒。
   // （relaxColon 改冒号、injectParentheticals 插破折号、injectDialect/错别字污染 均已加护盾）
-  it("高强度+朱雀：【场景：…】块头逐字守恒（多种子）", () => {
+  it("高强度+本地：【场景：…】块头逐字守恒（多种子）", () => {
     for (let seed = 1; seed <= 30; seed++) {
       const out = humanize(DIALOG_MULTI, {
         intensity: 0.9,
-        zhuqueMode: true,
+        enhancementMode: true,
         seed,
       });
       expect(out).toContain("【场景：公司会议室，下午三点】");
@@ -120,17 +120,17 @@ describe("B. 对话剧本场景块保护（postmortem 缺陷一固化）", () =>
     for (let seed = 1; seed <= 30; seed++) {
       const out = humanize(DIALOG_MULTI, {
         intensity: 0.9,
-        zhuqueMode: true,
+        enhancementMode: true,
         seed,
       });
       for (const m of QA_MARKERS) expect(out).not.toContain(m);
     }
   });
 
-  it("applyZhuqueFeatures 直调：skipSceneInject 全文跳过，无场景块普通文本注入仍存活（双向对照）", () => {
+  it("applyExpressionFeatures 直调：skipSceneInject 全文跳过，无场景块普通文本注入仍存活（双向对照）", () => {
     // 负向：剧本 + skipSceneInject → 不出现 QA，且块头逐字守恒（P8）
     for (let seed = 1; seed <= 20; seed++) {
-      const skipped = applyZhuqueFeatures(DIALOG_MULTI, 0.9, seed, "casual", {
+      const skipped = applyExpressionFeatures(DIALOG_MULTI, 0.9, seed, "casual", {
         skipSceneInject: true,
       });
       expect(skipped).toContain("【场景：公司会议室，下午三点】");
@@ -142,7 +142,7 @@ describe("B. 对话剧本场景块保护（postmortem 缺陷一固化）", () =>
       "数字化转型是企业发展的重要路径。市场竞争日趋激烈。数据资产的价值不断凸显。人才培养是核心课题。战略布局需要长期投入。研发投入决定技术深度。";
     let seen = false;
     for (let seed = 1; seed <= 60 && !seen; seed++) {
-      const out = applyZhuqueFeatures(PLAIN, 0.9, seed, "casual");
+      const out = applyExpressionFeatures(PLAIN, 0.9, seed, "casual");
       if (QA_MARKERS.some((m) => out.includes(m))) seen = true;
     }
     expect(seen).toBe(true);
@@ -161,7 +161,7 @@ describe("C. 多段 × 多体裁去味后 aiScore 不升", () => {
   for (const [label, text, genre] of cases) {
     it(`${label} intensity=0.9：去味后 score ≤ 原文`, () => {
       const before = aiScore(text);
-      const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre, seed: 7 });
+      const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre, seed: 7 });
       const after = aiScore(out);
       expect(after.score).toBeLessThanOrEqual(before.score);
     });
@@ -176,7 +176,7 @@ describe("D. 人写体裁多段守恒与可复现", () => {
     for (const seed of [1, 5, 42, 99]) {
       const out = humanize(HUMAN_MULTI, {
         intensity: 0.9,
-        zhuqueMode: true,
+        enhancementMode: true,
         genre: "humanHand",
         seed,
       });
@@ -187,13 +187,13 @@ describe("D. 人写体裁多段守恒与可复现", () => {
   it("humanHand：同种子可复现", () => {
     const a = humanize(HUMAN_MULTI, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 42,
     });
     const b = humanize(HUMAN_MULTI, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       genre: "humanHand",
       seed: 42,
     });
@@ -219,9 +219,9 @@ describe("括号守卫（v0.8.6：切句不在括号内切）", () => {
   const SEMI =
     "中国大陆晶圆代工厂（如中芯国际、华虹半导体）近年来在成熟制程领域持续扩张，产能规模已位居全球前列。值得注意的是，根据行业研究机构的数据，2025年全球晶圆代工市场规模将达到1500亿美元，其中成熟制程占比约为35%。与此同时，政策扶持力度不断加大，国产化率稳步提升，因此资本市场对半导体板块的关注度持续升温，产业链协同效应也日益显现出来。";
 
-  it("高强度朱雀档 30 种子：括号不被句号拆断、数量配对", () => {
+  it("高强度表达增强档 30 种子：括号不被句号拆断、数量配对", () => {
     for (let seed = 0; seed < 30; seed++) {
-      const out = humanize(SEMI, { intensity: 0.9, zhuqueMode: true, seed });
+      const out = humanize(SEMI, { intensity: 0.9, enhancementMode: true, seed });
       // 每个句子内括号数量自配对（拆断会在某句内出现孤括号）
       for (const seg of out.split(/(?<=[。！？])/)) {
         const o = (seg.match(/（/g) || []).length;
@@ -236,7 +236,7 @@ describe("括号守卫（v0.8.6：切句不在括号内切）", () => {
 
   it("中文术语与专名在括号内原样保留", () => {
     for (let seed = 0; seed < 10; seed++) {
-      const out = humanize(SEMI, { intensity: 0.9, zhuqueMode: true, seed });
+      const out = humanize(SEMI, { intensity: 0.9, enhancementMode: true, seed });
       expect(out).toContain("中芯国际");
       expect(out).toContain("华虹半导体");
     }

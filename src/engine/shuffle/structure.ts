@@ -501,7 +501,7 @@ export function injectSelfQA(
   //
   // 缺陷（artifacts/_probe-qa-double.ts 实测，强度 0.7~0.9 档）：
   //   本函数有两个调用点且**各自 budget=1、互不共享状态**：
-  //     ① applyZhuqueFeatures（humanize.ts，强度 ≥0.7）
+  //     ① applyExpressionFeatures（humanize.ts，强度 ≥0.7）
   //     ② structuralShuffleParagraph（本文件，强度 ≥0.65）
   //   主流程上 ① 先跑、② 后跑 ⇒ 同一段最多被塞进 2 整句模板。
   //   实测「B-工作总结」146 字：0.6 档 0 处 / 长度比 100%，0.7 档起 **2 处 / 119%**，
@@ -547,7 +547,7 @@ export function structuralShuffleParagraph(
   rng: () => number,
   intensity: number,
   opts: {
-    zhuqueMode?: boolean;
+    enhancementMode?: boolean;
     expoForceP3?: boolean;
     skipSceneInject?: boolean;
     skipSelfQA?: boolean; // v0.9.1：narrative/humanHead 跳过全部自问自答
@@ -570,12 +570,12 @@ export function structuralShuffleParagraph(
   const { sentences: afterSummary, splitAfter } = breakSummaryTail(working, rng, intensity);
   working = deParallelizeStructure(afterSummary, rng, intensity);
   // 2026-08-26 v2 P3-1/P3-2：论说结构语义级拆毁（插叙/颠倒顺序/拆编号）
-  // P7-B 体裁门控：(zhuqueMode AND expoScore≥0.55) OR (zhuqueMode AND expoForceP3)
+  // P7-B 体裁门控：(enhancementMode AND expoScore≥0.55) OR (enhancementMode AND expoForceP3)
   //           → 当 genre==main 且强度≥0.75 时，即使 expo 分略低于 0.55 也拆（覆盖边缘论说文）
-  const zhuqueBoost = opts.zhuqueMode ?? false;
+  const enhancementBoost = opts.enhancementMode ?? false;
   const expoScore = classifyExpositionScore(paragraph);
   const runP3 =
-    zhuqueBoost && (expoScore >= 0.55 || (opts.expoForceP3 === true && expoScore >= 0.35));
+    enhancementBoost && (expoScore >= 0.55 || (opts.expoForceP3 === true && expoScore >= 0.35));
   if (runP3) {
     working = dismantleExpositionTrilogy(working, rng, intensity);
     working = hardNumberedEnumerationShuffle(working, rng, intensity);
@@ -592,8 +592,8 @@ export function structuralShuffleParagraph(
   // v0.9.1：narrative/humanHand 体裁级跳过全部自问自答（"例子呢？"不属于叙事/人写原稿）
   const sceneBlockPara = (opts.skipSceneInject ?? false) && paraHasSceneBlock(paragraph);
   if (!sceneBlockPara && style !== "academic" && !(opts.skipSelfQA ?? false)) {
-    // v0.9.28 P0：同 applyZhuqueFeatures 那一处，注入也要"换到分"才留。
-    // 只关掉朱雀模式时本处是唯一的自问自答入口，不一起加就漏掉半条路径。
+    // v0.9.28 P0：同 applyExpressionFeatures 那一处，注入也要"换到分"才留。
+    // 只关掉本地模式时本处是唯一的自问自答入口，不一起加就漏掉半条路径。
     const beforeQA = working.join("");
     const injectedQA = injectSelfQA(working, rng, intensity, style);
     working =
@@ -610,7 +610,7 @@ export function structuralShuffleParagraph(
 /* =========================================================
    v2 P3 论说结构指纹拆毁 & 真人预检（2026-08-26）
    针对：O2(论说0.7) 本地 aiScore=0 但官方=45% → 词级/句长级已"满分像人"，
-   但朱雀仍看到「论述三部曲、硬编号列举、段首雷同、冰冷无个人锚点」这些
+   但本地仍看到「论述三部曲、硬编号列举、段首雷同、冰冷无个人锚点」这些
    本地 breakdown 没有建模的语义结构。
    ========================================================= */
 

@@ -39,7 +39,7 @@ for (const [name, text, genre] of CASES) {
   let sumAfter = 0;
   let worst = 0;
   for (let seed = 1; seed <= 10; seed++) {
-    const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre, seed });
+    const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre, seed });
     const after = countSent(out);
     sumAfter += after;
     if (before - after > worst) worst = before - after;

@@ -1,11 +1,5 @@
 /**
- * 趣AI味 · 对标评分面板：深度轮次分、LLM 评判、外部检测器、朱雀送检回填，
- * 以及引擎体裁联动（自动识别 + 手动 override，驱动引擎 knobs）。
- *
- * v0.9.83：本地代理分 → 官方朱雀分的标定预测（v3 四体裁 18 点 OLS）已随标定子系统
- * 整体移除——aiScore 与官方分之间没有可维护的换算关系，界面不再显示任何
- * "官方分预测 / 参考线 / 换算公式"。朱雀接入只剩两条真实通道：
- * 免费网页版半自动送检回填、外部检测器接口（EdgeOne API）。
+ * 趣AI味 · 评分面板：深度轮次分、LLM 评判、外部检测器与引擎体裁联动。
  */
 import { useState, useMemo, useEffect } from "react";
 import { DEEP_TARGET_SCORE, type ApiConfig } from "../api/llm";
@@ -28,13 +22,10 @@ interface BenchmarkPanelProps {
   judgeScore: number | null;
   judgeCritique: string[];
   detectorScore: number | null;
-  zhuqueManualScore: string;
   onJudge: () => void;
   onDetect: () => void;
-  onManualScore: (v: string) => void;
   /** 用户手动切换体裁时上抛；null = 回到自动识别 */
   onGenreChange?: (g: EngineGenre | null) => void;
-  onNote: (v: string) => void;
 }
 
 export function BenchmarkPanel({
@@ -48,12 +39,9 @@ export function BenchmarkPanel({
   judgeScore,
   judgeCritique,
   detectorScore,
-  zhuqueManualScore,
   onJudge,
   onDetect,
-  onManualScore,
   onGenreChange,
-  onNote,
 }: BenchmarkPanelProps) {
   const [genre, setGenre] = useState<EngineGenre>("main");
   // 用户手动切过下拉 → 自动识别不再覆盖；点击「回到自动」按钮重置为 false
@@ -98,15 +86,12 @@ export function BenchmarkPanel({
   const score = after?.score;
 
   /**
-   * 本地代理分 vs 外部通道分的分歧（2026-09-22 外评证据，见 score-conflict.ts）。
-   * 判据只认"外部比本地更像 AI"这一个方向：本地分低报会把用户骗到安全错觉里，
-   * 反过来（本地偏严）只会让人多改一轮，没有安全后果。
-   * 朱雀手动回填框是字符串，空的或填了非数字都不参与比较（scoreConflict 自己会拒 NaN）。
+   * 本地代理分 vs 外部通道分的分歧。
+   * 只认"外部比本地更像 AI"这一个方向：本地分低报会让用户误以为安全。
    */
   const conflict: ScoreConflict | null = pickConflict([
     scoreConflict(score, judgeScore, "judge"),
     scoreConflict(score, detectorScore, "detector"),
-    scoreConflict(score, zhuqueManualScore.trim() ? Number(zhuqueManualScore) : null, "official"),
   ]);
 
   /** severe（本地分低报）用红，warn（只是分歧大）用黄——两级不能共用一种颜色，
@@ -125,7 +110,7 @@ export function BenchmarkPanel({
 
   return (
     <div className="bench">
-      <div className="bench-head">评分与外部验证（本地分为套话指数，非朱雀官方分）</div>
+      <div className="bench-head">评分与外部验证（本地分为套话指数，不是检测器结果）</div>
       {roundScores.length > 0 && (
         <div className="bench-row">
           <span>
@@ -292,61 +277,10 @@ export function BenchmarkPanel({
         )}
       </div>
 
-      {/* 朱雀免费版：半自动送检——复制文本 + 打开网页，用户手动检测后回填分 */}
-      <div className="bench-row">
-        <button
-          className="ghost sm"
-          onClick={() => {
-            if (!output) return;
-            navigator.clipboard?.writeText(output);
-            window.open("https://matrix.tencent.com/ai-detect/ai_gen_txt/", "_blank");
-            onNote("已复制去味文本并打开朱雀检测页——粘贴检测后，在下方填入朱雀分");
-          }}
-          disabled={!output}
-        >
-          🔍 朱雀送检（免费网页版）
-        </button>
-        <input
-          type="number"
-          min={0}
-          max={100}
-          value={zhuqueManualScore}
-          onChange={(e) => onManualScore(e.target.value)}
-          placeholder="朱雀分"
-          style={{
-            width: 80,
-            background: "rgba(8,12,22,0.7)",
-            color: "var(--text)",
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            padding: "6px 8px",
-            outline: "none",
-          }}
-        />
-        {zhuqueManualScore && (
-          <span
-            className="tag"
-            title="你手动回填的官方检测结果，仅作记录；这里的颜色不构成过检判断"
-            style={{
-              color: "var(--muted)",
-              borderColor: "var(--border)",
-              background: "rgba(148,163,184,0.08)",
-            }}
-          >
-            朱雀回填：{zhuqueManualScore} 分（仅记录）
-          </span>
-        )}
-      </div>
       {!api.enabled && !detector.enabled && (
         <div className="bench-tip">
-          对标检测两条路径：<b>① 免费</b>
-          ——点上方「朱雀送检」自动复制文本并打开朱雀网页，手动检测后回填分数；
-          <b>② 自动</b>——在「设置」里点「填入朱雀默认值」并勾启用：朱雀官方 API 已于 2026-09
-          开放（EdgeOne Makers <code>@makers/zhuque-text</code>，每月 50 万 token 免费，只需一个 API
-          Key），去味后自动送检。
-          <br />
-          界面只显示本地套话指数与真实通道返回的分数——两者不是同一把尺子，不要互相换算，
-          真实结果以官方网页或 API 直接返回为准。
+          本地套话指数与外部检测器结果不是同一把尺子，不要互相换算；需要外部判断时，
+          请在设置中配置检测器接口。
         </div>
       )}
     </div>

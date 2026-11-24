@@ -27,7 +27,7 @@ for (const [name, text, genre] of SAMPLES) {
     const scores: number[] = [];
     const fHits: number[] = [];
     for (let seed = 1; seed <= 5; seed++) {
-      const out = humanize(text, { intensity: it, zhuqueMode: true, genre, seed });
+      const out = humanize(text, { intensity: it, enhancementMode: true, genre, seed });
       const s = aiScore(out);
       scores.push(s.score);
       fHits.push(s.formulaicHits);

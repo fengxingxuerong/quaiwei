@@ -15,7 +15,7 @@ const POLLUTION = ["死磕", "摆平", "捋顺", "弄全", "兜好", "拔高", "
 console.log("网络口语还原回归（0.9 档，academic 语体）\n" + "=".repeat(60));
 for (const [name, text] of FORMAL_CASES) {
   for (let seed = 1; seed <= 5; seed++) {
-    const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre: "main", style: "academic", seed });
+    const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre: "main", style: "academic", seed });
     const leaked = POLLUTION.filter((w) => out.includes(w));
     if (leaked.length) {
       console.log(`  ⚠️ ${name} seed=${seed} 漏网: [${leaked.join(",")}]`);

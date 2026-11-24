@@ -52,7 +52,7 @@ agent 一接上就知道「本地分不是检测器官方分」。
 | `intensity` | 0~1，默认 0.6 | 0.9 会动更多句式；正式稿别超过 0.6 |
 | `style` | `plain`/`casual`/`academic`，默认 `plain` | 论文、公文用 plain 或 academic |
 | `seed` | 整数，默认 20260905 | 固定后同一段文本每次产出逐字相同 |
-| `zhuque` | 布尔，默认 false | 朱雀增强特征（方言/插入语/句式碎片） |
+| `enhancement` | 布尔，默认 false | 表达增强特征（方言/插入语/句式碎片） |
 | `variant` | `zh-TW`，默认不传 | 地区用词校正：软件→软体、信息→资讯，半角标点转全角。不做简繁转换（见 [`regional-zh.md`](regional-zh.md)） |
 | `top` | 1~8，默认 5 | 只给 `detect_ai`：列几条高风险句 |
 | `rewritten` | 字符串，可选 | 只给 `academic_report`：待检的改写稿。给了就审这一份（引擎不参与改写），不给就由引擎按 academic 跑一遍再审 |

@@ -1,0 +1,42 @@
+{
+  "humanizer-zh": {
+    "repository": "https://github.com/op7418/Humanizer-zh",
+    "commit": "f4518a8eab97b8bfebc66a89d34320a89bef6930",
+    "license": "MIT",
+    "licenseFile": "licenses/Humanizer-zh-MIT.txt",
+    "files": {
+      "humanizer-zh-cases.json": {
+        "upstream": "tests/fixtures/cases.json",
+        "sha256": "4dc7a7b194a403bbc54b06722e928923c3f66135f09527fbda34b44296e34263",
+        "count": 18
+      },
+      "humanizer-zh-structure.md": {
+        "upstream": "tests/fixtures/structure.md",
+        "sha256": "3b55044f6ce249dbd96ddad4b09823b6aa8b8aff548717a449bc02f395059b3c",
+        "count": 1
+      }
+    }
+  },
+  "sgaofen-humanizer": {
+    "repository": "https://github.com/sgaofen/humanizer-local-model",
+    "commit": "7dd4be90cb3acb2e5d18aeea5837f888d2bb2d52",
+    "license": "Apache-2.0",
+    "licenseFile": "licenses/sgaofen-humanizer-APACHE-2.0.txt",
+    "noticeFile": "licenses/sgaofen-humanizer-NOTICE.txt",
+    "files": {
+      "sgaofen-zh-drafts.jsonl": {
+        "upstream": "eval/drafts/300a/zh_*.txt + eval/drafts/300b/zh_*.txt",
+        "count": 102,
+        "genres": ["email", "essay", "paper", "report", "social", "zhihu"],
+        "writers": ["glm", "luna", "sonnet"],
+        "note": "每行保留原始 text 与上游文件 sha256；公开版已用占位姓名/邮箱替换真实个人信息。"
+      }
+    }
+  },
+  "excluded": [
+    {
+      "repository": "https://github.com/HeraldofLight/C-ReD",
+      "reason": "仓库未提供许可证文件，暂不纳入可再分发测试资产。"
+    }
+  ]
+}

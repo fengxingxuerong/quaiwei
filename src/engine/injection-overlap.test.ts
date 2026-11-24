@@ -38,7 +38,7 @@ import { detectAI } from "../engine/detector";
  *
  * 第一次注入打了三处都**没生效**，连打两次：
  *   · 第 1590 行 —— 那是 `humanizeWithScore` 的出口，不是 `humanize`
- *   · 第 1101 行 —— 那是 `applyZhuqueFeatures` 的出口
+ *   · 第 1101 行 —— 那是 `applyExpressionFeatures` 的出口
  *   · 第 975 行  —— ✅ 才是 `humanize`
  *
  * `humanize.ts` 里有三个同形状的 `return result;`，**光看代码看不出是哪个函数**。
@@ -180,7 +180,7 @@ describe("注入叠加类签名", () => {
    * v0.9.27 P0：自问自答「跨调用点预算」端到端锁。
    *
    * 缺陷（artifacts/_probe-qa-double.ts）：
-   *   injectSelfQA 有两个调用点（applyZhuqueFeatures / structuralShuffleParagraph），
+   *   injectSelfQA 有两个调用点（applyExpressionFeatures / structuralShuffleParagraph），
    *   各自 budget=1 且互不共享状态 ⇒ 同一段最多被塞 2 整句模板。
    *   146 字的「工作总结」样本 0.7 档起：2 处 / 长度比 119% / detectAI 31 → 31（零收益）。
    *
@@ -197,7 +197,7 @@ describe("注入叠加类签名", () => {
     let injectedRuns = 0;
     for (const intensity of [0.7, 0.8, 0.9, 1.0]) {
       for (let seed = 0; seed < 30; seed++) {
-        const out = humanize(src, { intensity, seed, zhuqueMode: true, style: "plain" });
+        const out = humanize(src, { intensity, seed, enhancementMode: true, style: "plain" });
         const n = SELF_QA_POOLS.plain.filter(([q]) => out.includes(q)).length;
         if (n > 0) injectedRuns++;
         if (n > 1)
@@ -227,7 +227,7 @@ describe("注入叠加类签名", () => {
    *   ① 换种子后同一样本 detectAI 在 28~40 大幅波动（结构层重排随种子变化，与注入无关），
    *      跨种子统计只能锁住噪声；
    *   ② 想做同一样本 A/B（"摘掉输出里那句自问自答再看分"）也**不成立**：
-   *      回滚判据发生在朱雀增强阶段，其后还有结构层 + 四五道收尾 pass，
+   *      回滚判据发生在表达增强阶段，其后还有结构层 + 四五道收尾 pass，
    *      最终文本里的那句已经被改过 —— 摘掉它得到的不是当初比较的"注入前"。
    *      实测这条写法 90 条里 65 条假红，全是下游 pass 的账。
    *
@@ -242,7 +242,7 @@ describe("注入叠加类签名", () => {
   it("注入换不到降分就撤回：论说样本固定种子 0.9 档回到不注入时的 27 分", () => {
     const src =
       "首先，数字化转型不是简单的技术堆叠，而是组织能力的重构。其次，数据治理的难点不在工具，而在责任边界的划分。最后，评估体系必须跟着业务节奏迭代，否则指标会失真。总的来说，这三件事互为前提，缺一个都会让投入打折扣。\n\n从实践看，很多团队把预算压在平台上，却忽略了流程改造。这样一来，系统上线了，习惯没变，效率反而下降。因此，先定责任再上工具，是被反复验证过的顺序。";
-    const opts = { seed: 20260905, zhuqueMode: true, style: "plain" as const };
+    const opts = { seed: 20260905, enhancementMode: true, style: "plain" as const };
     const noInject = humanize(src, { ...opts, intensity: 0.6 }); // 0.6 档两处都不注入
     const withInject = humanize(src, { ...opts, intensity: 0.9 });
     // 修复前：0.9 档注入 1 处 → 28（比不注入的 26 还高 2）。

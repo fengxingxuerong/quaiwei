@@ -8,7 +8,7 @@ import { ApiConfig } from "./llm-config";
 import { chat } from "./llm-chat";
 import { buildSystemPrompt } from "./llm-humanize";
 import { judgeScoreStable } from "./llm-judge";
-import { ZHUQUE_DETECT_SYSTEM } from "./zhuque-semantic";
+import { QUALITY_RUBRIC } from "./quality-rubric";
 import { judgeByPanel, type JudgeSeat } from "./judge-panel";
 
 /* ----------------------------- 质检（v0.4.2） ----------------------------- */
@@ -449,8 +449,8 @@ export function localHardGate(original: string, rewritten: string): string[] {
 
 /** 处理一个改写候选：质检（LLM+本地硬门槛，含一次修复重试）→ 交叉评分。
  *  v0.5.1 抽出为独立步骤，供主循环与"双改写器竞争"共用。
- *  v0.8.3：① 评分改走朱雀检测员提示词（ZHUQUE_DETECT_SYSTEM）——深度闭环的收敛目标
- *  与朱雀语义层对齐，评判痕迹也是篇章层，修订轮定向更准；② 质检通过后叠加本地
+ *  v0.8.3：① 评分改走质量评判员提示词（QUALITY_RUBRIC）——深度闭环的收敛目标
+ *  与质量评判层对齐，评判痕迹也是篇章层，修订轮定向更准；② 质检通过后叠加本地
  *  硬门槛（指纹体检 + 忠实度），零成本拦住"LLM 质检放行但指纹明显"的漏网稿。
  *  v0.8.6 LLM 主导：**不再对 LLM 稿跑本地机械扰动**（旧实现叠 shuffle 0.3 会把方言
  *  替身/极短锚/碎片再注入 LLM 稿，污染语义级改写并制造新指纹）。节奏与反指纹由
@@ -538,7 +538,7 @@ export async function processCandidate(
     const seats = getJudgeSeats();
     if (seats.length >= 2) {
       try {
-        const panel = await judgeByPanel(draft, seats, ZHUQUE_DETECT_SYSTEM);
+        const panel = await judgeByPanel(draft, seats, QUALITY_RUBRIC);
         return {
           shuffled: draft,
           qc,
@@ -550,7 +550,7 @@ export async function processCandidate(
         // 合议庭全席失败：回退单裁判
       }
     }
-    const judged = await judgeScoreStable(draft, cfg, 3, ZHUQUE_DETECT_SYSTEM);
+    const judged = await judgeScoreStable(draft, cfg, 3, QUALITY_RUBRIC);
     return { shuffled: draft, qc, score: judged.score, critique: judged.critique };
   } catch {
     return { shuffled: draft, qc, score: null, critique: [] };

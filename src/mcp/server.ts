@@ -120,10 +120,10 @@ const OPTION_PROPS = {
     type: "integer",
     description: "随机种子，默认 20260905。固定后同一段文本每次产出完全一致",
   },
-  zhuque: {
+  enhancement: {
     type: "boolean",
     description:
-      "朱雀增强特征（方言/插入语/句式碎片/标点不规整）。默认 false；只说「更像人写」时不必开",
+      "表达增强特征（方言/插入语/句式碎片/标点不规整）。默认 false；只说「更像人写」时不必开",
   },
   variant: {
     type: "string",
@@ -174,7 +174,7 @@ export const TOOLS: ToolDef[] = [
         },
         detectorKey: {
           type: "string",
-          description: "外部检测器的 Bearer 凭证（EdgeOne Makers 的 Key 只在 EdgeOne 控制台建）",
+          description: "外部检测器的 Bearer 凭证",
         },
         detectorPath: {
           type: "string",
@@ -183,7 +183,7 @@ export const TOOLS: ToolDef[] = [
         detectorScale: {
           type: "string",
           enum: ["0-100", "0-1"],
-          description: '外部分数刻度，默认 "0-100"；"0-1" 会自动乘 100（朱雀官方 API 用这个）',
+          description: '外部分数刻度，默认 "0-100"；"0-1" 会自动乘 100（外部 API 用这个）',
         },
       },
       required: ["text"],
@@ -254,7 +254,7 @@ function asOptions(args: Record<string, unknown>): HumanizeOptions {
    */
   const seed = args.seed;
   o.seed = typeof seed === "number" && Number.isFinite(seed) ? Math.trunc(seed) : DEFAULT_SEED;
-  if (args.zhuque === true) o.zhuqueMode = true;
+  if (args.enhancement === true) o.enhancementMode = true;
   if (args.structural === true) o.structural = true;
   return o;
 }

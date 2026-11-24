@@ -15,7 +15,7 @@ const T2 = "在当今时代背景下，数字化转型已经成为企业发展�
 const rows: Array<{ it: number; seed: number; sc: number; out: string }> = [];
 for (const it of [0.6, 0.7, 0.8, 0.9]) {
   for (let seed = 1; seed <= 20; seed++) {
-    const out = humanize(T2, { intensity: it, seed, genre: "main", style: "plain", zhuqueMode: true });
+    const out = humanize(T2, { intensity: it, seed, genre: "main", style: "plain", enhancementMode: true });
     rows.push({ it, seed, sc: aiScore(out).score, out });
   }
 }

@@ -29,8 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # v0.9.83：曾因「凭证账本 append-only 检查需要全量历史」而强制 depth 0；
-          # 标定子系统移除后无消费者，回退 depth 1（更快）。
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
@@ -110,12 +108,14 @@ jobs:
         run: npx tsx scripts/verify-quality.ts
 
       # 零外部 key 的自证门禁：同一把本地尺下「改写稿比原文更不像 AI」（相对改善率）。
-      # 与朱雀官方送检无关、不依赖任何 Key —— 官方送检卡住时它是唯一还在跑的能力自证。
+      # 与官方送检无关、不依赖任何 Key。
       - name: Relative improvement (相对改善自证 · 零 key)
         run: npx tsx scripts/regression-improve.ts --samples scripts/regression-improve.samples.json
 
-      # v0.9.83：Calibration sanity / Evidence audit / Ledger append-only 三步随
-      # 朱雀标定子系统整体移除（test:calib、test:evidence、check:ledger 已删）。
+      - name: Open-source humanizer benchmark (离线外部样本)
+        run: npm run test:open-source
+
+      # v0.9.83：Calibration sanity / Evidence audit / Ledger append-only 三步已删除。
 
       - name: Production build
         run: npm run build

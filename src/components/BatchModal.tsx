@@ -37,10 +37,10 @@ interface BatchModalProps {
   files: File[];
   api: ApiConfig;
   intensity: number;
-  zhuqueMode: boolean;
+  enhancementMode: boolean;
   genre?: Genre;
   local: LocalSettings;
-  /** v0.9.66：外部检测器配置（用户在设置里填的那个，可能与朱雀无关） */
+  /** 外部检测器配置 */
   detector: DetectorConfig;
   /** v0.9.72：设置里存的多档预设——与当前档一起，可选几档参与本轮对比 */
   detectorPresets?: DetectorPreset[];
@@ -131,7 +131,7 @@ export function BatchModal({
   files,
   api,
   intensity,
-  zhuqueMode,
+  enhancementMode,
   genre,
   local,
   detector,
@@ -232,7 +232,7 @@ export function BatchModal({
           intensity,
           cfg,
           undefined,
-          zhuqueMode,
+          enhancementMode,
           genre,
           local.bestOf ? { bestOf: true, candidates: local.candidates } : undefined,
         );

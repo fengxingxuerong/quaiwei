@@ -8,7 +8,7 @@ const NARR_MULTI = `那天下午雨下得很大，我撑着伞走在回家的路
 
 const before = aiScore(NARR_MULTI);
 console.log(`原文 score=${before.score} avgLen=${before.avgLen} 句式=${before.structureHits} 病词=${before.brokenHits}`);
-const out = humanize(NARR_MULTI, { intensity: 0.9, zhuqueMode: true, genre: "narrative", seed: 7 });
+const out = humanize(NARR_MULTI, { intensity: 0.9, enhancementMode: true, genre: "narrative", seed: 7 });
 const after = aiScore(out);
 console.log(`\n输出 score=${after.score} avgLen=${after.avgLen} 句式=${after.structureHits} 病词=${after.brokenHits}`);
 console.log(out.replace(/\n+/g, " ⏎ "));

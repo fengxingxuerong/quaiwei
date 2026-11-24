@@ -1,8 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * BenchmarkPanel 渲染级测试：对标评分面板的双通道按钮、引擎体裁联动
- * （自动识别 / 手动 override / 回到自动 / 引擎上抛）、朱雀送检回填行。
- * v0.9.83：官方分预测（v3 18 点 OLS）已随标定子系统移除，预测类用例一并摘除。
+ * BenchmarkPanel 渲染级测试：评分按钮、外部检测器与引擎体裁联动。
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/react";
@@ -41,12 +39,9 @@ function base(overrides: Partial<Parameters<typeof BenchmarkPanel>[0]> = {}) {
     judgeScore: null,
     judgeCritique: [] as string[],
     detectorScore: null,
-    zhuqueManualScore: "",
     onJudge: vi.fn(),
     onDetect: vi.fn(),
-    onManualScore: vi.fn(),
     onGenreChange: vi.fn(),
-    onNote: vi.fn(),
     ...overrides,
   };
 }
@@ -59,7 +54,7 @@ describe("BenchmarkPanel（对标评分面板）", () => {
 
   it("渲染标题与本地套话指数；双通道按钮在未配置时禁用", () => {
     const { getByText } = render(<BenchmarkPanel {...base()} />);
-    expect(getByText("评分与外部验证（本地分为套话指数，非朱雀官方分）")).toBeTruthy();
+    expect(getByText("评分与外部验证（本地分为套话指数，不是检测器结果）")).toBeTruthy();
     expect(getByText("20")).toBeTruthy();
     const judge = getByText("用 LLM 评判").closest("button") as HTMLButtonElement;
     const detect = getByText("用外部检测器").closest("button") as HTMLButtonElement;
@@ -115,15 +110,6 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     const { getByText } = render(<BenchmarkPanel {...base({ roundScores: [60, -1, 25] })} />);
     expect(getByText(/60 → 失败 → 25/)).toBeTruthy();
     expect(getByText(/目标 ≤10/)).toBeTruthy();
-  });
-
-  it("不渲染任何官方分预测（标定子系统已移除）", () => {
-    const { container } = render(<BenchmarkPanel {...base()} />);
-    const t = container.textContent ?? "";
-    expect(t).not.toContain("朱雀分趋势预测");
-    expect(t).not.toContain("参考线");
-    expect(t).not.toContain("建议行动");
-    expect(t).not.toContain("实验性换算");
   });
 
   it("自动识别徽章显示体裁（论说文）且默认体裁为 main", () => {
@@ -218,47 +204,7 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     expect(getByText(/回到三分自动识别/)).toBeTruthy(); // 换成「回到三分」按钮
   });
 
-  it("朱雀送检行：手动分数上抛；回填只记录、不显示过检标记", () => {
-    const onManualScore = vi.fn();
-    const p = base({ onManualScore });
-    const { container, rerender } = render(<BenchmarkPanel {...p} />);
-    const input = container.querySelector('input[type="number"]') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "28" } });
-    expect(onManualScore).toHaveBeenCalledWith("28");
-    rerender(<BenchmarkPanel {...base({ onManualScore, zhuqueManualScore: "28" })} />);
-    expect(container.textContent).toContain("朱雀回填：28 分（仅记录）");
-    rerender(<BenchmarkPanel {...base({ onManualScore, zhuqueManualScore: "65" })} />);
-    expect(container.textContent).toContain("朱雀回填：65 分（仅记录）");
-  });
-
-  it("朱雀送检按钮：复制去味文本、打开官方送检页并上抛提示语", () => {
-    const onNote = vi.fn();
-    // 用可断言的桩替换 clipboard 与 window.open，避免真实打开浏览器页
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
-    const { getByText } = render(<BenchmarkPanel {...base({ onNote })} />);
-    fireEvent.click(getByText("🔍 朱雀送检（免费网页版）"));
-    expect(writeText).toHaveBeenCalledTimes(1);
-    expect(writeText).toHaveBeenCalledWith(EXPO_TEXT);
-    expect(openSpy).toHaveBeenCalledTimes(1);
-    expect(openSpy).toHaveBeenCalledWith(
-      "https://matrix.tencent.com/ai-detect/ai_gen_txt/",
-      "_blank",
-    );
-    expect(onNote).toHaveBeenCalledTimes(1);
-    expect(onNote).toHaveBeenCalledWith(
-      "已复制去味文本并打开朱雀检测页——粘贴检测后，在下方填入朱雀分",
-    );
-    openSpy.mockRestore();
-  });
-
-  it("API 与检测器都未启用时显示免费路径提示", () => {
-    const { container } = render(<BenchmarkPanel {...base()} />);
-    expect(container.textContent).toContain("对标检测两条路径");
-  });
-
-  /* ---- 本地套话指数 vs 外部通道分的分歧横幅（2026-09-22 外评证据） ---- */
+  /* ---- 本地套话指数 vs 外部通道分的分歧横幅 ---- */
 
   it("本地分低报：渲染 severe 横幅，点名通道并写明别看降幅", () => {
     // 本地 20（低分区）/ 评判 85 → gap 65，实测形态与「政务报告 本地 2 / 外部 90」同类
@@ -272,11 +218,6 @@ describe("BenchmarkPanel（对标评分面板）", () => {
     const { container } = render(<BenchmarkPanel {...base({ judgeScore: 25 })} />);
     expect(container.textContent).not.toContain("两把尺分歧");
     expect(container.textContent).not.toContain("低报");
-  });
-
-  it("朱雀手动回填的高分同样触发，且文案点名朱雀官方分", () => {
-    const { container } = render(<BenchmarkPanel {...base({ zhuqueManualScore: "90" })} />);
-    expect(container.textContent).toContain("朱雀官方分 90");
   });
 
   it("多通道同时分歧：取 severe 里 gap 最大的那条", () => {

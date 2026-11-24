@@ -81,7 +81,7 @@ describe("BatchModal", () => {
         files={files}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -106,7 +106,7 @@ describe("BatchModal", () => {
         files={[new File(["丙"], "c.txt", { type: "text/plain" })]}
         api={api}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -135,7 +135,7 @@ describe("BatchModal", () => {
         files={files}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -159,7 +159,7 @@ describe("BatchModal", () => {
         files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -179,7 +179,7 @@ describe("BatchModal", () => {
         files={files}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -227,7 +227,7 @@ describe("BatchModal", () => {
         files={files}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -271,7 +271,7 @@ describe("BatchModal", () => {
         files={files}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_ON}
         onClose={() => {}}
@@ -293,7 +293,7 @@ describe("BatchModal", () => {
         files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_ON}
         onClose={() => {}}
@@ -312,7 +312,7 @@ describe("BatchModal", () => {
         files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -336,7 +336,7 @@ describe("BatchModal", () => {
         files={files}
         api={API}
         intensity={0.9}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_ON}
         onClose={() => {}}
@@ -373,7 +373,7 @@ describe("BatchModal", () => {
         files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
         api={API}
         intensity={0.6}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_OFF}
         onClose={() => {}}
@@ -411,7 +411,7 @@ describe("BatchModal", () => {
         files={[new File(["甲"], "a.txt", { type: "text/plain" })]}
         api={API}
         intensity={0.9}
-        zhuqueMode={false}
+        enhancementMode={false}
         local={{ bestOf: false, candidates: 8 }}
         detector={DETECTOR_ON}
         detectorPresets={[preset]}

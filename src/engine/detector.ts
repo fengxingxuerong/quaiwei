@@ -1,27 +1,11 @@
 /**
- * 趣AI味 · 本地 AI 文本检测器（朱雀风格三档判定）
+ * 趣AI味 · 本地 AI 文本检测器（离线启发式）
  *
- * 说明（重要）：这不是朱雀，也不可能复刻朱雀——朱雀是腾讯混元大模型驱动的服务，
- * 模型权重与线上策略都不公开。本模块做的是**公开研究已验证的 AI 文本统计特征**的
- * 工程实现：不需要模型、不需要联网、在浏览器里毫秒级出结果。
- *
- * 检测依据的 14 个特征（中文 AI 文本检测文献 + 本项目实测归纳）：
- *  - 词汇层：套话密度、TTR 词汇多样性、名物化后缀（性/化/度）、"的"字密度
- *  - 句法层：句长变异系数、平均句长、无标点长句占比
- *  - 结构层：段落长度均匀度、句首词重复率、总分总骨架词（首先/其次/综上所述）
- *  - 衔接层：连接词密度、四字格/排比密度
- *  - 人文层：第一人称与具体细节密度（真人显著更高）
- *  - 格式层：中英数字间空格、标点多样性
- *
- * 输出沿用朱雀的三档语义，便于用户对号入座：
- *   human  = 人工特征
- *   medium = 疑似AI辅助
- *   high   = AI生成（"易被多平台检测为AI生成"）
- *
- * 诚实边界：这是启发式代理分，与朱雀官方分不是同一把尺子。README 有标定记录说明误差。
+ * 基于公开研究中的词汇、句法、结构、衔接与格式特征，不需要模型或联网。
+ * 输出 human / medium / high 三档，仅用于同一篇文本的前后相对比较。
  */
 
-// v0.8.5：四套词表收拢至 ./zhuque-lexicon.ts 共享（与 engine/zhuque.ts 同一把词汇尺）
+// v0.8.5：四套词表收拢至 ./detect-lexicon.ts 共享。
 // v0.9.21：5 条特征正则同样收拢（此前两份硬编码且 MODAL 已漂移）
 import {
   FORMULAIC,
@@ -33,7 +17,7 @@ import {
   reConcrete,
   reModalDetector,
   reIdiomLike,
-} from "./zhuque-lexicon";
+} from "./detect-lexicon";
 import { guardFor } from "./text-shield";
 
 /* ----------------------------- 类型 ----------------------------- */
@@ -83,12 +67,12 @@ export interface DetectReport {
     /** 句长变异系数 */
     sentenceCV: number;
   };
-  /** 提示：字数过少时可信度下降（朱雀要求 ≥350 字，本检测器给出软提示） */
+  /** 提示：字数过少时可信度下降 */
   warnings: string[];
 }
 
 /* ----------------------------- 特征正则 -----------------------------
- * v0.9.21：5 条特征正则收拢至 ./zhuque-lexicon.ts（单一事实源）。
+ * v0.9.21：5 条特征正则收拢至 ./detect-lexicon.ts（单一事实源）。
  *
  * ⚠️ 关键：这些正则带 `g` 标志，**有状态**。
  *   - `String.prototype.match(g)` 会忽略并重置 lastIndex → 计次用法安全；
@@ -379,7 +363,7 @@ const SKELETON_RES: RegExp[] = SKELETON.map((s) => new RegExp("^" + s));
  * 与 segmentRisk 的 v0.9.23 是同一种浪费。表是模块级常量、运行期不变 ⇒ 提到模块级编译一次。
  *
  * 安全性：`String.prototype.match` 在 global 模式下先重置 lastIndex 再匹配，
- * 共享 `g` 正则不会残留状态（同 zhuque.ts:countG 的登记）；正则源与 flag 与原先逐字一致。
+ * 共享 `g` 正则不会残留状态（同 enhancement.ts:countG 的登记）；正则源与 flag 与原先逐字一致。
  */
 const FORMULAIC_G: RegExp[] = FORMULAIC.map((p) => new RegExp(p, "g"));
 const OFFICIAL_G: RegExp[] = OFFICIAL.map((p) => new RegExp(p, "g"));
@@ -462,10 +446,8 @@ export function segmentRisk(sent: string): { risk: number; reason: string; reaso
 
 /* ----------------------------- 主入口 ----------------------------- */
 
-// 三档阈值：由 scripts/calibrate-detector.ts 在 5 AI + 5 真人样本集上标定得出。
-// 实测分布：AI 样本 39~60（均值 52）、真人样本 9~21（均值 12），安全可分区间 (21, 39)。
-// 取 48 / 32：典型 AI 论述文落 high（与朱雀对样本 D 的 high 判定对齐），真人全部落 human，
-// 公文类灰区落 medium（真人写的公文同样会落这档，属各检测器的共同行为，非误判）。
+// 三档阈值来自 5 AI + 5 真人样本集的本地分布。
+// AI 样本 39~60（均值 52）、真人样本 9~21（均值 12），取 48 / 32 作为分档线。
 const TH_HIGH = 48; // ≥ 判 AI生成
 const TH_MEDIUM = 32; // ≥ 判 疑似AI辅助，否则 人工特征
 
@@ -476,7 +458,7 @@ export function detectAI(raw: string): DetectReport {
   const warnings: string[] = [];
 
   if (r.chars < 350) {
-    warnings.push(`字数 ${r.chars}，低于朱雀的 350 字门槛；短文本特征不稳，判定仅供参考`);
+    warnings.push(`字数 ${r.chars}，短文本特征不稳，判定仅供参考`);
   }
   if (r.sentences.length < 4) {
     warnings.push("句子太少，节奏类特征不可靠");
@@ -543,11 +525,7 @@ export function detectLevel(text: string): AiLevel {
  *   不是"降够 X 分才留"——那需要标定 X，而本地 detector 是整数分、
  *   1 分就是它自己的最小可分辨单位，再定阈值是自造精度。
  *
- * ⚠️ 边界（必须如实登记，别把它说成"官方也验证过"）：
- *   判据是**本地 detector**，不是官方朱雀。自问自答当初的依据是"AI 极少写自问自答"
- *   （朱雀口径），而本地 detector 未必建模了这一条 ⇒ 存在"朱雀有收益、本地判无收益"
- *   的样本被误撤的可能。要证伪只能靠真送检，而 18 个校准点目前 **0/18 认证**。
- *   在拿到认证数据前，以本地可复核的指标为准——它至少是"能当场验"的。
+ * 判据只使用本地可复核指标；它不代表任何外部检测服务的结果。
  *
  * 开销：detectAI 实测 16k 字约 5.8ms（artifacts/_probe-detectai-cost.ts），
  *   本函数最多两次调用，且只在"确实注入了"时才比较（after===before 直接短路）。

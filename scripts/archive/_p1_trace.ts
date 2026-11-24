@@ -11,7 +11,7 @@ console.log(`原文分句数：${P1.split(/(?<=[。！？])/).filter(Boolean).le
 
 for (const it of [0.6, 0.7, 0.8, 0.9, 1.0]) {
   for (let seed = 1; seed <= 3; seed++) {
-    const out = humanize(P1, { intensity: it, zhuqueMode: true, genre: "narrative", seed });
+    const out = humanize(P1, { intensity: it, enhancementMode: true, genre: "narrative", seed });
     const n = out.split(/(?<=[。！？])/).filter(Boolean).length;
     const dots = (out.match(/。/g) || []).length;
     const commas = (out.match(/，/g) || []).length;

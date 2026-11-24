@@ -1,7 +1,7 @@
 /**
  * 本地代理分 vs 外部通道分：分歧判据
  * =================================
- * 起因（2026-09-22，docs/external-judge-findings.md）：拿一个**与本项目模型谱系不同**的
+ * 起因（2026-09-22）：拿一个**与本项目模型谱系不同**的
  * 外部席位（StepFun step-3.5-flash）复评深度模式留下的 5 份交付稿，结果：
  *
  * | 稿件        | 本地 aiScore | 外部席位 | 差  |
@@ -44,12 +44,11 @@ export const CONFLICT_EXTERNAL_AI_MIN = 60;
 export const CONFLICT_GAP_MIN = 30;
 
 /** 外部通道身份：不同通道的置信度不同，文案要指名道姓 */
-export type ConflictSource = "judge" | "detector" | "official";
+export type ConflictSource = "judge" | "detector";
 
 export const SOURCE_ZH: Record<ConflictSource, string> = {
   judge: "LLM 评判",
   detector: "外部检测器",
-  official: "朱雀官方分",
 };
 
 export interface ScoreConflict {

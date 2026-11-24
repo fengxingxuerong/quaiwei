@@ -1,6 +1,6 @@
 /**
- * 正交矩阵实验：分离「基础引擎」与「朱雀注入层」各自的损伤贡献。
- * 用 zhuqueMode 开关作为对照，看同一档位下开/关的差值。
+ * 正交矩阵实验：分离「基础引擎」与「本地注入层」各自的损伤贡献。
+ * 用 enhancementMode 开关作为对照，看同一档位下开/关的差值。
  */
 import { humanize } from "../src/engine/humanize.ts";
 import { aiScore } from "../src/engine/humanize-metrics.ts";
@@ -11,16 +11,16 @@ const SRC = `在今天这个快速发展的时代背景下，数字化转型已�
 
 const base = aiScore(SRC);
 console.log(`原文: score=${base.score} n=${base.sentenceCount} avg=${base.avgLen} cv=${base.burstiness}\n`);
-console.log("档位  zhuque  style       score  n     avg    cv    broken struct  字数");
+console.log("档位  enhancement  style       score  n     avg    cv    broken struct  字数");
 console.log("-".repeat(84));
 
 for (const intensity of [0.5, 0.7, 0.9]) {
-  for (const zhuqueMode of [false, true]) {
+  for (const enhancementMode of [false, true]) {
     for (const style of ["casual", "plain", "academic"]) {
-      const out = humanize(SRC, { intensity, zhuqueMode, style, seed: 20260826 } as never);
+      const out = humanize(SRC, { intensity, enhancementMode, style, seed: 20260826 } as never);
       const s = aiScore(out);
       console.log(
-        `${String(intensity).padEnd(6)}${String(zhuqueMode).padEnd(8)}${style.padEnd(12)}` +
+        `${String(intensity).padEnd(6)}${String(enhancementMode).padEnd(8)}${style.padEnd(12)}` +
           `${String(s.score).padEnd(7)}${String(s.sentenceCount).padEnd(6)}` +
           `${s.avgLen.toFixed(1).padEnd(7)}${s.burstiness.toFixed(2).padEnd(6)}` +
           `${String(s.brokenHits).padEnd(7)}${String(s.structureHits).padEnd(8)}${out.length}`,

@@ -1,9 +1,9 @@
 /**
  * install-hooks.mjs —— 把 `.githooks/` 接成 git 的钩子目录（幂等，缺失即跳过）
  *
- * 为什么需要：`.githooks/pre-commit` 里有四道关键防线——密钥形态拦截、凭证账本
- * append-only、tsc、eslint + prettier——但 git 默认只跑 `.git/hooks/`。
- * 不设 `core.hooksPath` 的话，这四道一条都不会跑，而 README 与 CONTRIBUTING 写的是
+ * 为什么需要：`.githooks/pre-commit` 里有三道关键防线——密钥形态拦截、tsc、
+ * eslint + prettier——但 git 默认只跑 `.git/hooks/`。
+ * 不设 `core.hooksPath` 的话，这三道一条都不会跑，而 README 与 CONTRIBUTING 写的是
  * "提交时已拦截"。2026-10-22 实测：某次克隆里 `core.hooksPath` 就是空的，
  * 钩子文件躺在仓库里但从未执行过。
  *

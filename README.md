@@ -10,7 +10,7 @@
 
 默认不配置任何 API 也能用（本地引擎离线、零成本、固定 seed 可复现），
 想更强就接一个 OpenAI 兼容的 LLM（各家通吃，实测支持 OpenRouter / SenseNova / OpenAI）。
-定位：中文 AI 文本**去味预处理工具 + 送检前自检清单**——可接入朱雀（网页版半自动 / EdgeOne API 全自动）等真实检测器做闭环验证。
+定位：中文 AI 文本**去味预处理工具 + 自检清单**——可接入任意 HTTP 检测接口做外部验证。
 
 **在线试玩**（无需安装，浏览器直接跑，✅ 已上线）：<https://fengxingxuerong.github.io/quaiwei/> ｜
 **下载**：[Windows 免安装包](https://github.com/fengxingxuerong/quaiwei/releases/latest)（v0.9.90，约 209MB zip；release 与仓库版本一致）——解压双击 `QuAiWei.exe` 即用；若双击闪退/白屏，改用包内 `启动 QuAiWei.bat`（GPU 兼容参数） ｜
@@ -95,15 +95,12 @@ npx tsx scripts/humanize-cli.ts in.txt --out out.txt --intensity 0.6 --seed 2026
    三家主张都是"保留事实和作者声口"，差别在形态：那两家是 `npx skills add` 装的规则文件，
    本仓是能离线跑的引擎，外加检测器接入与数字/格式守卫。星数是它们多。
 
-> ⚠️ 诚实声明：本项目**不承诺"通过朱雀检测"**——aiScore 与朱雀官方分之间**没有可用的换算关系**。
-> v0.9.83 把早期搭的标定子系统（18 个人工送检锚点、四体裁换算线、漂移棘轮 `test:calib`、
-> 凭证账本 `test:evidence`）**整体移除**了：那 18 个点是人工抄录的，始终没凑齐可复核的原始凭证
-> （覆盖率停在 0/18），引擎词表每次改动换算线就得重拟合——维护一条不可验证的换算，
-> 只会给界面数字披上它担不起的精确性。演进史留档在 `docs/fingerprint-and-zhuque-calibration.md`（历史档案）。
-> 本地引擎默认是"换词不换骨"：能削掉套话/标点指纹，但**不打散段落结构和句序**，而结构规律性恰是朱雀等重点特征；
+> ⚠️ 诚实声明：本项目**不承诺通过任何检测器**。内置评分与 LLM 评判都是代理指标，
+> 与外部检测结果没有可用的换算关系，请以真实检测器返回为准。
+>
+> 本地引擎默认是"换词不换骨"：能削掉套话/标点指纹，但**不打散段落结构和句序**。
 > 真正的结构级去味须走 LLM 深度模式（打散总分总/句序重排/段落重切）。
 > v0.9.82 起可选 `--structural` 做受限句序重排（相邻句至多一次交换、句多重集不变、默认关），见上方短处 2。
-> 内置评分（本地代理分与 LLM 评判）均为代理指标，与朱雀官方分无标定关系，请以真实检测器结果为准。
 > ⚠️ **尤其注意**：内置 `detectAI` 与去味引擎共用一套词表，去味后分数必然好看——
 > **不要用界面上的降幅判断安全性**，请以真实检测器为准。两边分数量级参考：
 > · 2026-09-19 在回归套件的存档样本上现测（`npm run test:regress12` 同源文本，seed=20260826）：
@@ -157,12 +154,12 @@ npx tsx scripts/humanize-cli.ts in.txt --out out.txt --intensity 0.6 --seed 2026
   - *LLM 评判*：用你配的模型当"检测员"给去味后文本打分（0~100）。**它是模型意见，不是官方真值**；
     未单独配置 `judgeModel` 时评委与改写模型同源同 Key 池，属闭环自评，且实测人工认可稿仍被
     打出 62~90（单模型方差 29），只可当"同一评委跨轮趋势"看。
-  - *外部检测器*：设置里填一个检测器接口（如朱雀类开放接口），把 `{text}` POST 过去按 JSON 路径取
+  - *外部检测器*：设置里填一个检测器接口，把 `{text}` POST 过去按 JSON 路径取
     AI 概率——**这是三者中唯一的外部真值**，但需要你有可用接口。
   - **两把尺打架时界面会说出来**（v0.9.15）：外部分 ≥60 且比本地分高出 ≥30 时，对标面板直接挂横幅——
     本地分落在人写带（≤27）而外部判成 AI 属**红档**，会明写「不要用降幅判断安全性」。
     起因是 2026-09-22 外部席位复评：5 份交付稿里 4 份本地 ≤13 而外部 ≥75（政务报告 本地 2 / 外部 90），
-    详见 `docs/external-judge-findings.md`。判据与阈值来源见 `src/engine/score-conflict.ts`。
+    判据与阈值来源见 `src/engine/score-conflict.ts`。
 - **文件导入 / 导出（v0.9.15）**：界面上「导入」直接读 `.txt`/`.md`（≤2MB），「导出」把结果下载为 `.txt`。
   Word 富文本格式保留不做（去味引擎只吃纯文本），但 .docx 纯文本导入/导出已支持（v0.9.16，零依赖实现）。
 - **多选批量（v0.9.64）**：「导入」可一次选多个 `.txt`/`.md`/`.docx`，自动进入批量面板；
@@ -245,7 +242,7 @@ READY / NOT READY，可审外部改写稿）。离线、不需要 Key、固定 s
 
 不想装桌面版/CLI，只想让自己在用的 agent（Claude Code / Cursor / Windsurf / Cline）**直接按规则改**？
 [`skills/humanizer-rules/`](skills/humanizer-rules/) 是一份独立 skill：50+ 组套话替换表、
-28 条模板腔签名、四体裁旋钮（论说/叙事/对话/人写）、六类实测病句模式、朱雀标定依据。
+28 条模板腔签名、四体裁旋钮（论说/叙事/对话/人写）、六类实测病句模式、本地评测依据。
 
 ```bash
 # Claude Code
@@ -258,7 +255,7 @@ cp -r skills/humanizer-rules/* ~/.claude/skills/humanizer-rules/
 
 规则文档由 `scripts/gen-skill-rules.ts` **从引擎源码自动生成**（词表/旋钮/守卫正则单一事实源），
 与引擎同源、随引擎更新；手改文档会被 `scripts/skill-rules.test.ts` 逐字比对拦下。
-引擎本体的完整能力（朱雀对标标定、AI 分自评、批量/LLM 通道）见上方各章节。
+引擎本体的完整能力（本地评分、批量/LLM 通道）见上方各章节。
 
 ### DeepSeek Harness（DSH）/ WorkBuddy 一键安装（v0.9.60+）
 
@@ -280,7 +277,7 @@ npm link                 # 可选：全局注册 ai-humanizer 命令
 ai-humanizer --help
 ```
 
-目录下所有 `.txt` 批量去味，输出到指定目录（默认强度 0.6、`plain` 书面风；要更激进再显式加 `--intensity 0.9 --zhuque`）：
+目录下所有 `.txt` 批量去味，输出到指定目录（默认强度 0.6、`plain` 书面风；要更激进再显式加 `--intensity 0.9 --enhancement`）：
 
 ```bash
 # 本地引擎（零成本、离线）
@@ -397,10 +394,10 @@ ai-humanizer - --explain < 稿子.txt          # 附「为什么这么改」清�
   - 宽松评判（早期提示词）：原文 ~80 → 输出 10~45
   - 严格评判（含口语模仿痕迹检查）：原文 90~95 → 输出 58~78
   - 交叉评判单次抽查最好：输出 4~5（glm-5.2 / 6.7-flash-lite 各自独立给出）
-  - **诚实结论：改写质量已到"人读自然"水平，数字高度依赖评判员宽严；权威结论待朱雀实测**
+  - **诚实结论：改写质量已到"人读自然"水平，数字高度依赖评判员宽严；效果仍需外部检测验证**
   - ⚠️ 上述"输出 X 分"一律是 **AI 味**（0=纯人写，100=纯 AI）。2026-09-15 那份
-    `artifacts/capability-test/` 能力报告把同一把尺读反了方向、据此宣布"全过线/好用"，
-    复核与正确读法见 **[`docs/deep-mode-evidence-audit.md`](docs/deep-mode-evidence-audit.md)**。
+    `artifacts/capability-test/` 能力报告把同一把尺读反了方向，据此宣布"全过线/好用"；
+    该结论已作废。
 - 耗时：单轮改写约 8~15s；深度闭环每轮消耗 5~6 次调用（改写 + 质检 + 评判 + 交叉评判），
   跑满设计的 4 轮约需 **20~24 次**。默认不限制调用次数与时长，但若把「调用上限」设成 10，
   实测只够跑 2 轮——想跑满 4 轮请选 20 以上。单篇实测 1~6 分钟，视轮数与模型响应速度而定。
@@ -509,13 +506,12 @@ Agent 宿主 / CI 服务 / Session 0 这类会话起不了任何 GUI（实测连
 │  │  ├─ anti-fingerprint.ts    #   反「新指纹」层（模板复读封顶 / 语体门控 / 残句守卫）
 │  │  ├─ classify-genre.ts      #   体裁判定（论说 / 叙事 / 对话 / 人写原稿）
 │  │  ├─ term-protect.ts        #   术语保护（58 项内置 + 用户自定义，设置面板可编辑）
-│  │  └─ detector.ts            #   本地启发式 AI 味评分（代理分，与朱雀无标定关系）
+│  │  └─ detector.ts            #   本地启发式 AI 味评分（仅作代理参考）
 │  ├─ api/                      # 可选 LLM 通道（15 个模块）
 │  │  ├─ llm.ts                 #   统一分发：本地引擎 ↔ LLM 深度模式
 │  │  ├─ llm-humanize.ts        #   深度闭环：改写 → 质检 → 交叉评判 → 定向修订
 │  │  ├─ llm-quality.ts         #   通顺 / 忠实 / 编造 / 截断 四类质检
 │  │  ├─ llm-prompts.ts         #   提示词铁律与篇章范例
-│  │  └─ zhuque.ts              #   朱雀送检客户端 / 官方结果解析 / 校准实验室
 │  ├─ components/               # React UI 面板（11 个）
 │  ├─ ppl/                      # 困惑度通道（MLM 伪困惑度，首次需联网下载模型）
 │  ├─ store.ts / store-history.ts   # 配置与历史持久化
@@ -570,32 +566,6 @@ npm run check:release  # 上面全部 + 单测，全绿才允许打 tag
 npm run bench          # 性能基准，纯打印给人看；判定在 src/engine/humanize-perf-budget.test.ts
 ```
 
-## 朱雀官方 API 自动送检（v0.9.14+）
-
-朱雀在腾讯云 EdgeOne Makers 开了官方 API（`@makers/zhuque-text`，50 万 token/月免费），
-送检不再需要人工过滑块。两条用法：
-
-- **界面自动送检**：设置 → 对标检测器 → 「填入朱雀默认值」并勾启用——去味后一键把文本发给
-  官方 API，返回分显示在「评分与外部验证」面板。那是真实通道返回的分，不是本地换算。
-- **命令行**：`scripts/humanize-cli.ts --detector-url` 指向 EdgeOne 网关同样可用（见快速开始的 CLI 表）。
-
-> v0.9.83：早期基于该 API 的批量重送检脚本（`score:official` / `--v4` 追加标定点）随标定子系统
-> 一起移除；API 本身照常可接（走外部检测器通道）。
-
-去味前后的分数对照不要靠这里背数字，`npm run test:regress12` 每次都会用当前引擎、固定
-`seed=20260826` 现算一遍，四体裁原文 → 朱雀档 0.9 实测 **33 / 46 / 7 / 43 → 全部 0**，
-0.6~0.7 档为 **8 / 0 / 0 / 1**。
-> ⚠️ 这些是**内置 `aiScore`** 的分，而它和 `detectAI` 共用一套词表，去味后必然好看——
-> 见开头「诚实披露」。这里放它只是为了让"引擎有没有退化"可复现，**不要拿它当安全性证据**。
-
-（此前这一行写的是"典型结果 去味前 ~82 → 去味后 ~30"，两处都站不住：① 块内没有任何命令会打印
-去味前后对照，`humanize-cli` 打的是朱雀接口的 `probability` 不是 aiScore；② **30 分正好压在
-`AI_SCORE_MACHINE_MIN=30` 这条机器下沿上**——按本项目自己的标定，那等于宣称"典型产物是机器稿"。
-82 也追不到源，它恰好等于 v2 存档里 `对话·0.6` 那段旧产物在今天的重打分，是旧引擎的结果。）
-
-
----
-
 ## 引擎质量回归（v0.2）
 
 `npm run test:regress` —— 4 档强度 × 30 种子共 120 次运行，扫描已修复病句签名
@@ -645,16 +615,6 @@ npx tsx scripts/regression-12samples.ts --rebaseline "<为什么这批数字是�
 
 ---
 
-## 朱雀实测记录（2026-08-16）
-
-- **最低字数门槛 350 字**：朱雀网页版要求检测文本 ≥350 字，短文本直接报"检测文本长度需大于350字"。
-  本工具去味不受影响，但送检前请保证长度；UI 会在文本不足 350 字时给出提示。
-- **未登录有次数限制**，且高峰期匿名请求经常「服务超时」/挂起数分钟，建议错峰或登录后使用。
-- 匿名会触发滑块拼图验证码（一般自动通过）。
-- 本地代理分与官方分的换算尚未标定（本次实测未拿到稳定官方分）。已知定性结论：
-  词汇替换类去味对句式骨架无影响，检测模型主要看**结构规律性**（每段开头挂过渡词、
-  总-分-总骨架、工整对仗），本地引擎 v0.2 已加入段首过渡词删除等结构级手段。
-
 ## SenseNova 网关实测记录（2026-08-16）
 
 用商汤 token.sensenova.cn（OpenAI 兼容）实测 3 Key × 3 模型：
@@ -670,48 +630,22 @@ npx tsx scripts/regression-12samples.ts --rebaseline "<为什么这批数字是�
 
 ---
 
-## aiScore → 朱雀分标定（已移除，v0.9.83）
-
-v0.8~v0.9.82 期间本仓维护过一套 aiScore → 朱雀官方分的标定：18 个人工送检锚点、四体裁分层
-换算线（论说/叙事/对话/纯人写）、`calib-sanity` 漂移棘轮、`zhuque-evidence` 凭证账本。
-换算线最终止步于"凭证覆盖率 0/18、锚点漂移压在棘轮天花板上"——一套无法自证的换算，
-只会把界面数字的精确性吹得比实际高。2026-11-05 起整体移除：
-
-- 删掉 `src/engine/zhuque-calib.ts`、`scripts/calib-sanity.ts`、`scripts/calibration-data.json`、
-  `scripts/zhuque-evidence.ts`、`scripts/check-ledger-appendonly.ts`、`scripts/zhuque-v4-pipeline.ts`、
-  `scripts/zhuque-v4-fit.ts`、`scripts/zhuque-official-run.ts`、`scripts/zhuque-api-score.ts`、
-  `scripts/zhuque-retro-backfill.ts` 与 `evidence/zhuque/` 账本，以及对应的
-  `test:calib` / `test:evidence` / `check:ledger` / `score:official` / `seal:api` / `check:publish`
-  命令与 CI 的三个步骤（Calibration sanity / Evidence audit / Ledger append-only）；
-- 界面不再显示"朱雀分趋势预测 / 40% 参考线 / 建议行动卡"；
-- **保留**：引擎评分（`aiScore`/`detectAI`）、`regression-12samples` D/E 双棘轮、`scan-bugs`
-  基线棘轮、外部检测器接入、朱雀网页版半自动送检回填与本地校准实验室（攒的是用户自己实测的点）；
-- 完整演进史（拟合过程、漂移体检、账本设计）见 `docs/fingerprint-and-zhuque-calibration.md`（历史档案）。
-
-朱雀接入只认两条真实通道：免费网页版半自动送检（复制 → 官方页 → 手动回填）与
-EdgeOne 官方 API（外部检测器预设）。本地分只做前后趋势对照，不做官方分预报。
-
----
-
 ## 竞品调研与移植（v0.4.0）
 
 调研了英文系商业 humanizer（Undetectable AI / HIX Bypass / Phrasly：改写+内置检测验证闭环、
-文风与强度档位是标配）和中文系降 AIGC 工具（PaperPass / 嘎嘎降AI / 腾讯云《5套降AI率润色方法》，
-后者实测朱雀通过率接近 100%）。本版移植了其中可确定性落地的部分：
+文风与强度档位是标配）和中文系降 AIGC 工具。本版移植了其中可确定性落地的部分：
 
 | 移植项 | 说明 |
 |---|---|
 | 中英空格处理 | **v0.9 改为跟随原文排版**：原文带空格就保留，没空格就不加。原实现无条件剥离，对技术文档是破坏性的（"从 Webpack 迁移到 Vite"→"从Webpack迁移到Vite"，连 optimizeDeps.include 都难辨认），而空格并非可靠的 AI 语义特征。旧剥离能力保留为 `stripCJKSpaces` 开关（`src/engine/humanize-primitives.ts:46`），回归探针仍在覆盖。<br>⚠️ 2026-10-04 核实：**该开关目前没有入口** —— UI 与 CLI 都不传这个字段，实际恒为 `false`，只能改代码调用；需要旧行为的话请提 issue 或直接调 `humanize(text, { stripCJKSpaces: true })` |
-| 让步句重构 | "虽然A，但是B"→"你可能觉得A？其实B"（竞品实测朱雀重点特征） |
+| 让步句重构 | "虽然A，但是B"→"你可能觉得A？其实B" |
 | 总结类过渡词直删 | 综上所述/总而言之直接删（比替换更有效） |
 | 半角逗号微混入 | 模拟人类手滑，双重限频（~4% 概率 + 全文 ≤5% 硬上限） |
 | 文风预设 | 自然口语 / 平实书面（报告公众号）/ 学术体（论文降AIGC，保术语删套话）——知网 4.0 会抓"拼凑式改写/风格断层"，学术档全文统一处理 |
 | 强度滑块作用于 LLM | 轻度保结构只修刺眼痕迹 / 重度允许打散句序段落 |
 
-英文竞品有而我们过去没有的：**接入真实检测器 API 做闭环验证**（它们买 GPTZero/Turnitin 的检测接口，
-我们只有自建 LLM 评判）。2026-09 朱雀官方 API 已开放（腾讯云 EdgeOne Makers 内置模型
-`@makers/zhuque-text`，每月 50 万 token 免费），本项目的「外部检测器」钩子已按该口径配好预设
-（设置 → 对标检测器 → 填入朱雀默认值），只差用户自己的一个 API Key。
+英文竞品有而我们过去没有的：**接入真实检测器 API 做闭环验证**。本项目现已提供通用
+HTTP 检测器钩子，用户配置自己的接口与凭证即可使用。
 
 ### 2026-09 竞品对标补全（v0.8.6）
 
@@ -721,7 +655,7 @@ EdgeOne 官方 API（外部检测器预设）。本地分只做前后趋势对�
 | 批量文件处理 | 嘎嘎降AI/零感AI/千笔AI（标配） | ✅ v0.8.6 `scripts/humanize-cli.ts`；v0.9.15 起 `--api` 可走 LLM 深度模式（此前只接了本地引擎） |
 | 目标 AI 率设定 | 文必过（"设定降至30%"） | ⚠️ **部分**：深度模式确有达标线与评判闭环，但达标线是**硬编码常量** `DEEP_TARGET_SCORE = 10`（`src/api/llm-config.ts:218`），UI 只**显示**它、CLI 无开关 ⇒ 用户目前**不能自行设定**目标值（2026-10-04 核实更正，此前标"✅ 已有"） |
 | .docx 导入导出（纯文本） | 零感AI/降重侠（"文档模式"） | ✅ v0.9.16（零依赖 OOXML 读写；富文本格式如加粗/公式不保留） |
-| 多检测平台适配策略 | 零感AI（知网/维普/格子达分策略） | ⏳ 部分（仅朱雀口径；知网/维普规则未逆向，暂缓） |
+| 多检测平台适配策略 | 零感AI（知网/维普/格子达分策略） | ⏳ 未适配厂商专用规则，仅提供通用 HTTP 接口 |
 | 不达标退款 | 降宝AI/ThouPen | N/A（本地工具零成本，无售后概念） |
 | 交叉模型评判 | —（多数竞品无此能力） | ✅ 领先：glm-5.2 交叉 + 痕迹定向修法（多数竞品单模型黑盒） |
 | 本地离线零成本 | —（竞品全部 SaaS 按字收费 1~8 元/千字） | ✅ 领先：纯本地引擎不联网不花钱（PPL 首次需联网下载一次约 99MB 模型，之后离线） |
@@ -752,14 +686,13 @@ Claude Code / Codex）。历经三次复测：首测 2026-10-03、2026-10-05 用
 | [larashero3-dotcom/lieflat-less-ai-tone](https://github.com/larashero3-dotcom/lieflat-less-ai-tone) | 2.8k | 2026-08-24 | Agent Skill | 规则清单（283 万字语料实测） |
 | [AIScientists-Dev/academic-humanizer](https://github.com/AIScientists-Dev/academic-humanizer) | 2.2k | 2026-07-03 | Agent Skill | 论文 / 基金本向 |
 | [MrGeDiao/shuorenhua](https://github.com/MrGeDiao/shuorenhua) | 2.1k | 2026-10-16 | Agent Skill | 规则清单 |
-| [iniwap/AIWriteX](https://github.com/iniwap/AIWriteX) | 2.1k | 2026-09-17 | 发布流水线 | 公众号全自动发布，宣称「去AI味、**过朱雀检测**」 |
+| [iniwap/AIWriteX](https://github.com/iniwap/AIWriteX) | 2.1k | 2026-09-17 | 发布流水线 | 公众号全自动发布，宣称「去AI味」 |
 | 🆕 [hexiecs/talk-normal](https://github.com/hexiecs/talk-normal) | 1.9k | 2026-04-22 | System Prompt | 一份让模型**长期说人话**的系统提示词；不是 skill，也不做文本改写 |
 | [Raymondhou0917/speak-human-tw](https://github.com/Raymondhou0917/speak-human-tw) | 1.1k | 2026-10-16 | Agent Skill | **繁体**「說人話」，38 种痕迹 |
 | [LifelongLazyLearner/qu-ai-wei](https://github.com/LifelongLazyLearner/qu-ai-wei) | 660 | 2026-09-10 | Agent Skill | 同名撞车（见下）；五语 README |
 | [redbaronyyyyy-eng/humanizer-zh-academic](https://github.com/redbaronyyyyy-eng/humanizer-zh-academic) | 320 | 2026-02-24 | Agent Skill | 中文学术向 |
 | [Hyacehila/humanizer-zh-next](https://github.com/Hyacehila/humanizer-zh-next) | 194 | 2026-10-15 | Agent Skill | 基于 blader + op7418 二次开发 |
 | [baibanbao/qu-ai-wei](https://github.com/baibanbao/qu-ai-wei) | 71 | 2026-09-23 | Agent Skill | 同名撞车；合并三家规则并**逐条裁决 7 处矛盾** |
-| [qoqu/anti-zhuque](https://github.com/qoqu/anti-zhuque) / [weiyinerzui/humanize-cn](https://github.com/weiyinerzui/humanize-cn) | 28 / 25 | 2026-02 / 2026-05 | 工具 | 直接冲朱雀/知网/维普，**均已停更** |
 | [pengong101/ai-humanizer-cn](https://github.com/pengong101/ai-humanizer-cn) | 1 | 2026-03-25 | Python 包 | pip；质量评分而非 AI 检测 |
 | **本项目**（[fengxingxuerong/quaiwei](https://github.com/fengxingxuerong/quaiwei)） | **3** | 2026-10-16 | **Electron + Web + CLI + Skill** | 内置启发式检测打分 + 外部检测器闭环（任意厂商、可多档对比）+ 2293 条用例回归；免安装 exe / 静态站 / CLI / SKILL.md |
 
@@ -804,10 +737,9 @@ Claude Code / Codex）。历经三次复测：首测 2026-10-03、2026-10-05 用
 
 MIT（见 LICENSE）。
 
-> ⚠️ 关于「朱雀对标」：内置的「AI 味评分」是一个**本地启发式代理分**（看套话密度、句式跳脱度、句长均匀度），
-> 不是朱雀官方分数。要真实验证有两条路：把去味结果粘到朱雀网页版跑一遍（≥350 字、有当日次数上限、需人工过滑块），
-> 或在「设置 → 对标检测器」填入朱雀默认值 + 你自己的 EdgeOne Makers API Key 做自动闭环。
-> 未接真值之前，README 与界面里所有分数都应读作「代理分」。
+> ⚠️ 关于评分：内置的「AI 味评分」是一个**本地启发式代理分**（看套话密度、句式跳脱度、句长均匀度），
+> 不是任何外部检测服务的结果。需要外部判断时，请在设置中配置检测器接口。
+> 未接外部结果之前，README 与界面里所有分数都应读作「代理分」。
 
 ---
 

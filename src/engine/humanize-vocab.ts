@@ -369,7 +369,7 @@ export const VOCAB: Record<string, string[]> = {
   // 是语体错位病句（专家实测签名）——改为中性书面替身
   // 候选里的「不断」是**死项**（它自己是 VOCAB 键，会被 wouldCascade 作废），去掉它既减少空转、也避免随机流落到无效项上。
   持续: ["一直", "一贯", "始终"],
-  全面: ["全", "方方面面", "铺开"],
+  全面: ["全", "方方面面"],
   深入: ["往深里", "扎下去", "钻进去"],
   // 充分删了：容易和后续动词（发挥了→有了）组合出"够有了"病句。用模板处理。
   // 充分: ["尽量", "够", "足量"],  ← 已删
@@ -824,6 +824,13 @@ export function fragmentCanStand(s: string): boolean {
   // v0.9.31：并列谓语残句（见 BARE_VO_START_RE 注释）——只看首段；动词顶在句首即无主语
   if (BARE_VO_START_RE.test(s.split(/[；;，,。！？：:]/)[0])) return false;
   if (BARE_REPORTING_VO_START_RE.test(s.split(/[；;，,。！？：:]/)[0])) return false;
+  if (
+    /^(?:部分|一些|多数|少数|许多|不少)?[\u4e00-\u9fa5A-Za-z0-9]{2,12}(?:商户|企业|用户|学生|团队|公司|机构|系统|产品|项目)$/.test(
+      s,
+    ) &&
+    !PREDICATE_HINT.test(s)
+  )
+    return false;
   if (ADVERBIAL_VO_START_RE.test(s)) return false;
   // 2026-10-22：C21 产品文案实测「…提供了丰富的开放接口。便于开发者进行二次集成。」
   // 与「…创造长期价值。助力企业实现数字化转型。」——「便于/助力/有助于」开头的

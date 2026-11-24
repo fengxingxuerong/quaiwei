@@ -321,7 +321,7 @@ describe("v0.9 引擎集成（对话剧本场景块保护 + 指纹健康）", ()
 李工（前端负责人）：张总您好，我这边负责的前端模块目前进展比较顺利。具体来说，所有核心功能页面的开发工作已经完成了百分之九十五以上，剩下的就是一些 UI 细节的微调以及和后端接口的最后联调。与此同时，我们也对移动端的适配做了一轮全面的回归测试，整体兼容性表现良好。不过需要提醒大家的是，支付模块最近做了一次比较大的重构，我建议今天下午安排一次压力测试来确保稳定性。`;
     const out = humanize(dialogue, {
       intensity: 0.9,
-      zhuqueMode: true,
+      enhancementMode: true,
       seed: 20260826,
       genre: "dialogue",
     });
@@ -336,7 +336,12 @@ describe("v0.9 引擎集成（对话剧本场景块保护 + 指纹健康）", ()
 
   it("论说 0.9 档：正式语体下不出现「麻利」等口语替换，模板不扎堆", () => {
     const expo = `在今天这个快速发展的时代背景下，数字化转型已经成为了各行各业不可逆转的必然趋势。根据国家统计局最新发布的《2025 年数字经济发展白皮书》显示，我国数字经济规模在去年已经突破了 56.7 万亿元人民币，占 GDP 的比重达到了 41.8%，较上一年度同比提升了 2.3 个百分点。值得注意的是，这一增长速度已经连续八年保持在 15% 以上，充分体现了数字经济作为国民经济核心增长引擎的强大动力与韧性。`;
-    const out = humanize(expo, { intensity: 0.9, zhuqueMode: true, seed: 20260826, genre: "main" });
+    const out = humanize(expo, {
+      intensity: 0.9,
+      enhancementMode: true,
+      seed: 20260826,
+      genre: "main",
+    });
     expect(out).not.toContain("麻利");
     expect(out).not.toContain("$1");
     // 模板总量受控（扎堆抑制）

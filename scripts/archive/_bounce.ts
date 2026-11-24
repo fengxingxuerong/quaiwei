@@ -34,7 +34,7 @@ for (const t of TEXTS) {
   const afters: number[] = [];
   for (const it of [0.6, 0.7, 0.8, 0.9]) {
     for (let seed = 1; seed <= 20; seed++) {
-      const out = humanize(raw, { intensity: it, seed, genre: t.genre, zhuqueMode: true });
+      const out = humanize(raw, { intensity: it, seed, genre: t.genre, enhancementMode: true });
       const a = aiScore(out).score;
       afters.push(a);
       if (a > t.before + 1) up++;

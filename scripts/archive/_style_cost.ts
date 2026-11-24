@@ -37,7 +37,7 @@ for (const t of AI_TEXTS) {
   for (const style of ["casual", "plain"] as const) {
     for (const it of [0.6, 0.7, 0.8, 0.9]) {
       for (let seed = 1; seed <= 20; seed++) {
-        const out = humanize(t.text, { intensity: it, seed, genre: "main", style, zhuqueMode: true });
+        const out = humanize(t.text, { intensity: it, seed, genre: "main", style, enhancementMode: true });
         const a = aiScore(out).score;
         res[style].arr.push(a);
         if (a < 29) res[style].ok++;

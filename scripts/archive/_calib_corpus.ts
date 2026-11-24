@@ -150,7 +150,7 @@ export const MACHINE_SAMPLES: CalibrationSample[] = [
     //
     // 新样本摘录自 scripts/_harvest_enginereal.ts 实测：
     //   humanize(论说长文, { intensity: 0.7, seed: 26, genre: "main",
-    //                        style: "casual", zhuqueMode: true }) → aiScore 44
+    //                        style: "casual", enhancementMode: true }) → aiScore 44
     // 保留它是因为 44 分仍是当前引擎可复现的**最高**论说污染，
     // 作为"引擎污染上界"的代表样本比 89 分的不存在样本更有意义。
     // 注意：其污染源已变为 casual 专属表演型注入（「不信？那你自己试试就知道了」），

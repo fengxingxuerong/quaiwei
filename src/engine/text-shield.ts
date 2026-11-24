@@ -8,14 +8,14 @@
  * 1. **槽位上限 16**：`String.fromCharCode(0xe000 + n)` 在第 17 个结构化串处溢出到
  *    U+E010，超出还原正则 `[\uE000-\uE00F]` ⇒ 该串**永久丢失**、原位留下私用区乱码。
  *    实测（`artifacts/_probe-shield-cap.ts`）：40 个 URL 只剩 16 个，24 个变乱码。
- * 2. **破坏原文偏移**：`zhuque.ts` 的切句要保留 `start/end` 供 UI 高亮，
+ * 2. **破坏原文偏移**：`enhancement.ts` 的切句要保留 `start/end` 供 UI 高亮，
  *    占位符把多字符压成 1 字符，偏移全乱。
  *
  * 区间表两个问题都没有：它**不改动原文本**，只告诉调用方「哪些下标在串内部」。
  *
  * ## 用法
  *
- * - 需要保留偏移的切句（`zhuque.ts`）：拿 `structuredSpans()` + `spanGuard()`，
+ * - 需要保留偏移的切句（`enhancement.ts`）：拿 `structuredSpans()` + `spanGuard()`，
  *   遇到切点时先问 `guard(idx)`。
  * - 不需要偏移的切句（`detector.ts` / `classify-genre.ts`）：同样用 guard，
  *   只跳过落在串内的切点，其余语义一字不动。
@@ -117,10 +117,10 @@ export function spanGuard(spans: TextSpan[] | null | undefined): (idx: number) =
  * 这是**改写事实**：文件标题是专名，改动它等于把一份不存在的文件塞给读者。
  * 比"语体崩"严重一档，和"URL/邮箱不得丢"同性质 ⇒ 与 URL 一样用区间保护。
  *
- * 为什么只收《》不收引号：引号里的多半是台词/发言，那正是要去味的对象；
- * 书名号里的是**作品名/文件名的字面本身**，动它一个字都叫篡改。
+ * 书名号与引号里都可能是作品名、文件标题或直接引语；改动字面内容属于事实失真。
  */
 const CITED_TITLE_RE = /《[^》]*》/g;
+const QUOTED_RE = /“[^”]*”|"[^"]*"/g;
 
 export function citedTitleSpans(text: string): TextSpan[] {
   if (!text) return [];
@@ -130,6 +130,21 @@ export function citedTitleSpans(text: string): TextSpan[] {
   while ((m = CITED_TITLE_RE.exec(text)) !== null) {
     if (m[0].length === 0) {
       CITED_TITLE_RE.lastIndex++;
+      continue;
+    }
+    out.push({ start: m.index, end: m.index + m[0].length });
+  }
+  return out;
+}
+
+export function quotedSpans(text: string): TextSpan[] {
+  if (!text) return [];
+  const out: TextSpan[] = [];
+  QUOTED_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = QUOTED_RE.exec(text)) !== null) {
+    if (m[0].length === 0) {
+      QUOTED_RE.lastIndex++;
       continue;
     }
     out.push({ start: m.index, end: m.index + m[0].length });

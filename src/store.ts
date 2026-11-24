@@ -1,13 +1,11 @@
 import { ApiConfig, DEFAULT_API, DEEP_TARGET_SCORE } from "./api/llm";
 import { DetectorConfig, DEFAULT_DETECTOR } from "./api/detector";
-import { DEFAULT_SEMANTIC_WEIGHT } from "./engine/zhuque";
 
 const K_API = "aihumanizer.api";
 const K_IT = "aihumanizer.intensity";
 const K_DET = "aihumanizer.detector";
-const K_ZQ = "aihumanizer.zhuque";
+const K_ENHANCEMENT = "aihumanizer.enhancement";
 const K_PPL = "aihumanizer.ppl";
-const K_FUSE = "quaiwei.zhuque.fuse";
 const K_LOCAL = "aihumanizer.local";
 /** v0.9.15：自定义保护术语（原文原样存，换行/逗号分隔）。
  *  此前 term-protect.ts 的 setProtectedTerms 只被测试调用，UI 零入口——
@@ -377,12 +375,12 @@ export function saveIntensity(v: number): void {
   localStorage.setItem(K_IT, String(v));
 }
 
-export function loadZhuqueMode(): boolean {
-  return localStorage.getItem(K_ZQ) === "true";
+export function loadEnhancementMode(): boolean {
+  return localStorage.getItem(K_ENHANCEMENT) === "true";
 }
 
-export function saveZhuqueMode(v: boolean): void {
-  localStorage.setItem(K_ZQ, String(v));
+export function saveEnhancementMode(v: boolean): void {
+  localStorage.setItem(K_ENHANCEMENT, String(v));
 }
 
 /* ------------------------------------------------------------------ *
@@ -420,10 +418,10 @@ export function saveVariant(v: UiVariant): void {
 /* ------------------------------------------------------------------
    v0.9.48 视图模式：简洁 / 专业
    ------------------------------------------------------------------
-   此前界面把 15 个按钮和 6 个工程面板（指纹体检 / 朱雀检测 / 基准 /
+   此前界面把 15 个按钮和 6 个工程面板（指纹体检 / 评分 / 基准 /
    流水线追踪 / 本地检测 / 历史）一股脑平铺在主界面上。那是**开发调参视图**，
    不是给用户看的：普通人打开只会想知道"我的稿子粘进来 → 改好 → 复制走"，
-   而「朱雀增强」「困惑度」「降幅」这些词对他们没有意义。
+   而「表达增强」「困惑度」「降幅」这些词对他们没有意义。
 
    · simple（**默认**）：只留主流程——粘贴、强度、去味、复制、导入导出。
    · pro：追加全部工程面板，供调参与排查用。
@@ -450,16 +448,6 @@ export function loadPplEnabled(): boolean {
 
 export function savePplEnabled(v: boolean): void {
   localStorage.setItem(K_PPL, v ? "true" : "false");
-}
-
-/** 朱雀检测「语义层权重」：表层×语义层加权融合用的 w（0~1，默认 DEFAULT_SEMANTIC_WEIGHT） */
-export function loadFuseWeight(): number {
-  const v = parseFloat(localStorage.getItem(K_FUSE) || "");
-  return isNaN(v) ? DEFAULT_SEMANTIC_WEIGHT : Math.max(0, Math.min(1, v));
-}
-
-export function saveFuseWeight(v: number): void {
-  localStorage.setItem(K_FUSE, String(v));
 }
 
 /** 自定义保护术语原文（空串 = 未设置，只用内置 58 项） */

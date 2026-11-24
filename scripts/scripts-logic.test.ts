@@ -198,7 +198,7 @@ interface CliArgs {
   input: string;
   out: string;
   intensity: number;
-  zhuque: boolean;
+  enhancement: boolean;
   style: string;
   suffix: string;
   seed: number;
@@ -285,7 +285,7 @@ describe("humanize-cli parseArgs", () => {
     expect(a.input).toBe("./docs");
     expect(a.out).toBe("./docs");
     expect(a.intensity).toBe(0.6);
-    expect(a.zhuque).toBe(false);
+    expect(a.enhancement).toBe(false);
     expect(a.style).toBe("plain");
     expect(a.suffix).toBe(".humanized");
   });
@@ -317,7 +317,7 @@ describe("humanize-cli parseArgs", () => {
     expect(() => parseArgs(base([""]))).toThrow("__CLI_EXIT__:1");
   });
 
-  it("全量参数解析：out/intensity/zhuque/style/suffix", () => {
+  it("全量参数解析：out/intensity/enhancement/style/suffix", () => {
     const a = parseArgs(
       base([
         "./in",
@@ -325,7 +325,7 @@ describe("humanize-cli parseArgs", () => {
         "./out",
         "--intensity",
         "0.7",
-        "--zhuque",
+        "--enhancement",
         "--style",
         "academic",
         "--suffix",
@@ -334,7 +334,7 @@ describe("humanize-cli parseArgs", () => {
     );
     expect(a.out).toBe("./out");
     expect(a.intensity).toBe(0.7);
-    expect(a.zhuque).toBe(true);
+    expect(a.enhancement).toBe(true);
     expect(a.style).toBe("academic");
     expect(a.suffix).toBe(".h");
   });

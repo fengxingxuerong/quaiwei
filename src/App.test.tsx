@@ -3,7 +3,7 @@
  * App 主界面渲染级测试（v0.9.16 测试迭代第五轮）。
  *
  * 此前 App.tsx（986 行主组件）语句覆盖仅 36.7%，是全项目最大的测试洞。
- * 本文件用 mock 隔离网络依赖（api/llm、ppl-client、zhuque-semantic、detector），
+ * 本文件用 mock 隔离网络依赖（api/llm、ppl-client、quality-rubric、detector），
  * 引擎与 store 走真实实现，覆盖：渲染冒烟 / 示例载入 / 去味闭环（本地与 LLM 引擎
  * 两种产出来源的界面文案）/ 空输入守卫 / Ctrl+Enter 热键 / 强度持久化 / 历史落盘。
  */
@@ -16,7 +16,7 @@ import {
   loadIntensity,
   saveDraft,
   loadDraft,
-  loadZhuqueMode,
+  loadEnhancementMode,
   loadStructuralMode,
   loadDetector,
   saveViewMode,
@@ -36,8 +36,6 @@ const {
   ensurePplModelMock,
   pplStatusMock,
   isPplReadyMock,
-  detectSemanticStableMock,
-  semanticAvailableMock,
 } = vi.hoisted(() => ({
   runHumanizeMock: vi.fn(),
   readDocxTextMock: vi.fn(),
@@ -49,9 +47,6 @@ const {
   ensurePplModelMock: vi.fn(),
   pplStatusMock: vi.fn(),
   isPplReadyMock: vi.fn(() => false),
-  // 语义层：默认不可用（与真实 Web 版一致）；个别用例临时打开验证回调链
-  detectSemanticStableMock: vi.fn(),
-  semanticAvailableMock: vi.fn(() => false),
 }));
 
 // 混合 mock：保留真实导出（DEFAULT_API / DEFAULT_DETECTOR / SENSENOVA_PRESET 等
@@ -81,12 +76,6 @@ vi.mock("./ppl/ppl-client", async (importOriginal) => ({
   ensurePplModel: ensurePplModelMock,
   pplStatus: pplStatusMock,
   isPplReady: isPplReadyMock,
-}));
-
-vi.mock("./api/zhuque-semantic", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./api/zhuque-semantic")>()),
-  detectSemanticStable: detectSemanticStableMock,
-  semanticAvailable: semanticAvailableMock,
 }));
 
 vi.mock("./api/detector", async (importOriginal) => ({
@@ -124,7 +113,7 @@ async function renderApp() {
 beforeEach(() => {
   localStorage.clear();
   // v0.9.48 起默认视图是**简洁模式**（工程面板收起）。本文件既有的断言覆盖的是
-  // 「指纹体检 / 朱雀检测 / 历史 / 对比 / 为什么这么改」等常驻形态，
+  // 「指纹体检 / 历史 / 对比 / 为什么这么改」等常驻形态，
   // 它们仍然要被验证——只是现在得先切到专业模式。简洁模式本身由
   // src/App-simple-view.test.tsx 单独覆盖。
   saveViewMode("pro");
@@ -137,9 +126,6 @@ beforeEach(() => {
   pplStatusMock.mockReset();
   isPplReadyMock.mockReset();
   isPplReadyMock.mockReturnValue(false);
-  detectSemanticStableMock.mockReset();
-  semanticAvailableMock.mockReset();
-  semanticAvailableMock.mockReturnValue(false);
   writeDocxTextMock.mockReset();
   writeDocxTextMock.mockImplementation((t: string) => docxReal.writeDocxText!(t));
   // happy-dom 未实现 URL.createObjectURL/revokeObjectURL——直接赋值 stub（下载路径断言用）
@@ -651,7 +637,7 @@ describe("App 集成：评分 / 检测闭环 / 设置 / 历史 / 草稿 / 面板
 
   it("「复制」按钮：clipboard 可用时提示已复制到剪贴板", async () => {
     // v0.9.54：复制改走 copyText（clipboard → textarea 降级）。这里把 clipboard
-    // 钉成可用，断言成功路径；失败路径由 zhuque.test.ts 的 copyText 用例覆盖。
+    // 钉成可用，断言成功路径；失败路径由下方剪贴板失败用例覆盖。
     const nav = navigator as Navigator & { clipboard?: { writeText?: () => Promise<void> } };
     const origClip = nav.clipboard;
     Object.defineProperty(navigator, "clipboard", {
@@ -691,7 +677,7 @@ describe("App 集成：评分 / 检测闭环 / 设置 / 历史 / 草稿 / 面板
     await waitFor(() => {
       expect(utils.getByText(/下载模型（约 100MB，仅一次，之后离线）/)).toBeTruthy();
     });
-    // 下载完成后模型就绪：自动对目标文本跑特征 → done（第 13 维并入朱雀面板的链路）
+    // 下载完成后模型就绪：自动对目标文本跑特征 → done。
     isPplReadyMock.mockReturnValue(true);
     computePplFeatureMock.mockResolvedValue({
       meanNll: 3.2,
@@ -756,21 +742,6 @@ describe("App 集成：评分 / 检测闭环 / 设置 / 历史 / 草稿 / 面板
     const { getByText } = await renderApp();
     fireEvent.click(getByText("导入"));
     expect(getByText("导入")).toBeTruthy();
-  });
-
-  it("「朱雀检测」：面板出现并可打开校准实验室完成复制动作", async () => {
-    const utils = render(<App />);
-    await humanizeFirst(utils);
-    fireEvent.click(utils.getByText("朱雀检测"));
-    fireEvent.click(utils.getByText(/校准实验室（攒真值）/));
-    fireEvent.click(utils.getByText(/预置真值锚点/));
-    // 页面存在两个「复制」按钮（主工具条 + 实验室样本行），逐个点击直到实验室给出回执。
-    // v0.9.54：主工具条「复制」改走异步 copyText 后也会落一条匹配 /已复制|复制失败的
-    // note，若断言同时匹配两者会命中多个元素；这里只认实验室的专属回执文案。
-    for (const btn of utils.getAllByText("复制")) fireEvent.click(btn);
-    await waitFor(() => {
-      expect(utils.getByText(/已复制（超 2000 字|复制失败，请手动复制/)).toBeTruthy();
-    });
   });
 
   it("历史条目点击载入：输入输出回填；「清空历史」后为空", async () => {
@@ -897,7 +868,7 @@ describe("App 「为什么这么改」接线（v0.9.30）", () => {
 
 /* -------------------------------------------------------------------------
  * 行覆盖补锁（第六轮）：针对 App.tsx 此前 100% 未触达的守卫/回调行——
- * 草稿 saveDraft 分支 / 输出面板 onChange / 导入空选择 / 朱雀增强开关 /
+ * 草稿 saveDraft 分支 / 输出面板 onChange / 导入空选择 / 表达增强开关 /
  * 评判与送检守卫 / 加密桥保存分支 / 面板与弹窗回调。
  * 网络依旧全桩：fetch 不出站，语义层、检测器、LLM 均为 mock。
  * ---------------------------------------------------------------------- */
@@ -964,16 +935,16 @@ describe("App 守卫分支与面板回调（行覆盖补锁）", () => {
     expect((getByPlaceholderText(/把 AI 写的文章粘进来/) as HTMLTextAreaElement).value).toBe("");
   });
 
-  it("「朱雀增强」开关：勾选写入 store 并点亮 active 标签", () => {
+  it("「表达增强」开关：勾选写入 store 并点亮 active 标签", () => {
     const { container, getByText } = render(<App />);
-    const label = getByText("🛡 朱雀增强").closest("label")!;
+    const label = getByText("🛡 表达增强").closest("label")!;
     const checkbox = label.querySelector("input") as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
     expect(container.querySelector(".mode-tag.active")).toBeNull();
     fireEvent.click(checkbox);
     expect(checkbox.checked).toBe(true);
     expect(container.querySelector(".mode-tag.active")).toBeTruthy();
-    expect(loadZhuqueMode()).toBe(true);
+    expect(loadEnhancementMode()).toBe(true);
   });
 
   it("「句序重排」开关（2026-11-03）：勾选写入 store，开启后 runHumanize 第 7 参带上 structural", async () => {
@@ -1061,55 +1032,6 @@ describe("App 守卫分支与面板回调（行覆盖补锁）", () => {
     });
     expect(setMock).toHaveBeenCalledWith("detectorApiKey", "sk-det");
     expect(loadDetector().apiKey).toBe("sk-det"); // okDet=false → 原样落盘
-  });
-
-  it("朱雀面板「看 12 维特征」：onToggleFeatures 开合生效", async () => {
-    const utils = render(<App />);
-    await humanizeFirst(utils);
-    fireEvent.click(utils.getByText("朱雀检测"));
-    expect(utils.getByText("看 12 维特征")).toBeTruthy();
-    fireEvent.click(utils.getByText("看 12 维特征"));
-    expect(utils.getByText("收起特征")).toBeTruthy();
-    expect(utils.getByText(/条越长越像 AI/)).toBeTruthy();
-    fireEvent.click(utils.getByText("收起特征"));
-    expect(utils.getByText("看 12 维特征")).toBeTruthy();
-  });
-
-  it("朱雀面板「用 LLM 补语义层」：onRunSemantic 回调触发，失败文案如实回显", async () => {
-    semanticAvailableMock.mockReturnValue(true);
-    detectSemanticStableMock.mockRejectedValue(new Error("语义超时"));
-    const utils = render(<App />);
-    await humanizeFirst(utils);
-    fireEvent.click(utils.getByText("朱雀检测"));
-    const btn = utils.getByText("用 LLM 补语义层") as HTMLButtonElement;
-    expect(btn.disabled).toBe(false); // canRunSemantic 才放行
-    fireEvent.click(btn);
-    await waitFor(() => {
-      expect(utils.getByText(/语义层评判失败：语义超时/)).toBeTruthy();
-    });
-    expect(detectSemanticStableMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("校准实验室：粘贴真值回填受控输入（onPaste）；「完成」关闭弹窗（onClose）", async () => {
-    const utils = render(<App />);
-    await humanizeFirst(utils);
-    fireEvent.click(utils.getByText("朱雀检测"));
-    fireEvent.click(utils.getByText(/校准实验室（攒真值）/));
-    fireEvent.change(utils.getByPlaceholderText(/贴一篇 AI 写的原文/), {
-      target: { value: INPUT_TEXT },
-    });
-    fireEvent.click(utils.getByText("生成本批样本（4 条）"));
-    // 注意：主朱雀面板也有同 placeholder 的回填框，查询必须圈在弹窗内
-    const modal = utils.container.querySelector(".modal") as HTMLElement;
-    expect(modal).toBeTruthy();
-    const pasteInputs = within(modal).getAllByPlaceholderText(/粘贴官方结果/) as HTMLInputElement[];
-    expect(pasteInputs.length).toBe(4);
-    fireEvent.change(pasteInputs[0], { target: { value: "AI生成 99.99%" } });
-    // 受控输入：值留在输入框 = onPaste 确实把状态更新了（否则 React 会弹回空串）
-    expect(pasteInputs[0].value).toBe("AI生成 99.99%");
-    fireEvent.click(within(modal).getByText("完成"));
-    expect(utils.container.querySelector(".modal")).toBeNull();
-    expect(utils.queryByText(/校准实验室 · 攒真值/)).toBeNull();
   });
 });
 
@@ -1288,14 +1210,14 @@ describe("指纹体检的空输入守卫（target 空串早退）", () => {
  * 内容由 `api.deepMode` 二选一。此前所有用例都没配过 API，
  * 于是这个 span 从来没出现过——deepMode 真/假两支与「Key 为空不渲染」三处都缺。
  *
- * ⚠️ 选择器必须限定 span：App.tsx 里「🛡 朱雀增强」还有一个同
+ * ⚠️ 选择器必须限定 span：App.tsx 里「🛡 表达增强」还有一个同
  *   `className="mode-tag"` 的 **label**（带 active 类）。第一版用
  *   `querySelector(".mode-tag")` 的第三条用例就是这么错的——拿到的是
- *   朱雀增强那个 label，不是这个 span。
+ *   表达增强那个 label，不是这个 span。
  */
 describe("LLM 模式标签", () => {
   const KEY = "aihumanizer.api";
-  const LLM_TAG = "span.mode-tag"; // span 是本标签；朱雀增强是 label，className 相同
+  const LLM_TAG = "span.mode-tag"; // span 是本标签；表达增强是 label，className 相同
 
   function renderWith(cfg: Record<string, unknown>) {
     localStorage.clear();
@@ -1328,7 +1250,7 @@ describe("LLM 模式标签", () => {
     // 探针实测：effectiveKeys({apiKey:"", apiKeys:""}) === []（splitKeys 会滤掉空串）
     const utils = renderWith({ enabled: true, deepMode: true, apiKey: "", apiKeys: "" });
     expect(utils.container.querySelector(LLM_TAG)).toBeNull();
-    // 对照：朱雀增强那个 label 仍在——证明是「这个 span 不渲染」而非整页崩了
+    // 对照：表达增强那个 label 仍在——证明是「这个 span 不渲染」而非整页崩了
     expect(utils.container.querySelector(".mode-tag")).toBeTruthy();
   });
 });

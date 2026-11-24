@@ -30,7 +30,6 @@ const REPOS = [
   "swaylq/humanize-chinese",
   "weiyinerzui/humanize-cn",
   "pengong101/ai-humanizer-cn",
-  "qoqu/anti-zhuque",
   "redbaronyyyyy-eng/humanizer-zh-academic",
   "Hyacehila/humanizer-zh-next",
   "junbolian/Academic-Humanizer",

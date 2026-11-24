@@ -116,7 +116,7 @@ function weightedMedian(scores: { score: number; weight: number }[]): number {
 /**
  * 合议庭审判：各席独立评（痕迹+分数）→ 痕迹交叉 ≥2 票定罪 → 分数加权中位。
  * 席间串行调用（跨网关并发易触发各家限流；单席 ≤90s 超时内建）。
- * systemOverride 透传（朱雀语义层提示词复用）。
+ * systemOverride 透传（质量评判层提示词复用）。
  */
 export async function judgeByPanel(
   text: string,

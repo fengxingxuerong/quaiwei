@@ -11,16 +11,14 @@ import {
   saveDetector,
   loadIntensity,
   saveIntensity,
-  loadZhuqueMode,
-  saveZhuqueMode,
+  loadEnhancementMode,
+  saveEnhancementMode,
   loadStructuralMode,
   saveStructuralMode,
   loadVariant,
   saveVariant,
   loadPplEnabled,
   savePplEnabled,
-  loadFuseWeight,
-  saveFuseWeight,
   loadLocal,
   saveLocal,
   loadProtectedTerms,
@@ -44,7 +42,6 @@ import {
 } from "./store";
 import { DEFAULT_API, effectiveKeys } from "./api/llm-config";
 import { DEFAULT_DETECTOR } from "./api/detector";
-import { DEFAULT_SEMANTIC_WEIGHT } from "./engine/zhuque";
 
 beforeEach(() => {
   localStorage.clear();
@@ -311,7 +308,7 @@ describe("detector presets", () => {
   });
 });
 
-describe("强度 / 朱雀模式 / 困惑度开关 / 融合权重 / 本地设置", () => {
+describe("强度 / 表达增强 / 困惑度开关 / 本地设置", () => {
   it("强度：默认 0.6，保存后读回，越界夹取 0~1", () => {
     expect(loadIntensity()).toBe(0.6);
     saveIntensity(0.85);
@@ -322,10 +319,10 @@ describe("强度 / 朱雀模式 / 困惑度开关 / 融合权重 / 本地设置"
     expect(loadIntensity()).toBe(0);
   });
 
-  it("朱雀模式：默认 false，true 正常往返", () => {
-    expect(loadZhuqueMode()).toBe(false);
-    saveZhuqueMode(true);
-    expect(loadZhuqueMode()).toBe(true);
+  it("表达增强：默认 false，true 正常往返", () => {
+    expect(loadEnhancementMode()).toBe(false);
+    saveEnhancementMode(true);
+    expect(loadEnhancementMode()).toBe(true);
   });
 
   it("句序重排：默认 false，true 正常往返，坏值不当 true（2026-11-03 store.test 补）", () => {
@@ -356,16 +353,6 @@ describe("强度 / 朱雀模式 / 困惑度开关 / 融合权重 / 本地设置"
     expect(loadPplEnabled()).toBe(true);
     savePplEnabled(false);
     expect(loadPplEnabled()).toBe(false);
-  });
-
-  it("融合权重：默认 DEFAULT_SEMANTIC_WEIGHT，越界夹取 0~1", () => {
-    expect(loadFuseWeight()).toBe(DEFAULT_SEMANTIC_WEIGHT);
-    saveFuseWeight(0.7);
-    expect(loadFuseWeight()).toBe(0.7);
-    saveFuseWeight(2);
-    expect(loadFuseWeight()).toBe(1);
-    saveFuseWeight(-1);
-    expect(loadFuseWeight()).toBe(0);
   });
 
   it("本地设置：默认 bestOf=true/8 候选，candidates 夹取 1~30", () => {

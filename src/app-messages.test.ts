@@ -2,22 +2,19 @@
  * 主界面文案组装纯函数的行为锁（自 App.tsx 抽出时补）。
  *
  * 重点锁「引擎产出如实标注」回归防护（v0.9.15 假话文案修复）：
- * 四种 engine 分支 + 拼接规则 + 短文提示 + 检测器追加段。
+ * 四种 engine 分支 + 拼接规则 + 检测器追加段。
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { buildHumanizeNote, formatRestoredNote, ZHUQUE_MIN_CHARS } from "./app-messages";
+import { buildHumanizeNote, formatRestoredNote } from "./app-messages";
 
 const DIN = { levelText: "疑似AI", probability: 82 };
 const DOUT = { levelText: "人类偏", probability: 35 };
-const ZR = { ratios: { ai: 12 }, labelText: "人类创作倾向" };
 
 function base(overrides: Partial<Parameters<typeof buildHumanizeNote>[0]> = {}) {
   return buildHumanizeNote({
     r: { engine: "local", usedApi: false },
-    input: "短文本",
     din: DIN,
     dout: DOUT,
-    zr: ZR,
     ...overrides,
   });
 }
@@ -68,23 +65,9 @@ describe("buildHumanizeNote：拼接规则", () => {
     expect(msg).toContain("多候选择优：3 稿中挑最优（淘汰 2 稿，中选种子 1）");
   });
 
-  it("原文不足 350 字 → 追加朱雀送检门槛提示（含当前字数）", () => {
-    const msg = base({ input: "只有十个字" });
-    expect(msg).toContain(
-      `提示：朱雀检测要求不少于 ${ZHUQUE_MIN_CHARS} 字（当前 5 字），去味本身不受影响`,
-    );
-  });
-
-  it("原文达到门槛 → 不出现提示", () => {
-    const long = "字".repeat(ZHUQUE_MIN_CHARS + 10);
-    const msg = base({ input: long });
-    expect(msg).not.toContain("提示：朱雀检测要求");
-  });
-
-  it("本地检测对照与朱雀口径按固定格式拼接", () => {
+  it("本地检测对照按固定格式拼接", () => {
     const msg = base({});
     expect(msg).toContain("本地检测：疑似AI(82%) → 人类偏(35%)");
-    expect(msg).toContain("朱雀口径：AI特征占比 12%（人类创作倾向）");
   });
 
   it("detectorNote 追加在末尾（检测器自动送检成功/失败共用）", () => {

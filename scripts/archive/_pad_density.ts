@@ -39,14 +39,14 @@ for (const [label, src, genre] of [
   ["对话", DIALOG, "dialogue"],
   ["人写", HUMAN, "humanHand"],
 ] as const) {
-  const out = humanize(src, { intensity: 0.9, zhuqueMode: true, genre, seed: 7 });
+  const out = humanize(src, { intensity: 0.9, enhancementMode: true, genre, seed: 7 });
   console.log(`  ${label}: 原文 ${countHead(src)} 处 → 引擎输出 ${countHead(out)} 处  (aiScore ${aiScore(src).score}→${aiScore(out).score})`);
 }
 
 console.log("\n不同 seed 下论说体裁的句首垫词数（看抖动范围）");
 const counts: number[] = [];
 for (let s = 1; s <= 30; s++) {
-  const out = humanize(EXPO, { intensity: 0.9, zhuqueMode: true, genre: "main", seed: s });
+  const out = humanize(EXPO, { intensity: 0.9, enhancementMode: true, genre: "main", seed: s });
   counts.push(countHead(out));
 }
 console.log(`  30 seeds: min=${Math.min(...counts)} max=${Math.max(...counts)} avg=${(counts.reduce((a, b) => a + b, 0) / 30).toFixed(1)}`);

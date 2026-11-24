@@ -121,7 +121,7 @@ describe("性能预算门禁", () => {
 
   it("bestOf 8 稿预算：2.8k 字 ≤ 6000ms（本机无插桩 ~90ms）", () => {
     const text = build(13); // ≈ 2.9k 字，低于 bestof 的 4000 字自动收敛阈值
-    const opts = { intensity: 0.9, seed: 20261017, zhuqueMode: true, candidates: 8 } as const;
+    const opts = { intensity: 0.9, seed: 20261017, enhancementMode: true, candidates: 8 } as const;
 
     humanizeBestOf(text, opts); // 预热
     const ms = bestMs(() => humanizeBestOf(text, opts), 2);

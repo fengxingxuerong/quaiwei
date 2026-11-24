@@ -69,7 +69,7 @@ export interface LocalOptions {
 function runLocal(
   text: string,
   intensity: number,
-  zhuqueMode: boolean | undefined,
+  enhancementMode: boolean | undefined,
   genre: "main" | "narrative" | "dialogue" | "humanHand" | undefined,
   style: ApiConfig["style"],
   local?: LocalOptions,
@@ -83,7 +83,7 @@ function runLocal(
   if (local?.bestOf) {
     const r = humanizeBestOf(text, {
       intensity,
-      zhuqueMode,
+      enhancementMode,
       style,
       genre,
       candidates: local.candidates,
@@ -101,7 +101,7 @@ function runLocal(
     const events: StageTrace[] = [];
     const out = humanize(text, {
       intensity,
-      zhuqueMode,
+      enhancementMode,
       style,
       genre,
       structural: local?.structural,
@@ -116,7 +116,7 @@ function runLocal(
   }
   const out = humanize(text, {
     intensity,
-    zhuqueMode,
+    enhancementMode,
     style,
     genre,
     structural: local?.structural,
@@ -130,7 +130,7 @@ export async function runHumanize(
   intensity: number,
   cfg: ApiConfig,
   onProgress?: (round: number, score: number | null, stage?: string) => void,
-  zhuqueMode?: boolean,
+  enhancementMode?: boolean,
   genre?: "main" | "narrative" | "dialogue" | "humanHand",
   local?: LocalOptions,
   /**
@@ -202,7 +202,7 @@ export async function runHumanize(
             } catch (e: unknown) {
               // 单块失败（如预算耗尽且该块零产出/各轮质检全挂）只回退该块本地引擎，
               // 不再让整篇抛错丢弃已完成块的 API 成果（v0.8.6 行为修正）
-              // v0.9.5 P4：回退块强制温和档（≤0.5、不开朱雀）——深度稿是自然口语，
+              // v0.9.5 P4：回退块强制温和档（≤0.5、不开本地）——深度稿是自然口语，
               // 全强度机械扰动产物（垫词/语气词/句序打乱）混进来是质量断崖
               // （s7 事故实测：后 1/3 出现"是啊/对哦"堆叠与断引用）。温和档只做
               // 套话与连接词清理，与 LLM 稿的风格落差最小。
@@ -244,7 +244,7 @@ export async function runHumanize(
           (fid.pass ? "" : ` · ⚠️忠实度：${fid.problems[0]}`) +
           (anyIssue ? " · 部分块有未修复质检问题" : "") +
           shrinkNote;
-        // v0.8.6 LLM 主导：API 输出即最终稿，不再叠加本地朱雀特征（方言/自问自答/错别字
+        // v0.8.6 LLM 主导：API 输出即最终稿，不再叠加本地表达特征（方言/自问自答/错别字
         // 注入会污染 LLM 的语义级改写）。反检测特征由提示词 19 条战术原生产出。
         // 混拼（部分块本地补位）同样要把原因顶到最前，理由同下
         return {
@@ -309,7 +309,15 @@ export async function runHumanize(
          */
         const numWarn = numericFidelityWarning(text, outText);
         if (numWarn && cfg.strictFidelity) {
-          const r = runLocal(text, intensity, zhuqueMode, genre, cfg.style, local, collectTrace);
+          const r = runLocal(
+            text,
+            intensity,
+            enhancementMode,
+            genre,
+            cfg.style,
+            local,
+            collectTrace,
+          );
           outText = r.text;
           bestOf = r.bestOf;
           trace = r.trace;
@@ -322,7 +330,7 @@ export async function runHumanize(
       }
     } catch (e: unknown) {
       // 回退本地引擎时同样尊重择优设置
-      const r = runLocal(text, intensity, zhuqueMode, genre, cfg.style, local, collectTrace);
+      const r = runLocal(text, intensity, enhancementMode, genre, cfg.style, local, collectTrace);
       outText = r.text;
       bestOf = r.bestOf;
       trace = r.trace;
@@ -340,16 +348,16 @@ export async function runHumanize(
         : `API 调用失败，已回退本地引擎：${errMsg(e)}`;
     }
   } else {
-    const r = runLocal(text, intensity, zhuqueMode, genre, cfg.style, local, collectTrace);
+    const r = runLocal(text, intensity, enhancementMode, genre, cfg.style, local, collectTrace);
     outText = r.text;
     bestOf = r.bestOf;
     trace = r.trace;
     degrade.push("未启用 API 或无可用 Key，本稿由本地引擎产出（非 LLM）");
   }
 
-  // v0.8.6 LLM 主导：API 输出即最终稿，不再叠加本地朱雀特征（方言/自问自答/错别字注入
+  // v0.8.6 LLM 主导：API 输出即最终稿，不再叠加本地表达特征（方言/自问自答/错别字注入
   // 会污染 LLM 的语义级改写并制造新指纹）——反检测特征由提示词 19 条战术原生产出；
-  // 朱雀增强（zhuqueMode）仅作用于本地引擎路径（runLocal 内部处理）。
+  // 表达增强（enhancementMode）仅作用于本地引擎路径（runLocal 内部处理）。
 
   const after = aiScore(outText);
   // v0.9.4 P2 迭代收益提示：实测深度模式对已去味文本（AI 味 <35 分）再处理

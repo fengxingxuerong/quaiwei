@@ -50,10 +50,6 @@ if command -v git >/dev/null 2>&1; then
   fi
 fi
 
-# ── 凭证账本 append-only（已于 v0.9.83 随标定子系统移除）──────────────────────
-# 曾在这里跑 scripts/check-ledger-appendonly.ts --staged，拦 evidence/zhuque/ledger.jsonl
-# 的历史行改动。2026-11-05 朱雀标定子系统整体移除（账本与脚本一并删除），此检查随之退役。
-
 echo "[pre-commit] 类型检查中…（约 7 秒）"
 $TSC --noEmit
 rc=$?

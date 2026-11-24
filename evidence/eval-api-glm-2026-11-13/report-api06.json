@@ -4,7 +4,7 @@
     "input": "eval-work/in",
     "out": "eval-work/arms-api/06",
     "intensity": 0.6,
-    "zhuque": false,
+    "enhancement": false,
     "style": "plain",
     "variant": "none",
     "academicCheck": false,

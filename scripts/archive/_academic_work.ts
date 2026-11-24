@@ -39,7 +39,7 @@ for (const [name, text] of [
 ] as Array<[string, string]>) {
   for (const intensity of [0.5, 0.7, 0.9]) {
     for (const style of ["academic", "plain", "casual"]) {
-      const out = humanize(text, { intensity, zhuqueMode: true, style, seed: 20260826 } as never);
+      const out = humanize(text, { intensity, enhancementMode: true, style, seed: 20260826 } as never);
       const sim = similarity(text, out);
       console.log(
         `${name}   ${String(intensity).padEnd(6)}${style.padEnd(12)}${(sim * 100).toFixed(1).padStart(6)}%   ` +
@@ -50,7 +50,7 @@ for (const [name, text] of [
 }
 
 console.log("\n\n=== academic 0.9 实际输出（全文）===");
-const ac09 = humanize(EXPO, { intensity: 0.9, zhuqueMode: true, style: "academic", seed: 20260826 } as never);
+const ac09 = humanize(EXPO, { intensity: 0.9, enhancementMode: true, style: "academic", seed: 20260826 } as never);
 console.log(ac09);
 
 console.log("\n\n=== 原文对照（前 300 字）===");

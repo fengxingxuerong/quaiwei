@@ -46,35 +46,35 @@
   "e2e": {
     "N1": {
       "score": 4.8,
-      "note": "seed=20260826, intensity=0.6, zhuque=false, genre=叙事文"
+      "note": "seed=20260826, intensity=0.6, enhancement=false, genre=叙事文"
     },
     "N2": {
       "score": 4.4,
-      "note": "seed=20260826, intensity=0.9, zhuque=true, genre=叙事文"
+      "note": "seed=20260826, intensity=0.9, enhancement=true, genre=叙事文"
     },
     "D1": {
       "score": 2.1,
-      "note": "seed=20260826, intensity=0.6, zhuque=false, genre=对话体"
+      "note": "seed=20260826, intensity=0.6, enhancement=false, genre=对话体"
     },
     "D2": {
       "score": 0.4,
-      "note": "seed=20260826, intensity=0.9, zhuque=true, genre=对话体"
+      "note": "seed=20260826, intensity=0.9, enhancement=true, genre=对话体"
     },
     "H1": {
       "score": 8,
-      "note": "seed=20260826, intensity=0.6, zhuque=false, genre=纯人写稿"
+      "note": "seed=20260826, intensity=0.6, enhancement=false, genre=纯人写稿"
     },
     "H2": {
       "score": 8,
-      "note": "seed=20260826, intensity=0.9, zhuque=true, genre=纯人写稿"
+      "note": "seed=20260826, intensity=0.9, enhancement=true, genre=纯人写稿"
     },
     "O2": {
       "score": 7.6,
-      "note": "seed=20260826, intensity=0.7, zhuque=false, genre=论说文"
+      "note": "seed=20260826, intensity=0.7, enhancement=false, genre=论说文"
     },
     "O3": {
       "score": 6.5,
-      "note": "seed=20260826, intensity=0.9, zhuque=true, genre=论说文"
+      "note": "seed=20260826, intensity=0.9, enhancement=true, genre=论说文"
     }
   },
   "rebaseLog": [

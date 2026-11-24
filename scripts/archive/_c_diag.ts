@@ -47,7 +47,7 @@ for (const [label, text, genre] of [
   ["人写", HUMAN_MULTI, "humanHand"],
 ] as const) {
   const before = aiScore(text);
-  const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre, seed: 7 });
+  const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre, seed: 7 });
   const after = aiScore(out);
   console.log(`\n${"=".repeat(78)}`);
   console.log(`【${label}】原文 ${before.score} → 去味后 ${after.score}  (句式 ${before.structureHits}→${after.structureHits}, 病词 ${before.brokenHits}→${after.brokenHits})`);

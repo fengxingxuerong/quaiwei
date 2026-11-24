@@ -4,7 +4,7 @@
     "input": "D:/projects/_quaiwei-tmp/api-smoke/in2/fin.txt",
     "out": "D:/projects/_quaiwei-tmp/api-smoke/out-pin2",
     "intensity": 0.6,
-    "zhuque": false,
+    "enhancement": false,
     "style": "plain",
     "variant": "none",
     "academicCheck": false,

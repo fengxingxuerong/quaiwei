@@ -1,8 +1,6 @@
 /**
- * 外部检测器钩子（对标朱雀等）
+ * 外部检测器钩子。
  * 通用 HTTP 接口：把 {text} POST 到 url，从返回的 JSON 里按 scorePath 取分数。
- * 朱雀官方 API 已于 2026-09 确认可用，见下方 ZHUQUE_OFFICIAL_DETECTOR。
- * 没有外部接口时，用 llm.ts 的 judgeAiScore（复用已配的 LLM）当评判也行。
  */
 import { resolveDesktopBaseUrl } from "./desktop-proxy";
 
@@ -23,37 +21,6 @@ export const DEFAULT_DETECTOR: DetectorConfig = {
   scorePath: "score",
   scale: "0-100",
 };
-
-/**
- * 朱雀官方 API 预设——腾讯云 EdgeOne Makers 的内置模型 @makers/zhuque-text。
- * 文档：https://cloud.tencent.com/document/product/1552/137539
- * 逐条按官方文档核对过，并实测过未授权分支（401 + {"error":{...}}）：
- *   - 网关域名是**固定**的，用户不需要自建网关，只在 EdgeOne 控制台 Makers→Models→API Key 建 Key；
- *   - 分数在 softmax_confidence（0~1，「越大越可能命中风险内容」），与网页版「AI 生成概率」同向；
- *     labels_ratio 另给三档占比（0=人工 1=AI 2=疑似AI），需要档位时取那里；
- *   - 每月 50 万 token 免费，扣减按 makers_models_usage.total_tokens 核算（不是 usage.total_tokens）；
- *   - 当前只有文本检测，图片检测要走企业版；
- *   - is_merge 不传即默认 true（合并整篇判定），与网页版一次性给一个总分的口径一致。
- * enabled 保持 false：勾上就等于每跑一次都花外部账号的额度，必须由用户自己开。
- */
-export const ZHUQUE_OFFICIAL_DETECTOR: DetectorConfig = {
-  ...DEFAULT_DETECTOR,
-  url: "https://ai-gateway.edgeone.link/v1/providers/zhuque-text/classify",
-  scorePath: "softmax_confidence",
-  scale: "0-1",
-};
-
-/**
- * 朱雀官方网关 URL 形状。命中即补官方 scorePath / scale ——
- * 用户只给 `--detector-url` 也能用对口径，不必手填三个参数。
- * 显式传过 --detector-path / --detector-scale 的以用户为准（由调用方判断是否覆盖）。
- */
-const ZHUQUE_PATH_RE = /\/v1\/providers\/zhuque-text\/classify(?:[/?#]|$)/i;
-export function inferZhuqueDefaults(url: string): { scorePath: string; scale: "0-1" } | null {
-  return ZHUQUE_PATH_RE.test(url)
-    ? { scorePath: ZHUQUE_OFFICIAL_DETECTOR.scorePath, scale: "0-1" }
-    : null;
-}
 
 /** status 字段白名单。只在响应**自报**状态时开火；没有 status 的第三方接口不受影响。 */
 const SUCCESS_STATUS = /^(success|ok|true|passed)$/i;
@@ -108,7 +75,7 @@ function getPath(obj: unknown, path: string): unknown {
  */
 export function extractScore(
   raw: Record<string, unknown>,
-  cfg: DetectorConfig = ZHUQUE_OFFICIAL_DETECTOR,
+  cfg: DetectorConfig = DEFAULT_DETECTOR,
 ): number {
   const v = getPath(raw, cfg.scorePath);
   // Number("") / Number(false) / Number([]) / Number(null) 全是 0 —— 一次接口字段异常
@@ -164,9 +131,7 @@ export async function classifyViaDetector(
     const masked = cfg.apiKey ? body.split(cfg.apiKey).join("⟨凭证已隐去⟩") : body;
     const why = masked.trim() ? `｜响应体：${masked.trim().slice(0, 200)}` : "";
     const hint =
-      resp.status === 401 || resp.status === 403
-        ? "｜401/403 最常见的原因是凭证与网关不配套（EdgeOne Makers 的 Key 只在 EdgeOne 控制台建）"
-        : "";
+      resp.status === 401 || resp.status === 403 ? "｜401/403 最常见的原因是凭证与网关不配套" : "";
     throw new Error(`检测器返回 ${resp.status}${why}${hint}`);
   }
   const data = await resp.json();

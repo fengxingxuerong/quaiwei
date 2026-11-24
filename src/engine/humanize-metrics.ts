@@ -457,12 +457,11 @@ export interface FingerprintReport {
   pass: boolean;
   issues: FingerprintIssue[];
   sentenceCV: number;
-  /** 句长标准差（朱雀官方口径参考：AI 文本常落在 5~8 区间） */
+  /** 句长标准差 */
   sentenceStd?: number;
 }
 
-/** 对任意文本做确定性指纹自检：把内部回归套件变成用户功能。
- *  送检朱雀前先跑一遍，红项就是会被抓的把柄。 */
+/** 对任意文本做确定性指纹自检。 */
 export function fingerprintCheck(text: string): FingerprintReport {
   const issues: FingerprintIssue[] = [];
   // 1) 中英数字间空格
@@ -512,7 +511,7 @@ export function fingerprintCheck(text: string): FingerprintReport {
       hint: "值得注意的是/毋庸置疑 这类词是检测器一票抓的特征",
     });
   }
-  // 6) 节奏过平（突发性双通道：CV 相对判据 + 句长标准差绝对判据，后者为朱雀官方口径）
+  // 6) 节奏过平（突发性双通道：CV 相对判据 + 句长标准差绝对判据）
   const stats = sentenceStats(text);
   const cv = Number(stats.cv.toFixed(2));
   const std = Number(stats.std.toFixed(1));
@@ -546,10 +545,9 @@ export function fingerprintCheck(text: string): FingerprintReport {
 }
 
 /* ------------------- 第 8 项：困惑度特征判定（评分由宿主层注入） ------------------- */
-// 朱雀官方点名的困惑度指标，本地用 ONNX MLM 伪困惑度近似（Salazar 打分法）。
+// 困惑度特征，本地用 ONNX MLM 伪困惑度近似（Salazar 打分法）。
 // 阈值来自 scripts/ppl-calibrate.ts 本地标定：分组掩码 K=5 下人工组 meanNll∈[0.98,1.35]、
-// AI 组∈[0.18,0.42]，完全线性可分，取间隔中点 0.70。随朱雀回传数据迭代（见
-// docs/fingerprint-and-zhuque-calibration.md §5）。本函数是纯函数，不感知模型与宿主的存在。
+// AI 组∈[0.18,0.42]，完全线性可分，取间隔中点 0.70。本函数不感知模型与宿主的存在。
 
 /** 全文平均 NLL 低于此值报「困惑度异常低」（单位 nat；标定间隔中点，见 §5） */
 export const PPL_MIN_MEAN_NLL = 0.7;
@@ -655,13 +653,19 @@ export function collapseIssues(original: string, rewritten: string): string[] {
   for (const raw of outClauses) {
     const frag = raw.replace(COLLAPSE_TAIL_PARTICLES, "");
     if (frag.length < 4 || frag.length > 16) continue;
+    if (/关键词/.test(original) && frag.length <= 8) continue;
     // 只有"被截的那个原文小句在输出里也消失了"才算塌缩——否则它只是另一句的普通前缀
     //（"字字字…"这类嵌套前缀、或两句共享词头时都会整批误报）
     const victim = srcClauses.find(
       (s) => s.length - frag.length >= 2 && s.startsWith(frag) && !outSet.has(s),
     );
-    if (victim)
+    if (victim) {
+      const tail = victim
+        .slice(frag.length)
+        .replace(/^(?:[\s，。！？；：、—–-]+|(?:导致|使得|让|使|于是|所以))+/, "");
+      if (tail && outClauses.some((clause) => clause.includes(tail))) continue;
       issues.push(`「${frag}」是原文「${victim.slice(0, 24)}」被截断后的残留，谓语已丢失`);
+    }
   }
   return issues;
 }

@@ -2,5 +2,4 @@ dist/
 electron-app/
 node_modules/
 *.tsbuildinfo
-src/engine/zhique-calibration.txt
 node_modules.zip

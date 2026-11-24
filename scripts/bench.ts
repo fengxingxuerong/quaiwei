@@ -9,7 +9,7 @@ const longText = `随着人工智能技术的快速发展，大语言模型在�
 
 // 生成不同规模的文本
 const sizes = [1, 5, 10, 20, 50];
-console.log("=== 性能基准（本地引擎，朱雀增强0.9）===\n");
+console.log("=== 性能基准（本地引擎，表达增强0.9）===\n");
 console.log("文本规模 | 字数 | 耗时");
 
 for (const mult of sizes) {
@@ -17,11 +17,11 @@ for (const mult of sizes) {
   const charCount = full.replace(/\s/g, "").length;
 
   // 预热
-  humanize(full, { intensity: 0.9, seed: 42, zhuqueMode: true });
+  humanize(full, { intensity: 0.9, seed: 42, enhancementMode: true });
 
   const t0 = performance.now();
   for (let i = 0; i < 3; i++) {
-    humanize(full, { intensity: 0.9, seed: 42, zhuqueMode: true });
+    humanize(full, { intensity: 0.9, seed: 42, enhancementMode: true });
   }
   const dt = (performance.now() - t0) / 3;
 
@@ -34,21 +34,21 @@ for (const mult of sizes) {
 console.log("\n=== 普通模式对比（10x）===\n");
 const full10 = Array(10).fill(longText).join("\n\n");
 const t0 = performance.now();
-humanize(full10, { intensity: 0.9, seed: 42, zhuqueMode: false });
+humanize(full10, { intensity: 0.9, seed: 42, enhancementMode: false });
 console.log(`普通模式: ${(performance.now() - t0).toFixed(0)}ms`);
 const t1 = performance.now();
-humanize(full10, { intensity: 0.9, seed: 42, zhuqueMode: true });
-console.log(`朱雀模式: ${(performance.now() - t1).toFixed(0)}ms`);
+humanize(full10, { intensity: 0.9, seed: 42, enhancementMode: true });
+console.log(`本地模式: ${(performance.now() - t1).toFixed(0)}ms`);
 
 // 多候选择优（bestOf）：默认 8 稿，UI 默认开启，耗时必须保持在可交互范围
-console.log("\n=== bestOf 多候选择优（默认 8 稿，朱雀增强 0.9）===\n");
+console.log("\n=== bestOf 多候选择优（默认 8 稿，表达增强 0.9）===\n");
 for (const mult of [1, 10]) {
   const full = Array(mult).fill(longText).join("\n\n");
   const charCount = full.replace(/\s/g, "").length;
   // 预热（含首次指纹/评分的 JIT 路径）
-  humanizeBestOf(full, { intensity: 0.9, seed: 42, zhuqueMode: true, candidates: 8 });
+  humanizeBestOf(full, { intensity: 0.9, seed: 42, enhancementMode: true, candidates: 8 });
   const t2 = performance.now();
-  humanizeBestOf(full, { intensity: 0.9, seed: 42, zhuqueMode: true, candidates: 8 });
+  humanizeBestOf(full, { intensity: 0.9, seed: 42, enhancementMode: true, candidates: 8 });
   const dt2 = performance.now() - t2;
   console.log(
     `x${mult.toString().padStart(2)}  | ${String(charCount).padStart(5)}字 | ${dt2.toFixed(0)}ms（8 稿择优，含指纹/忠实度门槛）`,
@@ -57,7 +57,7 @@ for (const mult of [1, 10]) {
 
 // 形态基准（工程卫生九补）：伸缩维度之外的两种真实稿型——多短段与单超长段，
 // 用来盯「分段级/段内级」循环与扫描的开销漂移（切句记忆化即在这两种形态下收益最明显）。
-console.log("\n=== 形态基准（朱雀增强 0.9）===\n");
+console.log("\n=== 形态基准（表达增强 0.9）===\n");
 const shapes: Array<[string, string]> = [
   [
     "多短段 120 段",
@@ -70,9 +70,9 @@ const shapes: Array<[string, string]> = [
 ];
 for (const [name, text] of shapes) {
   const charCount = text.replace(/\s/g, "").length;
-  humanize(text, { intensity: 0.9, seed: 42, zhuqueMode: true }); // 预热
+  humanize(text, { intensity: 0.9, seed: 42, enhancementMode: true }); // 预热
   const t3 = performance.now();
-  for (let i = 0; i < 3; i++) humanize(text, { intensity: 0.9, seed: 42 + i, zhuqueMode: true });
+  for (let i = 0; i < 3; i++) humanize(text, { intensity: 0.9, seed: 42 + i, enhancementMode: true });
   console.log(
     `${name.padEnd(14)} | ${String(charCount).padStart(5)}字 | ${((performance.now() - t3) / 3).toFixed(0)}ms`,
   );

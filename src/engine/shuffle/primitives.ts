@@ -97,18 +97,20 @@ const CONNECTOR_RES = new Map(
     new RegExp("([^。，；]{4,28}?)" + c + "([^。]{3,40})", "g"),
   ]),
 );
+const NOUN_SUBJECT_RE =
+  /^(?:部分|一些|多数|少数|许多|不少)?[\u4e00-\u9fa5A-Za-z0-9]{2,12}(?:商户|企业|用户|学生|团队|公司|机构|系统|产品|项目)$/;
 
 export function splitOnConnectors(text: string, rng: () => number, p: number): string {
   for (const c of ["使得", "导致"]) {
     const re = CONNECTOR_RES.get(c)!;
     text = text.replace(re, (_m: string, pre: string, post: string) =>
-      rng() < p ? pre + "。结果" + post : _m,
+      rng() < p && !NOUN_SUBJECT_RE.test(pre.trim()) ? pre + "。结果" + post : _m,
     );
   }
   for (const c of ["这样一来", "在此基础上", "与此同时", "正因如此"]) {
     const re = CONNECTOR_RES.get(c)!;
     text = text.replace(re, (_m: string, pre: string, post: string) =>
-      rng() < p ? pre + "。" + c + post : _m,
+      rng() < p && !NOUN_SUBJECT_RE.test(pre.trim()) ? pre + "。" + c + post : _m,
     );
   }
   return text;

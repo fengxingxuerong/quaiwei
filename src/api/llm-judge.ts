@@ -15,7 +15,7 @@ export interface JudgeResult {
 
 /** 带痕迹的评判：先列痕迹再打分。让模型"给出依据再下结论"，
  *  打分自洽性远高于裸打分（裸打同一文本能 10~72 乱跳）。
- *  systemOverride：自定义检测员提示词（朱雀语义层用它换上"篇章层检测"战术）。 */
+ *  systemOverride：自定义检测员提示词（质量评判层用它换上"篇章层检测"战术）。 */
 export async function judgeWithCritique(
   text: string,
   cfg: ApiConfig,
@@ -103,7 +103,7 @@ function median(nums: number[]): number {
 /** 稳健评分：配置了交叉评判模型时，主模型与交叉模型各评 1 次取均值（1+1，
  *  兼顾去自评偏差与速度——glm-5.2 单次要 15~20s）；未配置时同一模型评 3 次取中位数。
  *  顺带返回交叉模型的痕迹清单，省掉深度闭环里单独再取一次痕迹的调用。
- *  systemOverride：透传给 judgeWithCritique（朱雀语义层专用提示词）。 */
+ *  systemOverride：透传给 judgeWithCritique（质量评判层专用提示词）。 */
 export async function judgeScoreStable(
   text: string,
   cfg: ApiConfig,

@@ -47,7 +47,7 @@ for (const [name, text] of SAMPLES) {
     const row: string[] = [];
     const lens: number[] = [];
     for (const style of STYLES) {
-      const out = humanize(text, { intensity, zhuqueMode: true, style, seed: 20260826 } as never);
+      const out = humanize(text, { intensity, enhancementMode: true, style, seed: 20260826 } as never);
       const sc = aiScore(out);
       agg[style].push(sc.score);
       row.push(`${String(sc.score).padEnd(3)}(${String(sc.brokenHits).padStart(1)}/${String(sc.structureHits).padStart(1)})`.padEnd(11));

@@ -96,6 +96,30 @@ export function importFileToText(f: File): Promise<ImportOutcome> {
   });
 }
 
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* 降级到 textarea */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 /** 导出 .docx：纯文本按段落生成最小合法 OOXML（富文本格式不保留——引擎输出本就是纯文本） */
 export async function exportDocxBlob(output: string): Promise<Blob> {
   return writeDocxText(output);

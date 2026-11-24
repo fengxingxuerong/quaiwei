@@ -76,7 +76,7 @@ describe("SKILL.md 诚实边界（锁住不许被删）", () => {
   it("三条核心免责声明在位", () => {
     expect(SKILL).toContain("不承诺通过任何检测器");
     expect(SKILL).toContain("代理分");
-    expect(SKILL).toContain("人写稿别去味");
+    expect(SKILL).toContain("人写稿别过度去味");
     expect(SKILL).toContain("换词不换骨");
   });
 

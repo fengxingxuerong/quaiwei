@@ -40,7 +40,7 @@ function rolePlayFetch(): { fetch: ReturnType<typeof vi.fn>; count: () => number
     }
     if (sys.includes("改写专家")) {
       // 改写通道：返回能过本地硬门槛的正文（须先于评判判定——
-      // SYSTEM_PROMPT 正文中提及"朱雀"，按包含词判定会误入语义层分支）
+      // SYSTEM_PROMPT 正文中提及"本地"，按包含词判定会误入语义层分支）
       return okJson({ choices: [{ message: { content: GOOD_REWRITE } }] });
     }
     // 评判/语义层检测员通道：痕迹清单 + 末行独立 0-100 整数

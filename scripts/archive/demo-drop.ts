@@ -23,7 +23,7 @@ for (const { name, text } of samples) {
   const rzq = humanizeWithScore(text, {
     intensity: 0.9,
     seed: 42,
-    zhuqueMode: true,
+    enhancementMode: true,
     style: "casual",
   });
   console.log("  原始 aiScore      :", before.before.score);
@@ -42,14 +42,14 @@ for (const { name, text } of samples) {
     ")",
   );
   console.log(
-    "  强度 0.9 + 朱雀 → :",
+    "  强度 0.9 + 本地 → :",
     rzq.after.score,
     " (降幅",
     before.before.score - rzq.after.score,
     ")",
   );
   console.log(
-    "  朱雀输出(首160字):",
+    "  本地输出(首160字):",
     rzq.text.slice(0, 160).replace(/\n/g, "↵"),
   );
   console.log(

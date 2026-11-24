@@ -109,7 +109,7 @@ had never been verified on this machine, so it was removed.
 |---|---|---|
 | `--intensity <0-1>` | `0.6` | Rewrite strength; use `0.9` explicitly for aggressive rewriting |
 | `--style` | `plain` | `plain` \| `casual` \| `academic` — use `academic`/`plain` for papers and official documents |
-| `--zhuque` | off | Injects anti-fingerprint features |
+| `--enhancement` | off | Injects additional expression features |
 | `--seed <n>` | `20260905` | Fixes randomness, makes runs reproducible |
 | `--explain` | off | Emits a per-edit trace: which rule fired, which table it came from |
 | `--strict` | off | Refuses delivery and rolls back if facts were invented |
@@ -157,10 +157,7 @@ measured at 0.40 between "merge on / split off" thresholds).
   the external detector said "definitely AI" (**90**). Four of five deliverables scored ≤13 locally
   and ≥70 externally. Do not use the before/after drop as a safety verdict — the UI shows a banner
   when local and external scores disagree hard.
-- The old aiScore → Zhuque official-score calibration (18 hand-transcribed points, a per-genre
-  conversion line, drift ratchet, evidence ledger with **0/18 credential coverage**) was **removed
-  entirely in v0.9.83**: an unverifiable conversion pretends to a precision it cannot back.
-  History lives in `docs/fingerprint-and-zhuque-calibration.md` (archived).
+- Local and LLM scores are proxy metrics only; use an external detector when an external verdict is required.
 
 ## Competitor landscape (measured 2026-11-19; scan script: `node scripts/scan-github-sector.mjs --md`)
 
@@ -174,9 +171,8 @@ measured at 0.40 between "merge on / split off" thresholds).
 | **quaiwei** | 4 | ✓ | ✓ | LLM deep mode only | **✓ any HTTP endpoint, multi-vendor** |
 
 Self-reported pass-rates elsewhere (">50% → 11%", "100% human-rate cases") have **not been
-reproduced here** — and no forward pass-rate sample exists in this repo either (the credential
-ledger, stuck at 0/18, was removed with the calibration subsystem in v0.9.83). Both facts are
-stated so the reader can tell them apart.
+reproduced here**, and no forward pass-rate sample exists in this repo. Both facts are stated so
+the reader can tell them apart.
 
 ## Development
 

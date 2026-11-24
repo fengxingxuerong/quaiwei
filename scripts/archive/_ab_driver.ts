@@ -42,7 +42,7 @@ async function measure(label: string) {
   const { humanize, aiScore } = mod;
   const parts: string[] = [];
   for (const [name, text, genre] of CASES) {
-    const out = humanize(text, { intensity: 0.9, zhuqueMode: true, genre, seed: 7 });
+    const out = humanize(text, { intensity: 0.9, enhancementMode: true, genre, seed: 7 });
     const s = aiScore(out);
     parts.push(`${name}=${String(s.score).padStart(3)}(句式${String(s.structureHits).padStart(2)})`);
   }

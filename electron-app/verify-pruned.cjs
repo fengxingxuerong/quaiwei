@@ -28,7 +28,9 @@ const { createRequire } = require("module");
 
 const args = process.argv.slice(2);
 const di = args.indexOf("--dist");
-const DIST = di >= 0 ? args[di + 1] : path.join(__dirname, "..", "electron-dist", "QuAiWei-win32-x64");
+const DIST = path.resolve(
+  di >= 0 ? args[di + 1] : path.join(__dirname, "..", "electron-dist", "QuAiWei-win32-x64"),
+);
 const APP = path.join(DIST, "resources", "app");
 const NM = path.join(APP, "node_modules");
 

@@ -3,7 +3,7 @@
  * ---------------------------------------------------------
  * 只覆盖「确定性收口」的纯函数：句长上限、破折号上限、语气词密度上限。
  * 这三个是最后的兜底闸门——上游注入器可以随便加料，闸门必须把结果压回
- * 人味区间；闸门一旦失效，朱雀分数会静默劣化且看不出是哪一步出的错。
+ * 人味区间；闸门一旦失效，本地代理分数会静默劣化且看不出是哪一步出的错。
  * 均为零随机、幂等，可精确断言。
  */
 import { describe, it, expect } from "vitest";
@@ -149,6 +149,12 @@ describe("clampAvgSentenceLenUnder25（句长硬上限）", () => {
     expect(fragmentCanStand("以免影响后续流程")).toBe(false);
     // 对照组：不是目的连词开头 → 照常放行
     expect(fragmentCanStand("这次改版将推动整个行业重新洗牌。")).toBe(true);
+  });
+
+  it("名词性主语碎片不能独立成句", () => {
+    expect(fragmentCanStand("部分小微商户")).toBe(false);
+    expect(fragmentCanStand("一些企业")).toBe(false);
+    expect(fragmentCanStand("部分小微商户已经完成调整")).toBe(true);
   });
 
   it("v0.9.59：递进/转折连词开头的 rest 不能独立成句（而且/并且/但是/而是）", () => {
@@ -554,7 +560,7 @@ describe("句尾锚点注入收口", () => {
  * 技术文本里中文动词与英文标识符/数字/路径紧邻时，替换后极易产出
  * "不帮 CommonJS"、"预搭阶段" 这类语义错误。
  *
- * 探针实测的对照（intensity 0.9 + zhuqueMode，seed 固定）：
+ * 探针实测的对照（intensity 0.9 + enhancementMode，seed 固定）：
  *   「提升 CommonJS」→「提高 CommonJS」  ← 放行
  *   「提升CommonJS」 → 原样不动        ← before 末尾是 ASCII，守卫拦下
  *
@@ -564,7 +570,7 @@ describe("句尾锚点注入收口", () => {
  * 提升是混合池（[提高, 拔高]），正式体裁走安全候选「提高」，是真替换。
  */
 describe("混排守卫：中文动词紧贴 ASCII 标识符时不替换", () => {
-  const run = (s: string) => humanize(s, { intensity: 0.9, zhuqueMode: true, seed: 42 });
+  const run = (s: string) => humanize(s, { intensity: 0.9, enhancementMode: true, seed: 42 });
 
   it("带空格 → 正常替换", () => {
     expect(run("提升 CommonJS")).not.toBe("提升 CommonJS");

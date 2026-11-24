@@ -62,7 +62,7 @@ export function mechanicalShuffle(text: string, opts: HumanizeOptions = {}): str
   const isDialogueGenre = genreKnob === "dialogue";
 
   // 2026-08-26 v2：真人指纹预检。命中 → 降级，修复"H0→H1/H2越去味越差"
-  const zhuqueBoost = (opts.zhuqueMode ?? false) && !isHumanHandGenre;
+  const enhancementBoost = (opts.enhancementMode ?? false) && !isHumanHandGenre;
   const finger = preDetectHumanFingerprint(text);
   const baseIntensity = Math.max(0, Math.min(1, opts.intensity ?? 0.3));
   let intensity = baseIntensity;
@@ -78,9 +78,9 @@ export function mechanicalShuffle(text: string, opts: HumanizeOptions = {}): str
   //   P7-B：显式 genre==main 且强度≥0.75 时放宽到 expoScore≥0.35（强制覆盖边缘论说文）
   const textExpoScore = classifyExpositionScore(text);
   const applyExpoP3 =
-    zhuqueBoost &&
+    enhancementBoost &&
     (genreKnob === "main" && intensity >= 0.75 ? textExpoScore >= 0.35 : textExpoScore >= 0.55);
-  // zhuqueBoost → 论说锚点(P3-4)、段首方差(P3-3)要求强度≥0.85，把用户传 0.7 自动升档到 0.9
+  // enhancementBoost → 论说锚点(P3-4)、段首方差(P3-3)要求强度≥0.85，把用户传 0.7 自动升档到 0.9
   const effAnchorIntensity = applyExpoP3 ? Math.max(intensity, 0.9) : intensity;
 
   // P8 场景块全格式保真：relax 段按行护盾——relaxColon 会把【场景：…】改成【场景，…】
@@ -99,7 +99,7 @@ export function mechanicalShuffle(text: string, opts: HumanizeOptions = {}): str
       .split(/\n\n+/)
       .map((p) => {
         const s = structuralShuffleParagraph(p, rng, intensity, {
-          zhuqueMode: zhuqueBoost,
+          enhancementMode: enhancementBoost,
           // P7-B/P7-E：体裁联动参数透传给结构层
           expoForceP3: applyExpoP3,
           skipSceneInject: isDialogueGenre,

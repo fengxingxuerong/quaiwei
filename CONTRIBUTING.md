@@ -115,7 +115,7 @@ README 标题行 / README「当前版本」行 / CHANGELOG 本版章节 / 两份
 
 ### 提交钩子（新克隆必看）
 
-`.githooks/pre-commit` 里有四道防线：密钥形态拦截 → 凭证账本 append-only → `tsc` → `eslint` + `prettier`。
+`.githooks/pre-commit` 里有三道防线：密钥形态拦截 → `tsc` → `eslint` + `prettier`。
 git 默认**不会**跑它，必须设 `core.hooksPath`：
 
 ```bash
