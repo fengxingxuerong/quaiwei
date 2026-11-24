@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-11-24T19:45:03.381Z",
+  "model": "sensenova-6.8-flash-lite",
+  "baseUrl": "https://token.sensenova.cn/v1",
+  "keyCount": 3,
+  "maxTokens": 512,
+  "promptModes": ["full", "concise"],
+  "prompt": "full=QuAiWei buildSystemPrompt; concise=相同保真约束的短提示词；均无深度闭环/LLM 评委",
+  "samples": 15,
+  "completed": 15,
+  "apiSuccess": 12,
+  "apiFailure": 3,
+  "hardFailureRows": 6,
+  "hardFailurePct": 50,
+  "byKind": {
+    "human": {
+      "runs": 2,
+      "avgAiIsmsIn": 7.5,
+      "avgAiIsmsOut": 0,
+      "avgChangedRatio": 0.535,
+      "hardFailures": 1
+    },
+    "ai": {
+      "runs": 9,
+      "avgAiIsmsIn": 8.2,
+      "avgAiIsmsOut": 0.6,
+      "avgChangedRatio": 0.527,
+      "hardFailures": 4
+    },
+    "adversarial": {
+      "runs": 1,
+      "avgAiIsmsIn": 3,
+      "avgAiIsmsOut": 0,
+      "avgChangedRatio": 0.554,
+      "hardFailures": 1
+    }
+  },
+  "failures": [
+    {
+      "id": "unslop/academic-abstract",
+      "kind": "human",
+      "issues": ["markdown-headings", "language-drift:en-to-zh"],
+      "output": "分布式缓存这事，现在基本算系统设计的默认选项了。但真到要动手做的时候，账得重新算一遍。\n\n先说个基本判断：缓存的核心价值，在于计算和冗余工作之间的成本差。这个逻辑听着简单，真正做起来牵扯的东西不少。你选了缓存，等于承认了一个前提——同样的结果，与其重新算一遍，不如存下来直接取。但这只是起点。后面要面对的问题是，怎么存、存哪里、存多久、失效了怎么办。这些决策环环相扣，不是挑一个组件装上就完事的。\n\n具体到选型，得看你自己的场景。有人用一个进程内的内存缓存就够了，有人得上分布式方案，甚至多层缓存组合。这两端之间，还有一堆中间选项，各有各的代价。没有哪个是普适的最优解，只能说在特定条件下，某个选择更划算。\n\n我们做这套评估的时候，用了行业标准的基准测试，配合现代的监控和统计工具，把不同策略放在几组典型负载下跑。测的过程不算复杂，麻烦的是结果怎么解读。同一个策略，读多写少的业务下表现好，换到写密集的流量上可能就崩了。所以结论必须绑定场景，不能抽象地谈优劣。\n\n这里有个容易被忽略的点：可观测性。很多团队把缓存设计完了，监控却没跟上，结果出问题的时候，根本不知道是命中率的问题、过期策略的问题，还是后端抖动的问题。没有观测，你连自己选对了没选对都不知道。这比选型本身更值得花时间。\n\n所以我的判断是：缓存选型是个多因素权衡，没有捷径。先把你的业务特征摸清楚，再谈用什么方案。别一上来就追求技术栈上的“先进”，先进的东西未必匹配你的流量模型。"
+    },
+    {
+      "id": "unslop/ai-slop-expanded-categories",
+      "kind": "ai",
+      "issues": ["markdown-headings"],
+      "output": "Today's release is a significant step in our developer experience roadmap.\n\n## What's New\n\nTeams need to balance deployment speed with system reliability. This release focuses on shipping faster without sacrificing quality.\n\n- A scheduler for multi-region deployments\n- New dashboards for observability\n- Secret rotation with an updated trust model\n- A CLI refactor based on our pipeline framework\n\nEach feature went through extensive review. Internal benchmarks show P99 latency down 34% and cold starts are seamless.\n\n## Why This Matters\n\nDeployment tooling has changed over the past decade. This release collapses three previously separate tools into one platform.\n\nThis is not a minor iteration or a simple refactor.\n\nThe system reflects our belief that infrastructure should be invisible to users. 3.0 is a major release.\n\n## Breaking Changes\n\nTo unlock the new scheduling model, the `legacy-queue` driver has been removed. If you use it, see the migration guide at https://humizzler.dev/migrate before upgrading. Because the new driver uses a different wire format, downgrades are not supported.\n\n```bash\nhumizzler migrate --from legacy-queue --to priority-fair\n```\n\nWe've renamed `--verbose` to `--debug` in the CLI for consistency.\n\n## Closing\n\nThis release reflects the community's contributions. It's a major release for Humizzler. More is coming in 3.1. Thank you for your continued support."
+    },
+    {
+      "id": "unslop/ai-slop-new-categories",
+      "kind": "ai",
+      "issues": ["markdown-headings", "language-drift:en-to-zh"],
+      "output": "旧系统比 Kubernetes 还老。这是最扎眼的事实——在你决定往生产环境塞新功能之前，摄取层得先重造一遍。我们的迁移不是为了赶时髦，就是为了确认这套做法真能扛住规模。\n\n先交代清楚观测性到底是什么：指标、日志、追踪这三样东西搅在一起，管道必须时刻有活水。团队看不懂这套动态环境，就会掉队，这不是危言耸听。\n\n迁移前，我们做了两件事。第一，验证方案能扩展，不是纸面推演。第二，向后兼容这条线不能断——现有的查询语言照旧能用，谁也别想借着升级把老接口掀了。\n\n平台到底快在哪？瓶颈不在查询，在摄取扇出。这次设计的核心是一个事件流环形缓冲区，查询直接绕过冷存储。冷库慢是事实，但缓冲区的存在让慢这事不再卡住查询路径。\n\n失败路径用得极少，不到 0.1% 的流量。查询超时了，退回旧路径，这个兜底机制存在但几乎不触发。说句实话，这个数字比我们预想的还低。\n\n设计上三条硬规矩，没有商量余地。正确性和性能冲突时，正确性赢。向后兼容不可协商。运维团队只能操作他们看得见的东西——这条听着像废话，但真做起来最容易踩空。\n\n可靠性和延迟之间的拉扯很微妙。默认参数不是拍脑袋定的，是反复校准出来的。没有猜测，没有含糊。\n\n代码长这样：\n\n```python\n# AI-slop words INSIDE a fence must survive humanization untouched.\n# delve tapestry testament intricate interplay crucial vibrant — all read-only.\ndef ingest(event: dict) -> None:\n    ring.append(event)\n    if ring.full():\n        flush_to_cold_store()\n```\n\n完整架构在 https://example.com/observability 有写。那里展开讲了很多，但核心就一句话：追踪系统在当下这个阶段有多要紧，看链路就知道。\n\n整个方案总结起来也简单：关键路径跑得快，仪表盘是活的，复杂的配置藏在合理默认值后面。就这点事。"
+    },
+    {
+      "id": "unslop/ai-slop-tutorial",
+      "kind": "ai",
+      "issues": [
+        "missing-numbers:300",
+        "lost-url:https://example.com/arch,https://example.com/caching",
+        "lost-quote:\"user:{user_id}\"",
+        "markdown-headings",
+        "markdown-linkTargets",
+        "language-drift:en-to-zh"
+      ],
+      "output": "缓存这东西，说白了就是拿空间换时间。算过的结果存下来，下次直接用。每个应用都有数据流，缓存就是复用已算的结果。但缓存有个大坑——失效难。源数据变了，缓存不知道，用户拿到的还是旧的。这问题从缓存出现那天起就没彻底解决过。虽然难，但有办法顺滑些。\n\n设计缓存，先想清楚"
+    },
+    {
+      "id": "unslop/significance-and-notability",
+      "kind": "adversarial",
+      "issues": ["missing-numbers:3A", "markdown-headings"],
+      "output": "The introduction of structured logging marks a shift in observability, reflecting the broader movement toward machine-readable telemetry in software engineering. This change has affected every production system built since 2015.\n\nMartin Fowler is a software architect known for his work on enterprise patterns. His thinking is widely cited in the field.\n\nCharity Majors is an observability engineer whose approach draws on operational experience. She contributes to discussions about what operators need during incidents.\n\nStructured logs provide a common format for telemetry, useful for downstream analytics. JSON is used for transport, schema validation happens at ingest, and versioned envelopes ensure forward compatibility."
+    },
+    {
+      "id": "stop-slop/example-5",
+      "kind": "ai",
+      "issues": ["language-drift:en-to-zh"],
+      "output": "最好的团队，琢磨的不是产出，是学东西。这话得分两头看：效率是眼前的事，学习是往后的事。光喊“要学习”没用，得看学什么、怎么学，学完能不能真用上。把学习当日常的团队，比当运动的，走得远。"
+    }
+  ]
+}

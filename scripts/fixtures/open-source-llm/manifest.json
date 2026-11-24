@@ -1,0 +1,26 @@
+{
+  "unslop": {
+    "repository": "https://github.com/MohamedAbdallah-14/unslop",
+    "commit": "0cf9e9e4c5a73dfef6484574cee4e52fb03603b8",
+    "license": "MIT",
+    "licenseFile": "licenses/unslop-MIT.txt",
+    "samples": 10,
+    "note": "9 个 benchmark fixtures + 1 个 preservation.original.md；其中 3 个与 human corpus 哈希一致。"
+  },
+  "stop-slop": {
+    "repository": "https://github.com/hardikpandya/stop-slop",
+    "commit": "8da1f030185bdfe8471220585162991eaeb970e9",
+    "license": "MIT",
+    "licenseFile": "licenses/stop-slop-MIT.txt",
+    "samples": 5,
+    "note": "references/examples.md 的 5 个 Before 示例。"
+  },
+  "no-ai-slop": {
+    "repository": "https://github.com/petergyang/no-ai-slop",
+    "commit": "000650b156983f5159695b441477f4e63b25dc85",
+    "license": "MIT",
+    "licenseFile": "licenses/no-ai-slop-MIT.txt",
+    "ruleFile": "no-ai-slop-eval.md",
+    "note": "43 项编辑与终检规则，用作本评测的检查维度；不作为文本样本。"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-11-24T19:45:18.814Z",
+  "samples": 15,
+  "llm": {
+    "apiSuccess": 12,
+    "apiFailure": 3,
+    "hardFailureRows": 6,
+    "fullyPassedRows": 6,
+    "issueCounts": {
+      "markdown-headings": 5,
+      "language-drift": 4,
+      "missing-numbers": 2,
+      "lost-url": 1,
+      "lost-quote": 1,
+      "markdown-linkTargets": 1,
+      "api-failure": 3
+    },
+    "apiErrors": {
+      "empty-content": 3
+    }
+  },
+  "local": {
+    "samples": 15,
+    "hardFailureRows": 0
+  },
+  "conclusion": "12 条真实 LLM 输出中 6 条完全通过、6 条存在语言/结构/事实保真失败；3 条最终为空正文（此前多档预算遇 429），不能评价其模型质量。本地引擎同批 15/15 通过。"
+}

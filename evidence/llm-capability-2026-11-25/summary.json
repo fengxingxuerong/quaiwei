@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-11-24T20:48:31.836Z",
+  "samples": 28,
+  "keyCount": 11,
+  "byModel": {
+    "glm-5.3": {
+      "runs": 1,
+      "apiSuccess": 1,
+      "apiFailure": 0,
+      "hardFailures": 0,
+      "hardFailurePct": 0,
+      "avgLatencyMs": 50656,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    },
+    "sensenova-6.8-flash": {
+      "runs": 10,
+      "apiSuccess": 1,
+      "apiFailure": 9,
+      "hardFailures": 1,
+      "hardFailurePct": 100,
+      "avgLatencyMs": 3484,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "byLanguage": {
+    "zh": {
+      "runs": 11,
+      "apiSuccess": 2,
+      "apiFailure": 9,
+      "hardFailures": 1,
+      "hardFailurePct": 50,
+      "avgLatencyMs": 27070,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "byKind": {
+    "ai": {
+      "runs": 11,
+      "apiSuccess": 2,
+      "apiFailure": 9,
+      "hardFailures": 1,
+      "hardFailurePct": 50,
+      "avgLatencyMs": 27070,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "issueCounts": {
+    "collapse": 1
+  },
+  "failures": [
+    {
+      "key": "sensenova-6.8-flash|concise|0.9|plain|zh-ai/email/short",
+      "id": "zh-ai/email/short",
+      "model": "sensenova-6.8-flash",
+      "language": "zh",
+      "kind": "ai",
+      "issues": [
+        "collapse:「经仓库验收」是原文「经仓库验收发现」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "尊敬的王经理：\n\n我是上海华源科技有限公司采购部的李明。贵司于2026年9月20日送达我司位于上海市浦东新区创新路88号仓库的原材料，共计200箱。经仓库验收，其中15箱外包装破损、受潮并明显挤压变形，部分箱体封口开裂。现请贵司尽快更换这15箱合格原材料，并于9月23日前送达我司。请确认具体处理时间及补货安排；如需现场核验，我司可提供验收照片和相关记录。\n\n此致  \n李明  \n上海华源科技有限公司采购部"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "samples": 28,
+  "languages": { "zh": 22, "en": 6 },
+  "kinds": { "ai": 15, "human": 4, "edge": 6, "structure": 1, "semantic": 2 },
+  "sources": [
+    {
+      "name": "sgaofen/humanizer-local-model",
+      "license": "Apache-2.0",
+      "selection": "6 个体裁各取最短 1 篇，再取 email/paper/zhihu/essay/report/social 最长 1 篇"
+    },
+    {
+      "name": "中文维基百科",
+      "license": "CC BY-SA 4.0",
+      "selection": "manifest 中 300~1800 字的前 2 篇，保留来源 URL"
+    },
+    {
+      "name": "Hello-SimpleAI/HC3-Chinese",
+      "license": "CC-BY-SA（遵循上游更严格许可）",
+      "selection": "psychology 子集前 2 条满足长度的人写答案，各截取前 800 字并标记 excerpt"
+    },
+    {
+      "name": "QuAiWei realcase",
+      "license": "项目内建语料",
+      "selection": "C3/C4/C5/C6/C9/C17，覆盖英文术语、数字规格、引语、学术、代码 URL、判决书"
+    },
+    {
+      "name": "unslop / stop-slop",
+      "license": "MIT",
+      "selection": "release notes、真人文档、QA、preservation、两条短示例"
+    },
+    {
+      "name": "op7418/Humanizer-zh",
+      "license": "MIT",
+      "selection": "quotation 与 conditional_launch 两条语义边界"
+    }
+  ],
+  "caveats": [
+    "human 仅 4 条，且维基/知乎来源不能代表所有真人写作。",
+    "本轮不调用官方 AI 检测器，aiScore 与 LLM 评委都只是代理证据。",
+    "API 结果受模型、提示词、token 预算、网关限流影响，必须记录模型与日期。"
+  ]
+}

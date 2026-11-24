@@ -1,0 +1,107 @@
+[
+  {
+    "id": "unslop/academic-abstract",
+    "kind": "human",
+    "issues": [],
+    "charsIn": 2326,
+    "charsOut": 2324
+  },
+  {
+    "id": "unslop/ai-slop-expanded-categories",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 2489,
+    "charsOut": 2487
+  },
+  {
+    "id": "unslop/ai-slop-new-categories",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 2387,
+    "charsOut": 2386
+  },
+  {
+    "id": "unslop/ai-slop-release-notes",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 1183,
+    "charsOut": 1181
+  },
+  {
+    "id": "unslop/ai-slop-tutorial",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 1962,
+    "charsOut": 1960
+  },
+  {
+    "id": "unslop/direct-address-doc",
+    "kind": "human",
+    "issues": [],
+    "charsIn": 1462,
+    "charsOut": 1461
+  },
+  {
+    "id": "unslop/flat-paragraph-bait",
+    "kind": "adversarial",
+    "issues": [],
+    "charsIn": 2175,
+    "charsOut": 2174
+  },
+  {
+    "id": "unslop/qa-format",
+    "kind": "human",
+    "issues": [],
+    "charsIn": 1949,
+    "charsOut": 1946
+  },
+  {
+    "id": "unslop/significance-and-notability",
+    "kind": "adversarial",
+    "issues": [],
+    "charsIn": 1317,
+    "charsOut": 1316
+  },
+  {
+    "id": "unslop/preservation",
+    "kind": "structure",
+    "issues": [],
+    "charsIn": 717,
+    "charsOut": 715
+  },
+  {
+    "id": "stop-slop/example-1",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 129,
+    "charsOut": 129
+  },
+  {
+    "id": "stop-slop/example-2",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 142,
+    "charsOut": 142
+  },
+  {
+    "id": "stop-slop/example-3",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 156,
+    "charsOut": 156
+  },
+  {
+    "id": "stop-slop/example-4",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 76,
+    "charsOut": 76
+  },
+  {
+    "id": "stop-slop/example-5",
+    "kind": "ai",
+    "issues": [],
+    "charsIn": 135,
+    "charsOut": 134
+  }
+]
