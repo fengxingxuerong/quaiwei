@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
-title 趣AI味 QuAiWei v0.9.90 - 一键启动
+title 趣AI味 QuAiWei v0.9.91 - 一键启动
 cd /d "%~dp0"
 
 echo ================================================
-echo    趣AI味 QuAiWei v0.9.90 - 一键启动
+echo    趣AI味 QuAiWei v0.9.91 - 一键启动
 echo    把 AI 写的文章改得更像人写的
 echo    本地引擎离线可用 + 可选 LLM + 表达增强
 echo ================================================

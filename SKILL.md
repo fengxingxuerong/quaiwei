@@ -8,7 +8,7 @@ description_zh: 趣AI味 QuAiWei（简体中文去 AI 味）——本地离线�
 description_en: Remove AI-sounding Chinese prose with an offline deterministic engine or an optional LLM loop. Local proxy scores only; no detector-pass guarantee.
 license: MIT
 metadata:
-  version: 0.9.90
+  version: 0.9.91
   repo: https://github.com/fengxingxuerong/quaiwei
 ---
 
