@@ -5,8 +5,9 @@
  * Node fetch 能过。flip_for / parse_pair 逐字复刻 ab_accept.py，不碰归档脚本
  * （eval-dual-consistency.test.ts 守着它）。
  *
- * ⚠️ 本脚本只记录原始输出与判定；有效性需人工核对 rawFull 是否为纯「甲」/「乙」。
- *    模型若输出推理再抠字，结果是噪声，不得当有效票。
+ * ⚠️ STRICT=1（默认）：只认纯「甲/乙」或 {"pick":"甲"}，非严格输出记无效票（clean=false），
+ *    绝不从推理里抠字。实测 bailu-2.8 严格 JSON 提示把干净率从 19% 提到 53%
+ *    （evidence/convergence-bailu-mirror-2026-11-25/）。STRICT=0 是旧兼容模式，不建议用于结论。
  *
  * 用法：
  *   BASE=eval-work/ab-low-yield ARM_A=arms-skip ARM_B=arms-soft \
@@ -34,9 +35,13 @@ const SEATS = [
   { seat: "A", model: process.env.MODEL_A || "bailu-2.8", key: KEY_A },
   { seat: "B", model: process.env.MODEL_B || "yuyu-air", key: KEY_B },
 ];
-const SYS =
-  "你是中文文本鉴别员。下面给你两段内容相近的文本甲和乙。请判断哪一段更像 AI 生成的。" +
-  "只输出一个字：甲或乙。不要输出解释、标点或其他文字。";
+// STRICT=1（默认）：只认严格格式输出——纯「甲」/「乙」或 {"pick":"甲"}，
+// 非严格输出一律记无效票（绝不猜字）。复刻项目纪律：抠字=噪声，不得当有效票。
+const STRICT = process.env.STRICT !== "0";
+const SYS = STRICT
+  ? '你是文本鉴别员。判断哪段更像 AI 生成。只输出 JSON：{"pick":"甲"} 或 {"pick":"乙"}。禁止解释、禁止标点、禁止英文。'
+  : "你是中文文本鉴别员。下面给你两段内容相近的文本甲和乙。请判断哪一段更像 AI 生成的。" +
+    "只输出一个字：甲或乙。不要输出解释、标点或其他文字。";
 
 const corpusDir = path.join(BASE, "corpus");
 const ids = fs
@@ -50,7 +55,15 @@ function flipFor(cid, seat, tag = "ab") {
   const v = ([...cid].reduce((a, c) => a + c.charCodeAt(0), 0) + tag.length) % 2 === 0;
   return seat === "B" ? !v : v;
 }
+/** 严格解析：只认纯「甲/乙」或 {"pick":"甲"}，其余一律 null（无效票，绝不猜字）。 */
+function parseStrict(c) {
+  const s = String(c ?? "").trim();
+  if (/^[甲乙]$/.test(s)) return s;
+  const m = /^\{"pick"\s*:\s*"([甲乙])"\}$/.exec(s);
+  return m ? m[1] : null;
+}
 function parsePair(c) {
+  if (STRICT) return parseStrict(c);
   if (!c) return null;
   for (let i = c.length - 1; i >= 0; i--) if (c[i] === "甲" || c[i] === "乙") return c[i];
   for (const ch of c) if (ch === "A" || ch === "B") return ch === "A" ? "甲" : "乙";
@@ -62,11 +75,12 @@ async function call(up, user) {
   const body = JSON.stringify({
     model: up.model,
     temperature: 0,
-    max_tokens: 96,
+    max_tokens: STRICT ? 16 : 96,
     messages: [
       { role: "system", content: SYS },
       { role: "user", content: user },
     ],
+    ...(STRICT ? { response_format: { type: "json_object" } } : {}),
   });
   for (let i = 0; i < 3; i++) {
     try {
@@ -102,8 +116,10 @@ for (const up of SEATS) {
     const flip = flipFor(cid, up.seat);
     const first = flip ? b : a;
     const second = flip ? a : b;
-    const user =
-      "甲：\n<<<" + first + ">>>\n\n乙：\n<<<" + second + ">>>\n\n哪一段更像 AI 生成的？只输出「甲」或「乙」。";
+    const tail = STRICT
+      ? '哪一段更像 AI 生成的？只输出 JSON：{"pick":"甲"} 或 {"pick":"乙"}。'
+      : "哪一段更像 AI 生成的？只输出「甲」或「乙」。";
+    const user = "甲：\n<<<" + first + ">>>\n\n乙：\n<<<" + second + ">>>\n\n" + tail;
     const raw = await call(up, user);
     const err = typeof raw === "object" ? raw.error : null;
     const pick = err ? null : parsePair(raw);
@@ -111,7 +127,7 @@ for (const up of SEATS) {
     const rec = {
       key, id: cid, seat: up.seat, model: up.model, aIsFirst: flip, pick, chosen,
       bWin: chosen ? chosen === "b" : null,
-      clean: /^[甲乙]$/.test(String(raw || "").trim()),
+      clean: STRICT ? pick !== null : /^[甲乙]$/.test(String(raw || "").trim()),
       raw: err ? "" : String(raw).slice(0, 40),
       rawFull: err ? "" : String(raw),
       err,
