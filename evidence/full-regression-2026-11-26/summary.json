@@ -1,0 +1,171 @@
+{
+  "generatedAt": "2026-11-25T20:57:38.549Z",
+  "commit": "32230a1",
+  "scope": "发布前完整回归：静态门禁 + 单元 + 发版门禁 + 打包产物 + CLI 真实端到端 + 异源双席评判",
+  "gates": {
+    "vitest": {
+      "files": 127,
+      "tests": 2231,
+      "exit": 0
+    },
+    "tsc": {
+      "exit": 0
+    },
+    "eslint": {
+      "exit": 0
+    },
+    "checkRelease": {
+      "exit": 0,
+      "subGates": [
+        "check:env",
+        "check:version",
+        "check:regex",
+        "test:cov",
+        "test:regress",
+        "test:realcase",
+        "test:regress12",
+        "test:quality",
+        "test:improve",
+        "test:open-source",
+        "sweep:format"
+      ],
+      "durationSec": 139
+    },
+    "coverage": {
+      "stmt": 96.3,
+      "branch": 92.5,
+      "func": 97.9,
+      "lines": 97.2,
+      "thresholds": {
+        "stmt": 94,
+        "branch": 91,
+        "func": 95,
+        "lines": 95
+      }
+    },
+    "realcaseMatrix": {
+      "cases": 23,
+      "groupsPerCase": 10,
+      "totalGroups": 230,
+      "hardDefects": 0,
+      "softHints": 0
+    },
+    "smokeMcp": {
+      "checks": "11/11",
+      "protocol": "2025-06-18",
+      "version": "0.9.91"
+    },
+    "cliBundle": {
+      "humanizeCli": "549.2kb",
+      "mcp": "356.5kb"
+    }
+  },
+  "cliE2E": {
+    "corpus": "eval-work/ab-convergence-all/corpus 3 篇真人语料（老舍 2178 / 屠呦呦 2160 / 集成电路 3432 字）",
+    "localDefault": {
+      "behavior": "3/3 命中低收益风险，原样出稿，0 改写",
+      "chars": "7770→7770"
+    },
+    "localForced": {
+      "behavior": "3/3 改写生效",
+      "chars": "7770→7987",
+      "proxyScore": "22→17",
+      "engineMs": 220
+    },
+    "apiBailu": {
+      "model": "bailu-2.8 (bailucode)",
+      "mode": "--no-deep 单轮",
+      "totalMs": 473746,
+      "perFile": [
+        {
+          "id": "人物-现代作家-老舍",
+          "ms": 200002,
+          "chars": "2178→2109",
+          "note": "长文分块 3 块 + 保真修复 1 次（missing-numbers 已修）"
+        },
+        {
+          "id": "人物-科学家-屠呦呦",
+          "ms": 202027,
+          "chars": "2160→2160",
+          "note": "保真否决并回退原文：missing-numbers 91%,4,2026,10,14,96939,97570 / lost-url / quote-changed；定向修复失败"
+        },
+        {
+          "id": "科技-工程-集成电路",
+          "ms": 71717,
+          "chars": "3432→3432",
+          "note": "保真否决并回退原文：missing-numbers 86%,88%,90%,94%,4,2026,10,14,1倍 / added-numbers / lost-url / quote-changed"
+        }
+      ]
+    },
+    "apiDeepseek": {
+      "model": "deepseek-v4.1-flash-1017",
+      "verdict": "不可用：思考型，reasoning 吃满 max_tokens，content 恒空（4096 tokens 全为 reasoning，29.9s 后 content=0）；CLI 无兜底，单篇挂起 14 分钟无产出。已实测 thinking:{type:\"disabled\"} 可恢复（3.58s / 513 字）"
+    }
+  },
+  "dualSeatAB": {
+    "seats": {
+      "A": {
+        "endpoint": "discovery-api.intern-ai.org.cn",
+        "model": "deepseek-v4.1-flash-1017"
+      },
+      "B": {
+        "endpoint": "bailucode.com",
+        "model": "bailu-2.8"
+      }
+    },
+    "question": "哪段更像 AI 生成（甲/乙强制选择，位置翻转抵消偏置）",
+    "groups": [
+      {
+        "name": "真人语料 原文 vs 本地引擎改写",
+        "n": 3,
+        "votes": 6,
+        "clean": 6,
+        "bArmChosenAsAi": 6,
+        "rate": 1,
+        "consistency": "3/3 两席一致指向改写稿更像 AI"
+      },
+      {
+        "name": "真人语料 原文 vs LLM(bailu) 改写",
+        "n": 1,
+        "votes": 2,
+        "clean": 2,
+        "bArmChosenAsAi": 2,
+        "rate": 1,
+        "consistency": "1/1 两席一致指向改写稿更像 AI"
+      },
+      {
+        "name": "AI 稿(C1/C6/C16) 原文 vs 本地引擎改写",
+        "n": 3,
+        "votes": 6,
+        "clean": 6,
+        "bArmChosenAsAi": 2,
+        "rate": 0.333,
+        "consistency": "1/3 两席一致，改写方向对但不显著"
+      }
+    ]
+  },
+  "findings": [
+    "生产门禁全绿，但门禁不覆盖真实 LLM 链路：本轮 --api 单轮 3 篇耗时 7m54s，2/3 被保真门禁否决回原文。",
+    "保真门禁在真实语料上确实拦住了事实损坏（数字丢失 / URL 丢失 / 引语改写），这是有效防线，不是误报。",
+    "真人写好的稿子上改写（本地或 LLM）双席 8/8 一致判定更像 AI —— 印证 skipLowRisk 默认跳过的正确性。",
+    "AI 稿改写方向正确（改写被判更像 AI 仅 2/6）但样本小、两席一致率 1/3，不足以定性。",
+    "缺陷：思考型模型走 --api 会静默挂死（reasoning 吃满 token，content 空，CLI 无空内容快速失败/无 thinking 关闭参数）。"
+  ],
+  "defectFixed": {
+    "title": "--report 明文落盘网关凭证",
+    "detail": "args.apiKey / detectorKey / detectors[].key 原样写进 --report JSON，报告作为对外附件时直接泄漏凭证。已改为只留 *** 占位，附 2 条回归测试（撤销修复即变红）。"
+  },
+  "afterFixGates": {
+    "vitest": {
+      "files": 128,
+      "tests": 2233,
+      "exit": 0
+    },
+    "checkRelease": {
+      "exit": 0,
+      "okMarks": 90
+    },
+    "tsc": 0,
+    "eslint": 0
+  }
+}

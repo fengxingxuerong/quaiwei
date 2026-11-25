@@ -1,0 +1,146 @@
+{
+  "ts": "2026-11-25T20:55:12.414Z",
+  "args": {
+    "input": "D:/projects/_quaiwei-tmp/e2e-api/in",
+    "out": "D:/projects/_quaiwei-tmp/e2e-api/out",
+    "intensity": 0.7,
+    "enhancement": false,
+    "style": "plain",
+    "variant": "none",
+    "academicCheck": false,
+    "auditStructure": false,
+    "metrics": false,
+    "against": "",
+    "styleExplicit": false,
+    "suffix": ".humanized",
+    "seed": 20260905,
+    "api": true,
+    "baseUrl": "https://bailucode.com/openapi/v1",
+    "model": "bailu-2.8",
+    "apiKey": "***REDACTED***",
+    "judgeModel": "",
+    "altModel": "",
+    "deep": false,
+    "contest": 1,
+    "maxCalls": 6,
+    "maxWait": 0,
+    "llmTimeout": 300,
+    "reasoningEffort": "",
+    "reasoningEffortFormat": "nested",
+    "target": 0,
+    "strict": false,
+    "structural": false,
+    "skipLowRisk": false,
+    "persona": "default",
+    "report": "D:/projects/_quaiwei-tmp/e2e-api/report.json",
+    "voiceSamplePath": "",
+    "pinFile": "",
+    "docxInplace": false,
+    "outFormat": "follow",
+    "explain": false,
+    "recursive": false,
+    "jobs": 1,
+    "dryRun": false,
+    "stdin": false,
+    "help": false,
+    "detectOnly": false,
+    "detectors": [],
+    "detectorUrl": "",
+    "detectorKey": "",
+    "detectorPath": "score",
+    "detectorScale": "0-100"
+  },
+  "totals": {
+    "files": 3,
+    "ok": 3,
+    "fail": 0,
+    "skippedSuffix": 0,
+    "lowYieldRisk": 3,
+    "skippedLowRisk": 0,
+    "structuralApplied": 0,
+    "pinApplied": 0,
+    "pinFallback": 0,
+    "pinRetried": 0,
+    "charsIn": 7770,
+    "charsOut": 7701,
+    "msTotal": 473746
+  },
+  "reports": [
+    {
+      "file": "人物-现代作家-老舍.txt",
+      "ms": 200002,
+      "charsIn": 2178,
+      "charsOut": 2109,
+      "detectBefore": 23,
+      "detectAfter": 33,
+      "registerBefore": {
+        "index": 61,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "llm",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "长文分块处理（3 块） · 保真修复 1 次（missing-numbers:80%,81%,88%,4,2026,10,14）",
+      "degrade": [],
+      "registerAfter": {
+        "index": 54,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\e2e-api\\out\\人物-现代作家-老舍.humanized.txt"
+    },
+    {
+      "file": "人物-科学家-屠呦呦.txt",
+      "ms": 202027,
+      "charsIn": 2160,
+      "charsOut": 2160,
+      "detectBefore": 20,
+      "detectAfter": 20,
+      "registerBefore": {
+        "index": 65,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "passthrough",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "⚠️ LLM 保真否决：missing-numbers:91%,4,2026,10,14,96939,97570；定向修复失败（修复稿仍未通过：added-numbers:100万；quote-changed） —— 已保留原文。LLM 稿未通过客观保真门禁（missing-numbers:91%,4,2026,10,14,96939,97570；added-numbers:100万；lost-url:https://zh.wikipedia.org/wiki/%E5%B1%A0%E5%91%A6%E5%91%A6；quote-changed）；定向修复失败（修复稿仍未通过：added-numbers:100万；quote-changed），已保留原文",
+      "degrade": [
+        "LLM 保真否决：missing-numbers:91%,4,2026,10,14,96939,97570；定向修复失败（修复稿仍未通过：added-numbers:100万；quote-changed） —— 已保留原文"
+      ],
+      "registerAfter": {
+        "index": 65,
+        "label": "偏书面"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\e2e-api\\out\\人物-科学家-屠呦呦.humanized.txt"
+    },
+    {
+      "file": "科技-工程-集成电路.txt",
+      "ms": 71717,
+      "charsIn": 3432,
+      "charsOut": 3432,
+      "detectBefore": 23,
+      "detectAfter": 23,
+      "registerBefore": {
+        "index": 65,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "engine": "passthrough",
+      "usedApi": true,
+      "roundScores": [],
+      "note": "⚠️ LLM 保真否决：missing-numbers:86%,88%,90%,94%,4,2026,10,14,1倍；定向修复失败（修复稿仍未通过：missing-numbers:86%,88%,90%,94%,4,2026,10,14,1倍；lost-url:https://zh.wikipedia.org/wiki/%E9%9B%86%E6%88%90%E7%94%B5%E8%B7%AF；quote-changed） —— 已保留原文。LLM 稿未通过客观保真门禁（missing-numbers:86%,88%,90%,94%,4,2026,10,14,1倍；added-numbers:1000万；lost-url:https://zh.wikipedia.org/wiki/%E9%9B%86%E6%88%90%E7%94%B5%E8%B7%AF；quote-changed）；定向修复失败（修复稿仍未通过：missing-numbers:86%,88%,90%,94%,4,2026,10,14,1倍；lost-url:https://zh.wikipedia.org/wiki/%E9%9B%86%E6%88%90%E7%94%B5%E8%B7%AF；quote-changed），已保留原文",
+      "degrade": [
+        "LLM 保真否决：missing-numbers:86%,88%,90%,94%,4,2026,10,14,1倍；定向修复失败（修复稿仍未通过：missing-numbers:86%,88%,90%,94%,4,2026,10,14,1倍；lost-url:https://zh.wikipedia.org/wiki/%E9%9B%86%E6%88%90%E7%94%B5%E8%B7%AF；quote-changed） —— 已保留原文"
+      ],
+      "registerAfter": {
+        "index": 65,
+        "label": "偏书面"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\e2e-api\\out\\科技-工程-集成电路.humanized.txt"
+    }
+  ]
+}

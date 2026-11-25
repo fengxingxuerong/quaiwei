@@ -1,0 +1,2 @@
+{"key":"pair|人物-现代作家-老舍|A","id":"人物-现代作家-老舍","seat":"A","model":"deepseek-v4.1-flash-1017","aIsFirst":true,"pick":"甲","chosen":"b","formatRetries":0,"bWin":true,"clean":true,"raw":"{\"pick\":\"甲\"}","rawFull":"{\"pick\":\"甲\"}","err":null}
+{"key":"pair|人物-现代作家-老舍|B","id":"人物-现代作家-老舍","seat":"B","model":"bailu-2.8","aIsFirst":false,"pick":"乙","chosen":"b","formatRetries":0,"bWin":true,"clean":true,"raw":"{\"pick\":\"乙\"}","rawFull":"{\"pick\":\"乙\"}","err":null}
