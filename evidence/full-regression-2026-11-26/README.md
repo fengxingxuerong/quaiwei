@@ -18,7 +18,7 @@ HEAD `32230a1` · v0.9.91 工作树干净状态下跑的完整一轮。
 | MCP 冒烟 | **11/11**（协议 2025-06-18，版本 0.9.91） |
 | CLI 产物 | humanize-cli 549.2kb / quaiwei-mcp 356.5kb，可加载可跑 |
 
-原始日志：`check-release.log`。
+原始日志：`check-release.txt`。
 
 ## 二、CLI 本地引擎端到端（3 篇真人语料）
 
