@@ -74,8 +74,10 @@ function parsePair(c) {
 async function call(up, user) {
   const body = JSON.stringify({
     model: up.model,
-    temperature: 0,
-    max_tokens: STRICT ? 16 : 96,
+    temperature: Number(process.env.TEMPERATURE ?? 0),
+    // 思考型模型（如 SenseNova flash-lite）的 reasoning 会吃满 token 预算导致 content 为空；
+    // 默认保持原值不变，需时显式调大（例 MAX_TOKENS=512）。
+    max_tokens: Number(process.env.MAX_TOKENS ?? (STRICT ? 16 : 96)),
     messages: [
       { role: "system", content: SYS },
       { role: "user", content: user },
