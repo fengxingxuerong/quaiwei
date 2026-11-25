@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-11-25T19:54:53.697Z",
+  "task": "低分稿「跳过 vs 少改(0.3)」异源双席配对强制选择",
+  "arms": {
+    "A": "原文（当前默认跳过行为）",
+    "B": "humanize(intensity 0.3, seed 42) 低强度改写"
+  },
+  "corpus": {
+    "hitArticles": 10,
+    "judgeablePairs": 5,
+    "note": "10 篇命中低分稿信号，仅 5 篇两臂实际不同（其余 same=true 无可判差异）"
+  },
+  "judges": {
+    "seatA": {
+      "endpoint": "https://discovery-api.intern-ai.org.cn/v1",
+      "model": "deepseek-v4.1-flash-1017"
+    },
+    "seatB": {
+      "endpoint": "https://bailucode.com/openapi/v1",
+      "model": "bailu-2.8"
+    }
+  },
+  "votes": {
+    "total": 10,
+    "clean": 10,
+    "httpErrors": 0,
+    "nonStrict": 0
+  },
+  "result": {
+    "bArmChosenAsAi": 5,
+    "rate": 0.5,
+    "pValue": 1,
+    "perSeatA": [
+      2,
+      5
+    ],
+    "perSeatB": [
+      3,
+      5
+    ],
+    "agreement": 0.4
+  },
+  "conclusion": "50% 精确对半 ⇒ 无双席可识别差异；样本仅 5 对、统计力不足，维持默认跳过，不上线少改"
+}

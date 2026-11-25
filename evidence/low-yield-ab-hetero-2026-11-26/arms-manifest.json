@@ -1,0 +1,106 @@
+{
+  "intensity": 0.3,
+  "seed": 42,
+  "rows": [
+    {
+      "id": "C4-product-copy",
+      "hit": true,
+      "formalPer1k": 6.29,
+      "chars": 267,
+      "same": false,
+      "scoreSkip": 18,
+      "scoreSoft": 2,
+      "delta": -16
+    },
+    {
+      "id": "C5-news-release",
+      "hit": true,
+      "formalPer1k": 0,
+      "chars": 198,
+      "same": true,
+      "scoreSkip": 17,
+      "scoreSoft": 17,
+      "delta": 0
+    },
+    {
+      "id": "C7-story-dialogue",
+      "hit": true,
+      "formalPer1k": 0,
+      "chars": 208,
+      "same": true,
+      "scoreSkip": 8,
+      "scoreSoft": 8,
+      "delta": 0
+    },
+    {
+      "id": "C8-social-post",
+      "hit": true,
+      "formalPer1k": 0,
+      "chars": 118,
+      "same": false,
+      "scoreSkip": 12,
+      "scoreSoft": 12,
+      "delta": 0
+    },
+    {
+      "id": "C13-manual-steps",
+      "hit": true,
+      "formalPer1k": 5.95,
+      "chars": 224,
+      "same": false,
+      "scoreSkip": 20,
+      "scoreSoft": 1,
+      "delta": -19
+    },
+    {
+      "id": "C15-policy-qa",
+      "hit": true,
+      "formalPer1k": 0,
+      "chars": 216,
+      "same": true,
+      "scoreSkip": 18,
+      "scoreSoft": 18,
+      "delta": 0
+    },
+    {
+      "id": "C17-verdict-labor",
+      "hit": true,
+      "formalPer1k": 0,
+      "chars": 291,
+      "same": false,
+      "scoreSkip": 10,
+      "scoreSoft": 6,
+      "delta": -4
+    },
+    {
+      "id": "C18-tender-spec",
+      "hit": true,
+      "formalPer1k": 0,
+      "chars": 273,
+      "same": true,
+      "scoreSkip": 8,
+      "scoreSoft": 8,
+      "delta": 0
+    },
+    {
+      "id": "C19-kids-essay",
+      "hit": true,
+      "formalPer1k": 0,
+      "chars": 146,
+      "same": true,
+      "scoreSkip": 8,
+      "scoreSoft": 8,
+      "delta": 0
+    },
+    {
+      "id": "C20-speech-opening",
+      "hit": true,
+      "formalPer1k": 4.93,
+      "chars": 233,
+      "same": false,
+      "scoreSkip": 23,
+      "scoreSoft": 10,
+      "delta": -13
+    }
+  ]
+}
