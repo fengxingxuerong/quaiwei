@@ -1651,12 +1651,20 @@ async function main() {
   if (args.report) {
     const rp = path.resolve(args.report);
     fs.mkdirSync(path.dirname(rp), { recursive: true });
+    // v0.9.92：报告里的凭证一律脱敏。--report 常被当成对外附件（发同事/客户/贴 issue），
+    // 明文 key 写进去等于泄漏；这里只保留「有没有配过」。detector 档位的 key 同理。
+    const reportArgs = {
+      ...args,
+      apiKey: args.apiKey ? "***" : "",
+      detectorKey: args.detectorKey ? "***" : "",
+      detectors: args.detectors.map((d) => ({ ...d, key: d.key ? "***" : "" })),
+    };
     fs.writeFileSync(
       rp,
       JSON.stringify(
         {
           ts: new Date().toISOString(),
-          args,
+          args: reportArgs,
           totals: {
             files: reps.length,
             ok,
