@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-11-25T17:31:52.431Z",
+  "endpoint": "https://bailucode.com/openapi/v1",
+  "model": "bailu-2.8",
+  "matrix": {
+    "samples": 28,
+    "zh": 22,
+    "en": 6
+  },
+  "concisePrompt": {
+    "runs": 28,
+    "apiSuccess": 28,
+    "automatedHardFlags": 13,
+    "avgLatencyMs": 14822,
+    "avgLocalDelta": -3.54
+  },
+  "fullPrompt": {
+    "runs": 6,
+    "apiSuccess": 6,
+    "automatedHardFlags": 5,
+    "avgLatencyMs": 8465,
+    "avgLocalDelta": -11.83
+  },
+  "productPath": {
+    "runs": 1,
+    "usedApi": true,
+    "engine": "llm",
+    "degrade": 0,
+    "note": "URL/代码/数字保留；新增原文没有的迁移提醒与报错后果描述。"
+  },
+  "llmJudge": {
+    "total": 30,
+    "selfJudge": {
+      "n": 28,
+      "fidelity": 8.59,
+      "language": 9.26,
+      "format": 8.99,
+      "deai": 7.72,
+      "natural": 8.46,
+      "rewritePreferred": 22,
+      "originalPreferred": 6
+    },
+    "crossJudge": {
+      "n": 2,
+      "note": "仅 2 条其他模型输出，样本太少，不做统计比较。"
+    }
+  },
+  "localBaseline": {
+    "samples": 28,
+    "hardFailures": 0,
+    "avgLocalDelta": -6.4
+  },
+  "manualFindings": [
+    {
+      "severity": "critical",
+      "id": "en/stop-slop/example-5",
+      "finding": "短英文被扩写成多段说教，并新增实验、季度曲线、反方论证等原文没有的内容。"
+    },
+    {
+      "severity": "high",
+      "id": "en/unslop/ai-slop-release-notes",
+      "finding": "英文被翻成中文，标题层级丢失；完整提示词还新增“10分钟”。"
+    },
+    {
+      "severity": "high",
+      "id": "zh-edge/C5-news-release",
+      "finding": "记者署名和直接引语被删除。"
+    },
+    {
+      "severity": "high",
+      "id": "zh-human/hc3/0",
+      "finding": "真人原句意象与直接引语被改写，作者声音受损。"
+    },
+    {
+      "severity": "medium",
+      "id": "zh-ai/report/long",
+      "finding": "Markdown 标题井号丢失，改为粗体普通文本。"
+    },
+    {
+      "severity": "medium",
+      "id": "zh-semantic/quotation",
+      "finding": "新增原文没有的结构简洁、对仗鲜明等分析。"
+    },
+    {
+      "severity": "medium",
+      "id": "en/stop-slop/example-3",
+      "finding": "新增“Discomfort is where growth happens”这一原文没有的论断。"
+    },
+    {
+      "severity": "warning",
+      "id": "multiple",
+      "finding": "多个 collapse 告警为自动检测误报；逗号拆句后的语义仍完整。"
+    }
+  ],
+  "conclusion": "bailu-2.8 可作为中文 AI 稿的改写候选，尤其在压缩、去套话和代码/URL 保留上有可用性；但当前提示词和保真链不足以安全交付英文、真人稿、直接引语、Markdown 标题和短挑衅文本。建议默认增加语言/格式/引用/新增事实的后置硬门禁，失败回退原文。"
+}

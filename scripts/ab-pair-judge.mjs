@@ -82,7 +82,8 @@ async function call(up, user) {
     ],
     ...(STRICT ? { response_format: { type: "json_object" } } : {}),
   });
-  for (let i = 0; i < 3; i++) {
+  let formatRetries = 0;
+  for (let i = 0; i < 6; i++) {
     try {
       const r = await fetch(URL, {
         method: "POST",
@@ -94,12 +95,21 @@ async function call(up, user) {
       if (!r.ok) throw new Error(`HTTP ${r.status} ${t.slice(0, 100)}`);
       const j = JSON.parse(t);
       const m = j.choices?.[0]?.message ?? {};
-      return (m.content || m.reasoning_content || "").trim();
+      const raw = (m.content || m.reasoning_content || "").trim();
+      // 格式重试：仅当 STRICT 且输出无法严格解析时重发。触发条件与答案方向无关，
+      // 绝不因为「选了想要的臂」就接受、也不因为「选了不想要的臂」就重发。上限 2 次。
+      if (STRICT && !parseStrict(raw) && formatRetries < 2) {
+        formatRetries++;
+        await new Promise((r) => setTimeout(r, 1200));
+        continue;
+      }
+      return { raw, formatRetries };
     } catch (e) {
-      if (i === 2) return { error: e.message };
-      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+      if (i >= 5) return { error: e.message };
+      await new Promise((r) => setTimeout(r, 2000));
     }
   }
+  return { error: "exhausted" };
 }
 
 const done = new Set();
@@ -120,16 +130,18 @@ for (const up of SEATS) {
       ? '哪一段更像 AI 生成的？只输出 JSON：{"pick":"甲"} 或 {"pick":"乙"}。'
       : "哪一段更像 AI 生成的？只输出「甲」或「乙」。";
     const user = "甲：\n<<<" + first + ">>>\n\n乙：\n<<<" + second + ">>>\n\n" + tail;
-    const raw = await call(up, user);
-    const err = typeof raw === "object" ? raw.error : null;
+    const res = await call(up, user);
+    const err = res.error ?? null;
+    const raw = err ? "" : res.raw;
+    const formatRetries = err ? 0 : res.formatRetries;
     const pick = err ? null : parsePair(raw);
     const chosen = pick === "甲" ? (flip ? "b" : "a") : pick === "乙" ? (flip ? "a" : "b") : null;
     const rec = {
-      key, id: cid, seat: up.seat, model: up.model, aIsFirst: flip, pick, chosen,
+      key, id: cid, seat: up.seat, model: up.model, aIsFirst: flip, pick, chosen, formatRetries,
       bWin: chosen ? chosen === "b" : null,
       clean: STRICT ? pick !== null : /^[甲乙]$/.test(String(raw || "").trim()),
-      raw: err ? "" : String(raw).slice(0, 40),
-      rawFull: err ? "" : String(raw),
+      raw: String(raw).slice(0, 40),
+      rawFull: raw,
       err,
     };
     fs.appendFileSync(RESULTS, JSON.stringify(rec) + "\n");

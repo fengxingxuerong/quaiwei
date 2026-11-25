@@ -1,0 +1,379 @@
+{
+  "generatedAt": "2026-11-25T17:30:32.081Z",
+  "baseUrl": "https://bailucode.com/openapi/v1",
+  "keyCount": 2,
+  "samples": 28,
+  "conditionCount": 49,
+  "byModel": {
+    "glm-5.3": {
+      "runs": 5,
+      "apiSuccess": 1,
+      "apiFailure": 4,
+      "hardFailures": 0,
+      "hardFailurePct": 0,
+      "avgLatencyMs": 50656,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    },
+    "sensenova-6.8-flash": {
+      "runs": 10,
+      "apiSuccess": 1,
+      "apiFailure": 9,
+      "hardFailures": 1,
+      "hardFailurePct": 100,
+      "avgLatencyMs": 3484,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    },
+    "bailu-2.8": {
+      "runs": 34,
+      "apiSuccess": 34,
+      "apiFailure": 0,
+      "hardFailures": 18,
+      "hardFailurePct": 52.94,
+      "avgLatencyMs": 13700,
+      "avgLocalDelta": -5,
+      "avgAiIsmsIn": 2.4,
+      "avgAiIsmsOut": 0.4,
+      "humanOverEditWarnings": 1
+    }
+  },
+  "byLanguage": {
+    "zh": {
+      "runs": 41,
+      "apiSuccess": 28,
+      "apiFailure": 13,
+      "hardFailures": 16,
+      "hardFailurePct": 57.14,
+      "avgLatencyMs": 13796,
+      "avgLocalDelta": -3.8,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    },
+    "en": {
+      "runs": 8,
+      "apiSuccess": 8,
+      "apiFailure": 0,
+      "hardFailures": 3,
+      "hardFailurePct": 37.5,
+      "avgLatencyMs": 16708,
+      "avgLocalDelta": -7.9,
+      "avgAiIsmsIn": 10.1,
+      "avgAiIsmsOut": 1.5,
+      "humanOverEditWarnings": 1
+    }
+  },
+  "byKind": {
+    "ai": {
+      "runs": 32,
+      "apiSuccess": 20,
+      "apiFailure": 12,
+      "hardFailures": 11,
+      "hardFailurePct": 55,
+      "avgLatencyMs": 12947,
+      "avgLocalDelta": -4.5,
+      "avgAiIsmsIn": 1.9,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    },
+    "human": {
+      "runs": 5,
+      "apiSuccess": 4,
+      "apiFailure": 1,
+      "hardFailures": 1,
+      "hardFailurePct": 25,
+      "avgLatencyMs": 29586,
+      "avgLocalDelta": -1.8,
+      "avgAiIsmsIn": 4,
+      "avgAiIsmsOut": 0.3,
+      "humanOverEditWarnings": 1
+    },
+    "edge": {
+      "runs": 7,
+      "apiSuccess": 7,
+      "apiFailure": 0,
+      "hardFailures": 4,
+      "hardFailurePct": 57.14,
+      "avgLatencyMs": 16839,
+      "avgLocalDelta": -8,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    },
+    "structure": {
+      "runs": 2,
+      "apiSuccess": 2,
+      "apiFailure": 0,
+      "hardFailures": 1,
+      "hardFailurePct": 50,
+      "avgLatencyMs": 4454,
+      "avgLocalDelta": -10,
+      "avgAiIsmsIn": 13,
+      "avgAiIsmsOut": 5.5,
+      "humanOverEditWarnings": 0
+    },
+    "semantic": {
+      "runs": 3,
+      "apiSuccess": 3,
+      "apiFailure": 0,
+      "hardFailures": 2,
+      "hardFailurePct": 66.67,
+      "avgLatencyMs": 5297,
+      "avgLocalDelta": 0.7,
+      "avgAiIsmsIn": 0,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "issueCounts": {
+    "collapse": 10,
+    "lost-quote": 5,
+    "markdown-headings": 4,
+    "markdown-orderedStepMarkers": 1,
+    "markdown-inlineCode": 1,
+    "lost-url": 3,
+    "language-drift": 3,
+    "semantic-rule": 8,
+    "missing-numbers": 1,
+    "added-numbers": 1
+  },
+  "failures": [
+    {
+      "key": "sensenova-6.8-flash|concise|0.9|plain|zh-ai/email/short",
+      "id": "zh-ai/email/short",
+      "model": "sensenova-6.8-flash",
+      "language": "zh",
+      "kind": "ai",
+      "issues": ["collapse:「经仓库验收」是原文「经仓库验收发现」被截断后的残留，谓语已丢失"],
+      "warnings": [],
+      "output": "尊敬的王经理：\n\n我是上海华源科技有限公司采购部的李明。贵司于2026年9月20日送达我司位于上海市浦东新区创新路88号仓库的原材料，共计200箱。经仓库验收，其中15箱外包装破损、受潮并明显挤压变形，部分箱体封口开裂。现请贵司尽快更换这15箱合格原材料，并于9月23日前送达我司。请确认具体处理时间及补货安排；如需现场核验，我司可提供验收照片和相关记录。\n\n此致  \n李明  \n上海华源科技有限公司采购部"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-ai/essay/short",
+      "id": "zh-ai/essay/short",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": [
+        "collapse:「随后其博士论文被质疑存在抄袭」是原文「随后其博士论文被质疑存在抄袭等问题」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "2019年2月，演员翟天临在直播中被问论文检索，反问“知网是什么”。这句话迅速引发舆论关注，随后其博士论文被质疑存在抄袭，北京电影学院撤销了他的博士学位。事件震动之处，不仅在于当事人是公众人物，更在于它暴露了一个现实：学术资格可以被包装，论文成果可以被伪造，但知识不会因此真正属于一个人。\n\n几年后，人工智能写作工具进入校园，“AI代写”成为新的争议。学生输入题目，几分钟便能得到结构完整、语言流畅的文章；有人甚至把生成内容直接提交给教师。表面上看，AI只是效率工具，正如计算器不等于作弊，搜索引擎也不等于抄袭。关键在于，使用者是否诚实地承担了思考、查证和表达的责任。如果学生没有阅读资料、没有形成观点，只把机器生成的文字署上自己的名字，这不是“科技助学”，而是把学术欺骗自动化了。\n\n学术诚信的红线，不能简单划在“是否使用AI”上，而应划在“是否冒充自己的知识成果”上。用AI帮助梳理提纲、修改语病、寻找反例，并注明使用范围，属于合理辅助；让AI凭空编造参考文献、捏造实验数据，或直接代写整篇论文，则已越过底线。涉及医学、工程和社会政策的研究，一条虚假数据可能影响决策，甚至伤害真实的人。\n\n学校也不能只依赖查重率和检测软件。翟天临事件说明，学历审核不能只看证书；AI时代则提醒教师，评价应更多关注课堂讨论、过程记录、口头答辩和持续写作。真正的教育，不是训练学生把文字写得像论文，而是让他们在面对问题时能够独立判断、诚实求证。工具可以越来越聪明，人的责任却不能外包。学术的价值，在于允许我们暂时无知，但不允许我们用虚假装扮成有知。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-ai/report/short",
+      "id": "zh-ai/report/short",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": [
+        "collapse:「市场部围绕第四季度销售目标」是原文「市场部围绕第四季度销售目标完成了品牌推广」被截断后的残留，谓语已丢失,「客户拓展和活动筹备」是原文「客户拓展和活动筹备等重点工作」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "本周（10月14日—10月18日），市场部围绕第四季度销售目标，推进了品牌推广、客户拓展和活动筹备。\n\n10月14日，李倩组织召开周例会，复盘第三季度市场投放数据：官网访问量环比增长18%，新增有效线索126条，其中华东地区占42%。结合销售部反馈，团队选出32家重点客户，将跟进任务分配给王磊、陈思雨等6人。\n\n10月15日至16日，市场部在上海市浦东新区世纪大道88号筹备“智造行业数字化升级”客户沙龙，完成场地确认、嘉宾邀约、物料设计和预算审核。目前已有17家企业确认参会，预计到场约45人。产品经理赵晨将在现场演示新版数据分析平台，市场专员周颖负责签到、摄影和会后信息整理。\n\n10月17日，团队完成微信公众号和视频号内容排期，发布推文2篇、短视频3条，累计阅读量1.86万人次。本周广告投放支出4.8万元，比预算少6,200元，线索转化成本下降11%。10月18日，部门负责人刘敏带队与销售部、客服部召开协同会议，确定下周重点跟进客户名单及活动后回访流程。\n\n本周工作按计划推进，但部分客户资料更新不及时。下周将重点完成10月22日客户沙龙、活动线索分级和第四季度营销复盘，并在10月25日前提交详细分析报告。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-ai/email/long",
+      "id": "zh-ai/email/long",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": ["lost-quote:\"姓名拼音@company.com\""],
+      "warnings": [],
+      "output": "IT同事：\n\n我是市场部的于世恒。部门将于 2026 年 9 月 28 日（下周一）接待 8 位新员工。请协助开通名单中人员对应的系统账号和邮箱权限：\n\n1. 李明——市场专员\n2. 王芳——市场专员\n3. 张伟——数据分析师\n4. 刘洋——数据分析师\n5. 陈静——新媒体运营\n6. 赵磊——新媒体运营\n7. 孙倩——活动策划\n8. 周涛——活动策划\n\n具体权限如下：\n\n1. 企业邮箱：为上述 8 人开通公司邮箱账号，格式为“姓名拼音@company.com”，例如 liming@company.com；账号需预装至他们各自的办公电脑。\n2. OA 办公系统：开通基础权限，支持提交请假、报销和日常审批流程。\n3. CRM 系统：李明、王芳、孙倩、周涛 4 人的岗位涉及客户对接，需开通 CRM 录入及查询权限；其余 4 人暂不开通。\n4. 数据看板系统：张伟、刘洋需开通数据看板的编辑权限，用于制作日常报表。\n5. VPN 远程访问权限：8 人均需开通，以便出差或居家办公时使用。\n\n新员工将于 9 月 28 日上午 9 点在 3 楼培训室报到。请尽量在 9 月 26 日（周五）下班前完成账号和权限开通，以免影响入职当天的系统培训和实际操作。\n\n若需补充员工身份证号、工号或其他登记信息，请告知，我会尽快提供。\n\n市场部 于世恒  \n2026 年 9 月 21 日"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-ai/zhihu/long",
+      "id": "zh-ai/zhihu/long",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": [
+        "lost-quote:“一个模块”,“你这个事情为什么不能用中台通用方案解决”,“完整业务”,“边际收益”",
+        "collapse:「降薪 30%」是原文「降薪 30%,base 从 62k 变成 43k」被截断后的残留，谓语已丢失,「② 你要去的方向」是原文「② 你要去的方向是你在 . 大厂积累的延伸还是从」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "不是鸡汤，也不是“逃离大厂”的爽文，只是一笔算清楚的账。\n\n我在腾讯做了 5 年，最后一站是 CDG 下的中台部门，T11，2022 年绩效 3 星，base 深圳滨海大厦。2023 年 4 月，我去了南山科技园一家做跨境供应链 SaaS 的创业公司，50 人，B 轮，降薪 30%，base 从 62k 降到 43k，但拿到了不少期权。\n\n为什么走？三个原因。\n\n**第一，大厂里的边际收益已经归零。** 2018 年入职时，T11 升 T12 大概 3–4 年；到 2022 年，我前面排着 6 个同级同事，都在等一个坑。晋升答辩我参加过一次，评委问的不是“你做了什么”，而是“这件事为什么不能用中台通用方案解决”。那一刻我明白：在大厂，做“差异化的自己”反而是错的，组织要的是标准件。我 31 岁，再耗 3 年升不上去，34 岁的 T11 在市场上值多少，大家心里有数。\n\n**第二，我算的是风险账，不是热血账。** 我老婆在深圳一家外企做财务。降薪后，家庭年收入仍能覆盖房贷（深圳龙岗，月供 1.9 万）和日常开销。我们存了 14 个月的家庭应急金。也就是说，公司哪怕一年后倒闭，我们不会伤筋动骨。没有这个前提，任何“降薪去创业公司”的建议都是耍流氓。\n\n**第三，创业公司给我的是完整业务，不是一个模块。** 在腾讯 5 年，3 年风控中台、2 年商家增长，坦白说，我对“一个生意怎么赚钱”的理解是碎的。到新公司 3 个月，我参加了两次客户签约会，亲眼看到 200 万的合同怎么谈下来，也看到 CEO 在 6 月为现金流砍掉整个私域项目组——8 个人，一周内转岗。这些残酷但真实的信息，在大厂看不到；你看到的永远是 OKR 里被修饰过的世界。\n\n体验也不全是好的。没有行政帮你订会议室，没有 HRBP 关心你的心理状态，报销要自己贴发票等两周。9 月为了赶客户交付，我连续三周晚上 11 点后下班，比在腾讯还卷。\n\n但 10 月发生了一件事：我主导设计的计费模块上线，客户续费率从 71% 提到 88%。CEO 在周会上说“这个是 XX 做的”，全公司都知道那是我做的。\n\n在腾讯 5 年，我做的模块服务过几千万用户，但没有一个用户知道我的名字。\n\n这就是区别。有人需要平台的背书，有人需要作品的署名。我属于后者。\n\n如果你也想这么干，先回答三个问题：① 家庭现金流能否扛住 12 个月断供？② 你要去的方向，是大厂积累的延伸还是从零开始？③ 创始团队你见过几次、聊过几小时？答不好，就别动。\n\n我不是劝谁离开大厂，只是想清楚了自己要什么。祝各位都能想清楚。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-ai/essay/long",
+      "id": "zh-ai/essay/long",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": [
+        "lost-quote:\"上课是副业,打卡是主业\",\"填表打卡类\",\"能不能让我把整理表格的时间,还给备课和学生。\",\"请下载'安全教育平台'APP并完成本周学习打卡\",\"请于今日中午前完成防溺水教育台账拍照上传\",\"请填写课后服务出勤统计表\",\"请补交上周家访记录表\",\"请转发文明创建倡议书至朋友圈并截图\",\"谁来为教师减负\",\"非教学性事务\",\"顺带\"",
+        "collapse:「周一上午八点」是原文「周一上午八点,浙江某县实验小学的语文教师林晓芸打」被截断后的残留，谓语已丢失,「上学期十九周」是原文「上学期十九周,她填写」被截断后的残留，谓语已丢失,「爱国主义教育云平台等」是原文「爱国主义教育云平台等,每一个都要求定期打卡」被截断后的残留，谓语已丢失,「这些负担的根源」是原文「这些负担的根源,并不完全在学校」被截断后的残留，谓语已丢失,「照片是否清晰」是原文「照片是否清晰,并不关心课堂本身发生了什么」被截断后的残留，谓语已丢失,「然而六年过去」是原文「然而六年过去,基层执行仍参差不齐,原因之一在于考」被截断后的残留，谓语已丢失,「要让教师真正回归讲台」是原文「要让教师真正回归讲台,恐怕不能止于一纸文件」被截断后的残留，谓语已丢失,「林晓芸说」是原文「林晓芸说,她最大的愿望很简单」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "周一上午八点，浙江某县实验小学语文教师林晓芸打开工作群，群公告里列着五条待办：“请于今日中午前完成防溺水教育台账拍照上传”“请补交上周家访记录表”“请下载‘安全教育平台’APP并完成本周学习打卡”“请转发文明创建倡议书至朋友圈并截图”“请填写课后服务出勤统计表”。这还不包括她随后要完成的教案、作业批改和一节公开课。她算过，上学期十九周，她填写、上传、打卡的各类表格和留痕材料共计一百一十七项，平均每周超过六项，占去她近十小时课余时间。\n\n林晓芸的处境不是个例。中国教育科学研究院2023年发布的一项调查显示，受访的六千余名中小学教师中，超过七成认为“非教学性事务”侵占了备课与批改时间，其中“填表打卡类”任务被提及的比例高达六十八点三%。安徽合肥某中学班主任张建国给记者列出他手机里的九个工作类APP：钉钉、安全教育平台、学习强国、河小青、爱国主义教育云平台等。每一个都要求定期打卡、截图、写心得，否则会被通报批评。他苦笑，说自己“上课是副业，打卡是主业”。\n\n这些负担的根源，并不完全在学校。许多台账、报表来自教育局以外的部门：综治办要防溺水记录，创文办要文明创建材料，应急管理局要消防演练留痕，团委要志愿服务打卡。每个部门都借教育系统的末端完成自己的考核指标，却极少有人核算这份“顺带”要求最终落在哪一位具体教师身上。任务逐级下派，留痕要求随之加码，而检查者往往只看表格是否填齐、照片是否清晰，并不关心课堂本身发生了什么。\n\n2019年，中共中央办公厅、国务院办公厅印发《关于减轻中小学教师负担进一步营造教育教学良好环境的若干意见》，已明确要求清理规范各类督查检查评比考核事项，精简文件和会议，不得随意要求教师参与与教育教学无关的社会性事务。然而六年过去，基层执行仍参差不齐，原因之一在于考核问责压力并未真正转移：学校怕被通报，教师怕被扣分，层层加码的动力始终存在，而“谁来为教师减负”却缺少可问责的具体主体。\n\n要让教师真正回归讲台，不能只靠一纸文件。教育行政部门应建立跨部门事项审核清单制度，凡进校园的检查评比一律先过筛；同时把课堂教学质量、学生成长实效作为评价教师的核心指标，而不是看台账是否齐全、打卡是否连续。林晓芸说，她最大的愿望很简单：“能不能让我把整理表格的时间，还给备课和学生。”这句朴素的诉求，或许正是减负政策该抵达的终点。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-ai/report/long",
+      "id": "zh-ai/report/long",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": [
+        "markdown-headings",
+        "markdown-orderedStepMarkers",
+        "collapse:「环比增长17.4%」是原文「环比增长17.4%,整体呈现稳步上升态势」被截断后的残留，谓语已丢失,「达成率58.6%」是原文「达成率58.6%,由片区经理李伟带领的12人团队」被截断后的残留，谓语已丢失,「达成率仅41.3%」是原文「达成率仅41.3%,为各区最低」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "华东区销售团队上半年业绩达成情况汇报（2024年1—6月）\n\n各位领导：\n\n以下为华东区销售团队2024年上半年业绩情况。\n\n**一、整体业绩完成情况**\n\n2024年1—6月，华东区累计完成销售额2.87亿元，达成年度目标（5.6亿元）的51.3%，同比增长14.2%。一季度完成1.32亿元，二季度完成1.55亿元，环比增长17.4%，整体稳步上升。\n\n**二、分区域及团队表现**\n\n江苏片区完成1.12亿元，达成率58.6%，由片区经理李伟带领的12人团队蝉联区域第一；上海片区完成0.86亿元，达成率50.9%；浙江片区完成0.63亿元，达成率47.2%；安徽片区完成0.26亿元，达成率仅41.3%，为各区最低，需重点帮扶。\n\n个人业绩方面，苏州办事处高级客户经理王芳上半年签约4,120万元，位居全区第一；杭州办事处张明3,680万元次之。全区共有9名销售顾问业绩超2,000万元，较去年同期增加3人。\n\n**三、重点工作回顾**\n\n1. 3月18—20日，在上海国际会展中心参加行业展会，现场获取有效线索346条，截至6月底已转化订单2,140万元；\n2. 5月启动“大客户攻坚计划”，新增年采购额500万元以上客户7家，含南京某智能制造企业（首单860万元）；\n3. 6月28日在杭州召开上半年总结会，完成下半年指标分解与动员。\n\n**四、存在问题**\n\n1. 安徽片区人员流动较大，上半年离职5人，影响客户跟进连续性；\n2. 部分老客户回款周期拉长，截至6月30日应收账款余额达4,300万元；\n3. 新产品线销售占比仅18%，低于集团25%的要求。\n\n**五、下半年工作计划**\n\n1. 7月为安徽片区补充招聘6人，并由李伟带队驻点帮扶一个月；\n2. 8月底前将应收账款压降至3,000万元以内；\n3. 加大新品培训与激励力度，力争全年新品销售占比提升至26%。\n\n下半年将继续保持增长势头，确保全年5.6亿元目标达成。\n\n汇报人：华东区销售总监 陈建国\n2024年7月5日"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-human/hc3/0",
+      "id": "zh-human/hc3/0",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "human",
+      "issues": ["lost-quote:“我真的很羡慕你，你像是带着一种与生自来的自信，生活的那么潇洒”"],
+      "warnings": [],
+      "output": "自卑确实很消耗人。你明明有能力站得更高，却总是站在山脚看别人。\n\n来源可能不清楚，也许是家庭，也许是过往。试着回想这种感觉是从什么时候开始的，然后去面对。没有人天生比别人差。\n\n我以前也因为外貌被排挤，甚至想过放弃。后来我关注了一位很自信的艺人，看她的生活，听她的故事，慢慢恢复了信心。性格、脾气、外在都在改变。现在朋友说我带着与生俱来的自信，生活得很潇洒。一个曾从低谷走出来的人，如今过得不错。偶尔会有低落情绪，这很正常，谁都不圆满。\n\n多读点提升自信的书，或者去欣赏那些自信、且能给别人带来力量的人。别人只能辅助，关键是你自己帮自己，学会相信自己。\n\n自信可以去到任何地方。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-edge/C4-product-copy",
+      "id": "zh-edge/C4-product-copy",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "edge",
+      "issues": [
+        "collapse:「机身采用航空级铝合金」是原文「机身采用航空级铝合金材质」被截断后的残留，谓语已丢失,「支持 100% sRGB 色域」是原文「支持 100% sRGB 色域覆盖」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "X200 智能会议终端搭载 8 核处理器与 12GB 内存，唤醒响应时间 0.3 秒。机身采用航空级铝合金，重 1.28 千克，厚 15.6 毫米。配备 14 英寸 2.8K 触控屏，支持 100% sRGB 色域。内置 65Wh 电池，续航 14 小时，可满足视频会议需求。支持 Wi-Fi 7 与蓝牙 5.4，适配多设备协同办公。标准版售价 4999 元，Pro 版 6499 元，均含两年质保。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-edge/C5-news-release",
+      "id": "zh-edge/C5-news-release",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "edge",
+      "issues": ["lost-quote:“这款产品的研发历时三年，凝聚了研发团队的心血。”"],
+      "warnings": [],
+      "output": "10 月 12 日，蓝海科技在总部召开新品发布会，推出新一代工业机器人产品线。首席执行官王建国表示，该产品研发历时三年。新产品线包含三个型号，分别面向电子制造、汽车零部件及新能源行业。发布会现场展示了与华为云签署的战略合作协议。相关负责人称，首批产品将于今年第四季度交付苏州和东莞的两家工厂。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-edge/C9-mixed-links",
+      "id": "zh-edge/C9-mixed-links",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "edge",
+      "issues": ["markdown-inlineCode"],
+      "warnings": [],
+      "output": "接口地址变更为 https://api.example.com/v2/gateway，旧地址将于 2026-12-31 停止服务。技术对接请联系 dev-support@example.com。\n\n调用示例：\n\n```javascript\nconst resp = await fetch(url, { method: \"POST\", headers: { \"X-Token\": token } });\nif (!resp.ok) throw new Error(\"gateway 5xx\");\n```\n\n新版本将请求频率限制在 QPS 20，返回结果中的 `user_id` 字段类型由 number 改为 string，调用方需做兼容处理。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-edge/C17-verdict-labor",
+      "id": "zh-edge/C17-verdict-labor",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "edge",
+      "issues": ["collapse:「第八十二条」是原文「第八十二条之规定」被截断后的残留，谓语已丢失"],
+      "warnings": [],
+      "output": "上诉人北京某科技有限公司因与被上诉人李某劳动争议一案，不服北京市海淀区人民法院（2025）海0105民初12345号民事判决，向本院提起上诉。本院于二〇二六年三月十八日立案，依法组成合议庭审理。某科技公司请求撤销一审判决，改判驳回李某全部诉讼请求。其主张双方劳动合同约定李某任算法工程师，试用期三个月；李某则称在职期间存在加班，公司未足额支付加班费。本院指出，依据《中华人民共和国劳动合同法》第十条、第八十二条，自用工之日起超过一个月不满一年未订立书面劳动合同的，用人单位应向劳动者每月支付二倍工资。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|en/unslop/ai-slop-release-notes",
+      "id": "en/unslop/ai-slop-release-notes",
+      "model": "bailu-2.8",
+      "language": "en",
+      "kind": "ai",
+      "issues": [
+        "lost-url:https://fingerling.dev/migrate.",
+        "markdown-headings",
+        "language-drift:en-to-zh"
+      ],
+      "warnings": [],
+      "output": "Fingerling 2.4.0 发布了，这是一次重要的迭代，重点在于性能、可观测性和更完整的配置管理。\n\n## 新特性\n\n- 新解析器支持嵌套配置\n- 基于 OpenTelemetry 的遥测功能，提供监控洞察\n- CLI 界面重构\n\n性能方面，解析时间减少 40%，启动速度也有所提升。\n\n## 破坏性变更\n\n`--legacy-config` 参数已移除。如果你之前使用该参数，请参见迁移指南：https://fingerling.dev/migrate\n\n## 总结\n\n这是 Fingerling 发展历程中的一次重要更新，感谢社区的贡献。"
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|zh-semantic/conditional_launch",
+      "id": "zh-semantic/conditional_launch",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "semantic",
+      "issues": [
+        "collapse:「任一条件不满足」是原文「任一条件不满足就继续使用旧站」被截断后的残留，谓语已丢失",
+        "semantic-rule:如果",
+        "semantic-rule:并且|且",
+        "semantic-rule:继续使用旧站",
+        "semantic-rule:审阅完成不代表|审阅完成.{0,5}不代表"
+      ],
+      "warnings": [],
+      "output": "维护人员正在做迁移演练。旧链接验证通过、周四前收到编辑确认，站点最早周五切换；任一条件不满足，就继续用旧站。审阅完成不等于迁移完成。镜像站点只读，暂不收新稿。"
+    },
+    {
+      "key": "bailu-2.8|full|0.9|plain|zh-ai/email/short",
+      "id": "zh-ai/email/short",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": ["missing-numbers:2026"],
+      "warnings": [],
+      "output": "王经理：\n\n我是上海华源科技有限公司采购部的李明。你们9月20日送到我们浦东新区创新路88号仓库的那批原材料，共200箱，验收时查出15箱有问题：外包装破损、受潮，还有的被挤变形了，部分封口裂开。这批货不能直接进生产流程，得换掉。\n\n麻烦你们安排把这15箱换成合格的，9月23日前送到我们仓库。具体什么时候能处理、补货怎么排，麻烦确认一下。如果需要现场核对，我们这边的验收照片和记录随时可以提供。\n\n这事涉及物流和质量，希望尽快处理。收到请回复。\n\n李明\n上海华源科技有限公司采购部"
+    },
+    {
+      "key": "bailu-2.8|full|0.9|plain|zh-ai/paper/long",
+      "id": "zh-ai/paper/long",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "ai",
+      "issues": [
+        "collapse:「染色体异常」是原文「染色体异常及疗效持久性仍需长期观察」被截断后的残留，谓语已丢失,「长期监测」是原文「长期监测和全球可及性作为临床推广前提」被截断后的残留，谓语已丢失"
+      ],
+      "warnings": [],
+      "output": "先说结果。2024年4月24日《新英格兰医学杂志》刊出CLIMB-SCD-121的数据：30名随访足够的患者里，29名（97%）连续至少12个月没再发生严重血管阻塞危象，30名（100%）没因这个危象住过院。[临床研究](https://www.nejm.org/doi/full/10.1056/NEJMoa2309676) 这个数字摆在这，疗效没什么可争的。\n\n原理其实不复杂，难的是做出来。2019年7月2日，美国田纳西州患者Victoria Gray在儿科血液学家Haydar Frangoul主持的试验中接受了自体造血干细胞编辑：采集CD34⁺细胞，用CRISPR-Cas9切BCL11A红系增强子，让胎儿血红蛋白重新表达，血红蛋白S的聚合就少，血管阻塞危象跟着减少。\n\n监管这边走得比不少人预想的快。2023年11月15日英国MHRA先批准exagamglogene autotemcel（Casgevy）；12月8日美国FDA批准其用于12岁及以上、反复发生血管阻塞危象的患者；2024年2月9日欧盟给了有条件上市许可。[MHRA公告](https://www.gov.uk/government/news/mhra-authorises-world-first-gene-therapy-that-aims-to-cure-sickle-cell-disease-and-transfusion-dependent-β-thalassemia) [FDA公告](https://www.fda.gov/news-events/press-announcements/fda-approves-first-gene-therapies-treat-patients-sickle-cell-disease)\n\n账不能只算疗效这一边。离体编辑前要打强化化疗，化疗本身可能带来不孕、感染和继发肿瘤；脱靶突变、染色体异常、疗效能维持多久，也得长期观察，FDA的要求是15年安全随访。价格更直接：美国每疗程约220万美元，谁能用得起、哪国医保肯报，种族、国家和支付能力之间的公平问题就绕不开了。\n\n这疗法是不可遗传的体细胞编辑，跟胚胎编辑原则上不是一回事。但2018年贺建奎事件提醒得很清楚，治疗与增强、somatic与germline的边界必须严格区分。要往临床推，知情同意、长期监测、全球可及性，这三样少一样都不行。[WHO治理框架](https://www.who.int/publications-detail-redirect/9789240030060)"
+    },
+    {
+      "key": "bailu-2.8|full|0.9|plain|en/unslop/ai-slop-release-notes",
+      "id": "en/unslop/ai-slop-release-notes",
+      "model": "bailu-2.8",
+      "language": "en",
+      "kind": "ai",
+      "issues": [
+        "added-numbers:10分钟",
+        "lost-url:https://fingerling.dev/migrate.",
+        "markdown-headings",
+        "language-drift:en-to-zh"
+      ],
+      "warnings": [],
+      "output": "Fingerling 2.4.0 发了。这次改动集中在三块：性能、可观测性，还有配置。\n\n先说最要紧的：`--legacy-config` 这个 flag 没了。还在用的，去 https://fingerling.dev/migrate 看迁移说明，别等升级完才发现跑不起来。\n\n剩下的改动：\n\n解析器重写了，嵌套配置能直接处理。遥测这块接了 OpenTelemetry，该有的指标都有了。CLI 也做了一次比较大的重构。\n\n性能数字摆在这：解析时间降了 40%。这个降幅不算小，之前配置一复杂就明显卡的情况应该能缓解。\n\n至于这次算不算 Fingerling 历史上最重要的版本，我不下这个判断。但 2.4.0 确实把配置、遥测、命令行这三条线都动了一遍，升级前值得花十分钟看看迁移指南。"
+    },
+    {
+      "key": "bailu-2.8|full|0.9|plain|en/unslop/preservation",
+      "id": "en/unslop/preservation",
+      "model": "bailu-2.8",
+      "language": "en",
+      "kind": "structure",
+      "issues": [
+        "lost-url:https://example.com/docs/api.",
+        "markdown-headings",
+        "language-drift:en-to-zh"
+      ],
+      "warnings": [],
+      "output": "# API 参考\n\n`fetchData()` 这个函数是关键，用起来之前先记住这点。\n\n## 用法\n\n先跑 `npm install`。示例在 https://example.com/docs/api 里，可以直接翻。\n\n```python\n# This code block must not be touched — including AI-isms like delve and tapestry.\ndef fetch_data():\n    \"\"\"Delve into the tapestry of data.\"\"\"\n    return \"pivotal\"\n```\n\n完整指南见 [the full guide](https://example.com/guide)。不想看长篇大论的话，短版本就一句：调 `fetch()`，把错误接住。重试这块处理得挺顺，基本不用操心。\n\n    # Indented code block — also preserved.\n    delve into tapestry\n\n## 结尾\n\n说到底，这套模式是当下的主流做法，能搭上就搭上。"
+    },
+    {
+      "key": "bailu-2.8|full|0.9|plain|zh-semantic/conditional_launch",
+      "id": "zh-semantic/conditional_launch",
+      "model": "bailu-2.8",
+      "language": "zh",
+      "kind": "semantic",
+      "issues": [
+        "semantic-rule:如果",
+        "semantic-rule:并且|且",
+        "semantic-rule:条件.{0,4}(?:不满足|不对上|未满足)",
+        "semantic-rule:暂不"
+      ],
+      "warnings": [],
+      "output": "维护人员现在在做迁移演练，站点还没有切换。\n\n能不能在周五切换，取决于两个条件：旧链接验证通过，周四前收到编辑确认。这两个条件只要有一个不满足，就继续使用旧站。\n\n有一点容易混：审阅完成并不代表迁移已经完成。\n\n镜像站点那边只提供只读访问，新稿暂时不接收。"
+    }
+  ]
+}

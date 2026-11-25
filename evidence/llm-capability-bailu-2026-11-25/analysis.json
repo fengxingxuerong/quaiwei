@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-11-25T16:37:23.477Z",
+  "matrix": {
+    "samples": 28,
+    "zh": 22,
+    "en": 6
+  },
+  "attempts": {
+    "conditions": 15,
+    "apiSuccess": 2,
+    "apiFailure": 13,
+    "errors": {
+      "rate-limit-429": 13
+    }
+  },
+  "automated": {
+    "hardFailureRows": 1,
+    "issueCounts": {
+      "collapse": 1
+    }
+  },
+  "manualReview": [
+    {
+      "model": "glm-5.3",
+      "id": "zh-ai/email/short",
+      "verdict": "pass",
+      "note": "更简洁自然，日期、地址、200箱、15箱、9月23日和处理要求均保留；删除了寒暄与致歉措辞。"
+    },
+    {
+      "model": "sensenova-6.8-flash",
+      "id": "zh-ai/email/short",
+      "verdict": "pass-with-warning",
+      "note": "自动塌缩检测将“经仓库验收，其中15箱…”误判为残句；人工复核语义完整，事实保留。"
+    }
+  ],
+  "localBaseline": {
+    "samples": 28,
+    "hardFailures": 0,
+    "avgLocalScoreDelta": -6.4
+  },
+  "notRun": [
+    "完整 28×2 双模型矩阵",
+    "跨模型 LLM 评委",
+    "0.6/1.0 强度与 academic/casual 文风矩阵",
+    "官方检测器真值"
+  ],
+  "conclusion": "本轮受 EndpointTPMExceeded 阻断，只能形成早期结论：LLM 在中文短邮件上能产生比本地规则更自然的压缩，但完整能力矩阵尚未跑完，不能给出统计性能力评级。"
+}
