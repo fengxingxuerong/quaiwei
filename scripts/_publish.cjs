@@ -18,6 +18,8 @@ const fs = require("fs");
 const path = require("path");
 const net = require("net");
 const crypto = require("crypto");
+const https = require("https");
+const { URL } = require("url");
 const { spawn } = require("child_process");
 
 const REPO = "fengxingxuerong/quaiwei";
@@ -198,9 +200,12 @@ const probeTcp = (host, port, ms = 8000) =>
       child.stdout.on("data", (d) => (out += d));
       child.stderr.setEncoding("utf-8");
       child.stderr.on("data", (d) => (err += d));
-      child.on("error", (e) => reject(new Error(`派生 credential helper 失败：${e.code || e.message}`)));
+      child.on("error", (e) =>
+        reject(new Error(`派生 credential helper 失败：${e.code || e.message}`)),
+      );
       child.on("close", (code) => {
-        if (code !== 0) return reject(new Error(`credential helper → 退出码 ${code}\n${err.trim()}`));
+        if (code !== 0)
+          return reject(new Error(`credential helper → 退出码 ${code}\n${err.trim()}`));
         resolve(out);
       });
       child.stdin.end("protocol=https\nhost=github.com\n\n");
@@ -324,26 +329,57 @@ const probeTcp = (host, port, ms = 8000) =>
     await apiCall("DELETE", `https://api.github.com/repos/${REPO}/releases/assets/${dup.id}`);
     log(`\n== [5] 已删除同名旧资产 ${name}（${(dup.size / 1048576).toFixed(1)} MB），准备重传`);
   } else if (dup) {
-    log(`\n== [5] 资源 ${name} 已存在（${(dup.size / 1048576).toFixed(1)} MB），跳过上传；要覆盖加 --replace`);
+    log(
+      `\n== [5] 资源 ${name} 已存在（${(dup.size / 1048576).toFixed(1)} MB），跳过上传；要覆盖加 --replace`,
+    );
   }
   if (!dup || REPLACE_ASSETS) {
     log(`\n== [5] 上传 ${name}（${zipMB} MB）==`);
-    const upRes = await fetch(
-      `https://uploads.github.com/repos/${REPO}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-          "User-Agent": "quaiwei-publish",
-          "Content-Type": "application/zip",
+    // 为什么不用 fetch：209MB 上传实测在 285s 撞上 undici 固定的 300s headersTimeout，
+    // 而 RequestInit 调不了这个值（不是 socket 空闲超时，是「请求发出后多久必须见到响应头」）。
+    // 2026-11-26 v0.9.92 发布就是这样挂的：Release 建好了、资产没传上。
+    // 改 https.request 流式发送：不设空闲超时、边读边传、每 15 秒报一次进度。
+    const up = await new Promise((resolve, reject) => {
+      const u = new URL(
+        `https://uploads.github.com/repos/${REPO}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
+      );
+      const req = https.request(
+        {
+          method: "POST",
+          hostname: u.hostname,
+          path: u.pathname + u.search,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "User-Agent": "quaiwei-publish",
+            "Content-Type": "application/zip",
+            "Content-Length": buf.length,
+          },
         },
-        body: buf,
-      },
-    );
-    const upText = await upRes.text();
-    if (!upRes.ok) die(`上传失败 → ${upRes.status} ${upText.slice(0, 300)}`);
-    log(`  ✅ 上传完成：${JSON.parse(upText).browser_download_url}`);
+        (res) => {
+          let out = "";
+          res.setEncoding("utf-8");
+          res.on("data", (d) => (out += d));
+          res.on("end", () => resolve({ status: res.statusCode, text: out }));
+        },
+      );
+      req.setTimeout(0); // 关掉空闲超时：慢链路下 209MB 可能要传十几分钟
+      req.on("error", reject);
+      const rs = fs.createReadStream(ZIP);
+      let sent = 0;
+      let mark = Date.now();
+      rs.on("data", (c) => {
+        sent += c.length;
+        if (Date.now() - mark >= 15000) {
+          mark = Date.now();
+          log(`  … ${(sent / 1048576).toFixed(1)}/${zipMB} MB`);
+        }
+      });
+      rs.on("error", reject);
+      rs.pipe(req);
+    });
+    if (up.status >= 300) die(`上传失败 → ${up.status} ${up.text.slice(0, 300)}`);
+    log(`  ✅ 上传完成：${JSON.parse(up.text).browser_download_url}`);
   }
 
   /* v0.9.84 起：校验码随包上传。此前发布器只传 zip，而 SCORECARD 写「zip + sha256」，
