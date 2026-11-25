@@ -1,0 +1,626 @@
+{
+  "generatedAt": "2026-11-25T23:03:01.029Z",
+  "commit": "0086d47",
+  "task": "AI 风格稿改写（原文 vs 本地引擎 0.7 强度改写）异源双席配对强制选择：哪段更像 AI 生成",
+  "populations": {
+    "P1": {
+      "name": "realcase 项目自有 AI 风格验收语料",
+      "source": "scripts/realcase/cases.json",
+      "pairs": 23,
+      "judgeable": 20
+    },
+    "P2": {
+      "name": "DetectRL-ZH dev 机器标注样本(第三方独立来源)",
+      "source": "artifacts/open-datasets/detectrl-zh-dev.json label=1",
+      "sampled": 30,
+      "sampling": "LCG seed 20261126 洗牌取前 30",
+      "judgeable": 30
+    }
+  },
+  "arms": {
+    "A": "原文",
+    "B": "humanize(intensity 0.7, force-low-risk) 本地规则引擎改写，单 seed"
+  },
+  "judges": {
+    "seatA": {
+      "endpoint": "discovery-api.intern-ai.org.cn",
+      "model": "deepseek-v4.1-flash-1017"
+    },
+    "seatB": {
+      "endpoint": "bailucode.com",
+      "model": "bailu-2.8"
+    },
+    "protocol": "STRICT 纯甲/乙，位置翻转抵消偏置，max_tokens 512 / temp 0.6"
+  },
+  "votes": {
+    "total": 106,
+    "clean": 106,
+    "httpErrors": 0,
+    "formatFail": 0
+  },
+  "excluded": {
+    "byteIdenticalPairs": [
+      "rc-C18-tender-spec",
+      "rc-C19-kids-essay",
+      "rc-C5-news-release"
+    ],
+    "reason": "两臂逐字节相同，无可判差异，答案属噪声，统计时剔除"
+  },
+  "result": {
+    "pooled": {
+      "pairs": 50,
+      "votes": 100,
+      "bArmChosenAsAi": 21,
+      "rate": 0.21,
+      "pValue": 4.34e-9,
+      "seatA": {
+        "bArm": 5,
+        "n": 50,
+        "p": 4.21e-9
+      },
+      "seatB": {
+        "bArm": 16,
+        "n": 50,
+        "p": 0.0153
+      },
+      "seatHeterogeneityFisherP": 0.0128,
+      "bothSayRewriteMoreAi": 3,
+      "bothSayOriginalMoreAi": 32,
+      "seatsAgree": 35,
+      "seatsAgreePairs": 50
+    },
+    "P1": {
+      "pairs": 20,
+      "votes": 40,
+      "bArmChosenAsAi": 12,
+      "rate": 0.3,
+      "pValue": 0.0166,
+      "seatA": {
+        "bArm": 2,
+        "n": 20,
+        "p": 0.000402
+      },
+      "seatB": {
+        "bArm": 10,
+        "n": 20,
+        "p": 1
+      },
+      "seatHeterogeneityFisherP": 0.0138,
+      "bothSayRewriteMoreAi": 2,
+      "bothSayOriginalMoreAi": 10,
+      "seatsAgree": 12,
+      "seatsAgreePairs": 20
+    },
+    "P2": {
+      "pairs": 30,
+      "votes": 60,
+      "bArmChosenAsAi": 9,
+      "rate": 0.15,
+      "pValue": 3.09e-8,
+      "seatA": {
+        "bArm": 3,
+        "n": 30,
+        "p": 0.00000843
+      },
+      "seatB": {
+        "bArm": 6,
+        "n": 30,
+        "p": 0.00143
+      },
+      "seatHeterogeneityFisherP": 0.4716,
+      "bothSayRewriteMoreAi": 1,
+      "bothSayOriginalMoreAi": 22,
+      "seatsAgree": 23,
+      "seatsAgreePairs": 30
+    },
+    "highSignal": {
+      "pairs": 11,
+      "votes": 22,
+      "bArmChosenAsAi": 4,
+      "rate": 0.182,
+      "pValue": 0.00434,
+      "seatA": {
+        "bArm": 1,
+        "n": 11,
+        "p": 0.0117
+      },
+      "seatB": {
+        "bArm": 3,
+        "n": 11,
+        "p": 0.227
+      },
+      "seatHeterogeneityFisherP": 0.5865,
+      "bothSayRewriteMoreAi": 1,
+      "bothSayOriginalMoreAi": 8,
+      "seatsAgree": 9,
+      "seatsAgreePairs": 11
+    },
+    "lowSignal": {
+      "pairs": 39,
+      "votes": 78,
+      "bArmChosenAsAi": 17,
+      "rate": 0.218,
+      "pValue": 5.66e-7,
+      "seatA": {
+        "bArm": 4,
+        "n": 39,
+        "p": 3.35e-7
+      },
+      "seatB": {
+        "bArm": 13,
+        "n": 39,
+        "p": 0.0533
+      },
+      "seatHeterogeneityFisherP": 0.0263,
+      "bothSayRewriteMoreAi": 2,
+      "bothSayOriginalMoreAi": 24,
+      "seatsAgree": 26,
+      "seatsAgreePairs": 39
+    }
+  },
+  "perPair": [
+    {
+      "id": "dr-01-idx380",
+      "scoreBefore": 24,
+      "scoreAfter": 18,
+      "chars": 440,
+      "charsAfter": 440,
+      "seatSaysRewriteMoreAiA": true,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-02-idx1893",
+      "scoreBefore": 37,
+      "scoreAfter": 31,
+      "chars": 653,
+      "charsAfter": 652,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-03-idx1009",
+      "scoreBefore": 42,
+      "scoreAfter": 33,
+      "chars": 721,
+      "charsAfter": 715,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-04-idx1457",
+      "scoreBefore": 25,
+      "scoreAfter": 21,
+      "chars": 896,
+      "charsAfter": 897,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-05-idx875",
+      "scoreBefore": 35,
+      "scoreAfter": 27,
+      "chars": 340,
+      "charsAfter": 336,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-06-idx2681",
+      "scoreBefore": 21,
+      "scoreAfter": 16,
+      "chars": 1071,
+      "charsAfter": 1066,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "dr-07-idx794",
+      "scoreBefore": 34,
+      "scoreAfter": 28,
+      "chars": 367,
+      "charsAfter": 365,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-08-idx77",
+      "scoreBefore": 21,
+      "scoreAfter": 14,
+      "chars": 383,
+      "charsAfter": 398,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-09-idx320",
+      "scoreBefore": 22,
+      "scoreAfter": 22,
+      "chars": 331,
+      "charsAfter": 329,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "dr-10-idx768",
+      "scoreBefore": 29,
+      "scoreAfter": 21,
+      "chars": 658,
+      "charsAfter": 679,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-11-idx441",
+      "scoreBefore": 28,
+      "scoreAfter": 29,
+      "chars": 474,
+      "charsAfter": 471,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "dr-12-idx251",
+      "scoreBefore": 34,
+      "scoreAfter": 20,
+      "chars": 354,
+      "charsAfter": 349,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "dr-13-idx185",
+      "scoreBefore": 34,
+      "scoreAfter": 29,
+      "chars": 335,
+      "charsAfter": 333,
+      "seatSaysRewriteMoreAiA": true,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "dr-14-idx1127",
+      "scoreBefore": 34,
+      "scoreAfter": 30,
+      "chars": 447,
+      "charsAfter": 446,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-15-idx499",
+      "scoreBefore": 27,
+      "scoreAfter": 22,
+      "chars": 412,
+      "charsAfter": 430,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-16-idx1713",
+      "scoreBefore": 41,
+      "scoreAfter": 34,
+      "chars": 1041,
+      "charsAfter": 1040,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-17-idx1046",
+      "scoreBefore": 43,
+      "scoreAfter": 34,
+      "chars": 284,
+      "charsAfter": 284,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-18-idx2437",
+      "scoreBefore": 23,
+      "scoreAfter": 20,
+      "chars": 979,
+      "charsAfter": 976,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-19-idx2227",
+      "scoreBefore": 18,
+      "scoreAfter": 17,
+      "chars": 1057,
+      "charsAfter": 1057,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "dr-20-idx1379",
+      "scoreBefore": 19,
+      "scoreAfter": 15,
+      "chars": 834,
+      "charsAfter": 832,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-21-idx1153",
+      "scoreBefore": 45,
+      "scoreAfter": 41,
+      "chars": 398,
+      "charsAfter": 385,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-22-idx1779",
+      "scoreBefore": 24,
+      "scoreAfter": 19,
+      "chars": 767,
+      "charsAfter": 783,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-23-idx360",
+      "scoreBefore": 27,
+      "scoreAfter": 20,
+      "chars": 346,
+      "charsAfter": 364,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-24-idx1591",
+      "scoreBefore": 19,
+      "scoreAfter": 17,
+      "chars": 564,
+      "charsAfter": 564,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-25-idx491",
+      "scoreBefore": 34,
+      "scoreAfter": 30,
+      "chars": 436,
+      "charsAfter": 435,
+      "seatSaysRewriteMoreAiA": true,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-26-idx1637",
+      "scoreBefore": 23,
+      "scoreAfter": 22,
+      "chars": 471,
+      "charsAfter": 471,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-27-idx1070",
+      "scoreBefore": 33,
+      "scoreAfter": 26,
+      "chars": 539,
+      "charsAfter": 534,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-28-idx1517",
+      "scoreBefore": 33,
+      "scoreAfter": 27,
+      "chars": 479,
+      "charsAfter": 477,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-29-idx1023",
+      "scoreBefore": 38,
+      "scoreAfter": 31,
+      "chars": 516,
+      "charsAfter": 509,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "dr-30-idx2595",
+      "scoreBefore": 22,
+      "scoreAfter": 21,
+      "chars": 1181,
+      "charsAfter": 1177,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C1-work-summary",
+      "scoreBefore": 33,
+      "scoreAfter": 28,
+      "chars": 274,
+      "charsAfter": 265,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C10-tiny-input",
+      "scoreBefore": 28,
+      "scoreAfter": 24,
+      "chars": 53,
+      "charsAfter": 51,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C11-admin-notice",
+      "scoreBefore": 40,
+      "scoreAfter": 34,
+      "chars": 292,
+      "charsAfter": 292,
+      "seatSaysRewriteMoreAiA": true,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C12-paper-abstract",
+      "scoreBefore": 25,
+      "scoreAfter": 22,
+      "chars": 244,
+      "charsAfter": 244,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C13-manual-steps",
+      "scoreBefore": 32,
+      "scoreAfter": 27,
+      "chars": 224,
+      "charsAfter": 224,
+      "seatSaysRewriteMoreAiA": true,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C14-finance-flash",
+      "scoreBefore": 29,
+      "scoreAfter": 29,
+      "chars": 253,
+      "charsAfter": 251,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C15-policy-qa",
+      "scoreBefore": 44,
+      "scoreAfter": 42,
+      "chars": 216,
+      "charsAfter": 216,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C16-prospectus-risk",
+      "scoreBefore": 47,
+      "scoreAfter": 27,
+      "chars": 209,
+      "charsAfter": 210,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C17-verdict-labor",
+      "scoreBefore": 28,
+      "scoreAfter": 27,
+      "chars": 291,
+      "charsAfter": 291,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C2-opinion-wechat",
+      "scoreBefore": 45,
+      "scoreAfter": 23,
+      "chars": 213,
+      "charsAfter": 217,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C20-speech-opening",
+      "scoreBefore": 33,
+      "scoreAfter": 33,
+      "chars": 233,
+      "charsAfter": 228,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C21-fenced-code-doc",
+      "scoreBefore": 41,
+      "scoreAfter": 40,
+      "chars": 453,
+      "charsAfter": 453,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C22-markdown-struct",
+      "scoreBefore": 54,
+      "scoreAfter": 39,
+      "chars": 248,
+      "charsAfter": 240,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C23-frontmatter-indent",
+      "scoreBefore": 47,
+      "scoreAfter": 39,
+      "chars": 252,
+      "charsAfter": 246,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C3-tech-popular",
+      "scoreBefore": 39,
+      "scoreAfter": 35,
+      "chars": 282,
+      "charsAfter": 278,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": false
+    },
+    {
+      "id": "rc-C4-product-copy",
+      "scoreBefore": 36,
+      "scoreAfter": 28,
+      "chars": 267,
+      "charsAfter": 260,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C6-academic-abstract",
+      "scoreBefore": 38,
+      "scoreAfter": 34,
+      "chars": 226,
+      "charsAfter": 222,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C7-story-dialogue",
+      "scoreBefore": 18,
+      "scoreAfter": 20,
+      "chars": 208,
+      "charsAfter": 208,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C8-social-post",
+      "scoreBefore": 3,
+      "scoreAfter": 8,
+      "chars": 118,
+      "charsAfter": 118,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    },
+    {
+      "id": "rc-C9-mixed-links",
+      "scoreBefore": 28,
+      "scoreAfter": 23,
+      "chars": 334,
+      "charsAfter": 331,
+      "seatSaysRewriteMoreAiA": false,
+      "seatSaysRewriteMoreAiB": true
+    }
+  ],
+  "findings": [
+    "合并 50 对 / 100 票：改写稿被判更像 AI 仅 21%（p=4.3e-9），两席一致 35/50、两席都说原文更像 AI 32/50。",
+    "两群方向一致：P1 realcase 30%(p=0.017)、P2 DetectRL 机器标注 15%(p=3.1e-8) ⇒ 不是单一语料的偶然。",
+    "与 3 篇试点（C1/C6/C16，2/6=33%）同向同量级，复现性成立。",
+    "失败样本仅 3/50（两席都说改写更像 AI）：dr-13-idx185、rc-C11-admin-notice、rc-C13-manual-steps —— 均为 224~335 字短稿且改写几乎不改字数。",
+    "改写后变长的 8 篇被判更像 AI 率 13%，变短的 29 篇 34% ⇒ 碎句/删减型改动更容易被判成 AI，与「碎句化是 AI 特征」一致。",
+    "两席异质性：合并 Fisher p=0.013（P1 p=0.014 显著、P2 p=0.47 一致）；Bailu 席明显弱于 DeepSeek 席（16/50 vs 5/50）。",
+    "口径：单强度 0.7、单 seed、仅本地规则引擎（未覆盖 --api LLM 改写）、评委均为 LLM ⇒ 支持「改写让 AI 稿更像人」这一方向，但不据此改判据/默认参数。"
+  ],
+  "crossReference": {
+    "humanCorpus": "2026-11-26 完整回归：真人语料 原文 vs 改写 8/8 双席一致判定改写更像 AI ⇒ 同一引擎在两类起点上方向相反，与 skipLowRisk 默认跳过自洽",
+    "openDatasetAuc": "2026-11-21 DetectRL 300 篇：本地 aiScore AUC 0.6153→0.2971 曾被解读为「只骗过判据」；本轮独立 LLM 评委给出同方向判定（改写更像人），说明不只是本地判据被绕开"
+  }
+}

@@ -1,0 +1,1078 @@
+{
+  "ts": "2026-11-25T22:49:22.393Z",
+  "args": {
+    "input": "eval-work/ab-ai-full/in",
+    "out": "eval-work/ab-ai-full/arms-engine",
+    "intensity": 0.7,
+    "enhancement": false,
+    "style": "plain",
+    "variant": "none",
+    "academicCheck": false,
+    "auditStructure": false,
+    "metrics": false,
+    "against": "",
+    "styleExplicit": false,
+    "suffix": ".humanized",
+    "seed": 20260905,
+    "api": false,
+    "baseUrl": "",
+    "model": "",
+    "apiKey": "",
+    "judgeModel": "",
+    "altModel": "",
+    "deep": true,
+    "contest": 1,
+    "maxCalls": 0,
+    "maxWait": 0,
+    "llmTimeout": 0,
+    "reasoningEffort": "",
+    "reasoningEffortFormat": "nested",
+    "disableThinking": false,
+    "target": 0,
+    "strict": false,
+    "structural": false,
+    "skipLowRisk": false,
+    "persona": "default",
+    "report": "eval-work/ab-ai-full/engine-report.json",
+    "voiceSamplePath": "",
+    "pinFile": "",
+    "docxInplace": false,
+    "outFormat": "follow",
+    "explain": false,
+    "recursive": false,
+    "jobs": 1,
+    "dryRun": false,
+    "stdin": false,
+    "help": false,
+    "detectOnly": false,
+    "detectors": [],
+    "detectorUrl": "",
+    "detectorKey": "",
+    "detectorPath": "score",
+    "detectorScale": "0-100"
+  },
+  "totals": {
+    "files": 53,
+    "ok": 53,
+    "fail": 0,
+    "skippedSuffix": 0,
+    "lowYieldRisk": 33,
+    "skippedLowRisk": 0,
+    "structuralApplied": 0,
+    "pinApplied": 0,
+    "pinFallback": 0,
+    "pinRetried": 0,
+    "charsIn": 23281,
+    "charsOut": 23256,
+    "msTotal": 330
+  },
+  "reports": [
+    {
+      "file": "dr-01-idx380.txt",
+      "ms": 47,
+      "charsIn": 440,
+      "charsOut": 440,
+      "detectBefore": 24,
+      "detectAfter": 18,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-01-idx380.humanized.txt"
+    },
+    {
+      "file": "dr-02-idx1893.txt",
+      "ms": 12,
+      "charsIn": 653,
+      "charsOut": 652,
+      "detectBefore": 37,
+      "detectAfter": 31,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 82,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-02-idx1893.humanized.txt"
+    },
+    {
+      "file": "dr-03-idx1009.txt",
+      "ms": 15,
+      "charsIn": 721,
+      "charsOut": 715,
+      "detectBefore": 42,
+      "detectAfter": 33,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 78,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-03-idx1009.humanized.txt"
+    },
+    {
+      "file": "dr-04-idx1457.txt",
+      "ms": 13,
+      "charsIn": 896,
+      "charsOut": 897,
+      "detectBefore": 25,
+      "detectAfter": 21,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-04-idx1457.humanized.txt"
+    },
+    {
+      "file": "dr-05-idx875.txt",
+      "ms": 4,
+      "charsIn": 340,
+      "charsOut": 336,
+      "detectBefore": 35,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 72,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 77,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-05-idx875.humanized.txt"
+    },
+    {
+      "file": "dr-06-idx2681.txt",
+      "ms": 15,
+      "charsIn": 1071,
+      "charsOut": 1066,
+      "detectBefore": 21,
+      "detectAfter": 16,
+      "registerBefore": {
+        "index": 57,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-06-idx2681.humanized.txt"
+    },
+    {
+      "file": "dr-07-idx794.txt",
+      "ms": 7,
+      "charsIn": 367,
+      "charsOut": 365,
+      "detectBefore": 34,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-07-idx794.humanized.txt"
+    },
+    {
+      "file": "dr-08-idx77.txt",
+      "ms": 7,
+      "charsIn": 383,
+      "charsOut": 398,
+      "detectBefore": 21,
+      "detectAfter": 14,
+      "registerBefore": {
+        "index": 32,
+        "label": "偏口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 15,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-08-idx77.humanized.txt"
+    },
+    {
+      "file": "dr-09-idx320.txt",
+      "ms": 3,
+      "charsIn": 331,
+      "charsOut": 329,
+      "detectBefore": 22,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 71,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-09-idx320.humanized.txt"
+    },
+    {
+      "file": "dr-10-idx768.txt",
+      "ms": 10,
+      "charsIn": 658,
+      "charsOut": 679,
+      "detectBefore": 29,
+      "detectAfter": 21,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-10-idx768.humanized.txt"
+    },
+    {
+      "file": "dr-11-idx441.txt",
+      "ms": 5,
+      "charsIn": 474,
+      "charsOut": 471,
+      "detectBefore": 28,
+      "detectAfter": 29,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-11-idx441.humanized.txt"
+    },
+    {
+      "file": "dr-12-idx251.txt",
+      "ms": 5,
+      "charsIn": 354,
+      "charsOut": 349,
+      "detectBefore": 34,
+      "detectAfter": 20,
+      "registerBefore": {
+        "index": 0,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 0,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-12-idx251.humanized.txt"
+    },
+    {
+      "file": "dr-13-idx185.txt",
+      "ms": 5,
+      "charsIn": 335,
+      "charsOut": 333,
+      "detectBefore": 34,
+      "detectAfter": 29,
+      "registerBefore": {
+        "index": 71,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 71,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-13-idx185.humanized.txt"
+    },
+    {
+      "file": "dr-14-idx1127.txt",
+      "ms": 4,
+      "charsIn": 447,
+      "charsOut": 446,
+      "detectBefore": 34,
+      "detectAfter": 30,
+      "registerBefore": {
+        "index": 95,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 80,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-14-idx1127.humanized.txt"
+    },
+    {
+      "file": "dr-15-idx499.txt",
+      "ms": 7,
+      "charsIn": 412,
+      "charsOut": 430,
+      "detectBefore": 27,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 67,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-15-idx499.humanized.txt"
+    },
+    {
+      "file": "dr-16-idx1713.txt",
+      "ms": 11,
+      "charsIn": 1041,
+      "charsOut": 1040,
+      "detectBefore": 41,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 98,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 70,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-16-idx1713.humanized.txt"
+    },
+    {
+      "file": "dr-17-idx1046.txt",
+      "ms": 6,
+      "charsIn": 284,
+      "charsOut": 284,
+      "detectBefore": 43,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 74,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 74,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-17-idx1046.humanized.txt"
+    },
+    {
+      "file": "dr-18-idx2437.txt",
+      "ms": 8,
+      "charsIn": 979,
+      "charsOut": 976,
+      "detectBefore": 23,
+      "detectAfter": 20,
+      "registerBefore": {
+        "index": 73,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 73,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-18-idx2437.humanized.txt"
+    },
+    {
+      "file": "dr-19-idx2227.txt",
+      "ms": 8,
+      "charsIn": 1057,
+      "charsOut": 1057,
+      "detectBefore": 18,
+      "detectAfter": 17,
+      "registerBefore": {
+        "index": 57,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 57,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-19-idx2227.humanized.txt"
+    },
+    {
+      "file": "dr-20-idx1379.txt",
+      "ms": 7,
+      "charsIn": 834,
+      "charsOut": 832,
+      "detectBefore": 19,
+      "detectAfter": 15,
+      "registerBefore": {
+        "index": 76,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 67,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-20-idx1379.humanized.txt"
+    },
+    {
+      "file": "dr-21-idx1153.txt",
+      "ms": 3,
+      "charsIn": 398,
+      "charsOut": 385,
+      "detectBefore": 45,
+      "detectAfter": 41,
+      "registerBefore": {
+        "index": 84,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 86,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-21-idx1153.humanized.txt"
+    },
+    {
+      "file": "dr-22-idx1779.txt",
+      "ms": 10,
+      "charsIn": 767,
+      "charsOut": 783,
+      "detectBefore": 24,
+      "detectAfter": 19,
+      "registerBefore": {
+        "index": 59,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-22-idx1779.humanized.txt"
+    },
+    {
+      "file": "dr-23-idx360.txt",
+      "ms": 4,
+      "charsIn": 346,
+      "charsOut": 364,
+      "detectBefore": 27,
+      "detectAfter": 20,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-23-idx360.humanized.txt"
+    },
+    {
+      "file": "dr-24-idx1591.txt",
+      "ms": 5,
+      "charsIn": 564,
+      "charsOut": 564,
+      "detectBefore": 19,
+      "detectAfter": 17,
+      "registerBefore": {
+        "index": 64,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 64,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-24-idx1591.humanized.txt"
+    },
+    {
+      "file": "dr-25-idx491.txt",
+      "ms": 4,
+      "charsIn": 436,
+      "charsOut": 435,
+      "detectBefore": 34,
+      "detectAfter": 30,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-25-idx491.humanized.txt"
+    },
+    {
+      "file": "dr-26-idx1637.txt",
+      "ms": 5,
+      "charsIn": 471,
+      "charsOut": 471,
+      "detectBefore": 23,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 66,
+        "label": "偏书面"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 66,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-26-idx1637.humanized.txt"
+    },
+    {
+      "file": "dr-27-idx1070.txt",
+      "ms": 5,
+      "charsIn": 539,
+      "charsOut": 534,
+      "detectBefore": 33,
+      "detectAfter": 26,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 79,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-27-idx1070.humanized.txt"
+    },
+    {
+      "file": "dr-28-idx1517.txt",
+      "ms": 4,
+      "charsIn": 479,
+      "charsOut": 477,
+      "detectBefore": 33,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 94,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 65,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-28-idx1517.humanized.txt"
+    },
+    {
+      "file": "dr-29-idx1023.txt",
+      "ms": 4,
+      "charsIn": 516,
+      "charsOut": 509,
+      "detectBefore": 38,
+      "detectAfter": 31,
+      "registerBefore": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 76,
+        "label": "偏书面"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-29-idx1023.humanized.txt"
+    },
+    {
+      "file": "dr-30-idx2595.txt",
+      "ms": 10,
+      "charsIn": 1181,
+      "charsOut": 1177,
+      "detectBefore": 22,
+      "detectAfter": 21,
+      "registerBefore": {
+        "index": 56,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\dr-30-idx2595.humanized.txt"
+    },
+    {
+      "file": "rc-C1-work-summary.txt",
+      "ms": 3,
+      "charsIn": 274,
+      "charsOut": 265,
+      "detectBefore": 33,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C1-work-summary.humanized.txt"
+    },
+    {
+      "file": "rc-C10-tiny-input.txt",
+      "ms": 1,
+      "charsIn": 53,
+      "charsOut": 51,
+      "detectBefore": 28,
+      "detectAfter": 24,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C10-tiny-input.humanized.txt"
+    },
+    {
+      "file": "rc-C11-admin-notice.txt",
+      "ms": 4,
+      "charsIn": 292,
+      "charsOut": 292,
+      "detectBefore": 40,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C11-admin-notice.humanized.txt"
+    },
+    {
+      "file": "rc-C12-paper-abstract.txt",
+      "ms": 4,
+      "charsIn": 244,
+      "charsOut": 244,
+      "detectBefore": 25,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C12-paper-abstract.humanized.txt"
+    },
+    {
+      "file": "rc-C13-manual-steps.txt",
+      "ms": 3,
+      "charsIn": 224,
+      "charsOut": 224,
+      "detectBefore": 32,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 87,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 87,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C13-manual-steps.humanized.txt"
+    },
+    {
+      "file": "rc-C14-finance-flash.txt",
+      "ms": 2,
+      "charsIn": 253,
+      "charsOut": 251,
+      "detectBefore": 29,
+      "detectAfter": 29,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C14-finance-flash.humanized.txt"
+    },
+    {
+      "file": "rc-C15-policy-qa.txt",
+      "ms": 2,
+      "charsIn": 216,
+      "charsOut": 216,
+      "detectBefore": 44,
+      "detectAfter": 42,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C15-policy-qa.humanized.txt"
+    },
+    {
+      "file": "rc-C16-prospectus-risk.txt",
+      "ms": 2,
+      "charsIn": 209,
+      "charsOut": 210,
+      "detectBefore": 47,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C16-prospectus-risk.humanized.txt"
+    },
+    {
+      "file": "rc-C17-verdict-labor.txt",
+      "ms": 3,
+      "charsIn": 291,
+      "charsOut": 291,
+      "detectBefore": 28,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C17-verdict-labor.humanized.txt"
+    },
+    {
+      "file": "rc-C18-tender-spec.txt",
+      "ms": 2,
+      "charsIn": 273,
+      "charsOut": 273,
+      "detectBefore": 26,
+      "detectAfter": 26,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C18-tender-spec.humanized.txt"
+    },
+    {
+      "file": "rc-C19-kids-essay.txt",
+      "ms": 2,
+      "charsIn": 146,
+      "charsOut": 146,
+      "detectBefore": 15,
+      "detectAfter": 15,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C19-kids-essay.humanized.txt"
+    },
+    {
+      "file": "rc-C2-opinion-wechat.txt",
+      "ms": 3,
+      "charsIn": 213,
+      "charsOut": 217,
+      "detectBefore": 45,
+      "detectAfter": 23,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C2-opinion-wechat.humanized.txt"
+    },
+    {
+      "file": "rc-C20-speech-opening.txt",
+      "ms": 2,
+      "charsIn": 233,
+      "charsOut": 228,
+      "detectBefore": 33,
+      "detectAfter": 33,
+      "registerBefore": {
+        "index": 81,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 81,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C20-speech-opening.humanized.txt"
+    },
+    {
+      "file": "rc-C21-fenced-code-doc.txt",
+      "ms": 7,
+      "charsIn": 453,
+      "charsOut": 453,
+      "detectBefore": 41,
+      "detectAfter": 40,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C21-fenced-code-doc.humanized.txt"
+    },
+    {
+      "file": "rc-C22-markdown-struct.txt",
+      "ms": 5,
+      "charsIn": 248,
+      "charsOut": 240,
+      "detectBefore": 54,
+      "detectAfter": 39,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C22-markdown-struct.humanized.txt"
+    },
+    {
+      "file": "rc-C23-frontmatter-indent.txt",
+      "ms": 3,
+      "charsIn": 252,
+      "charsOut": 246,
+      "detectBefore": 47,
+      "detectAfter": 39,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C23-frontmatter-indent.humanized.txt"
+    },
+    {
+      "file": "rc-C3-tech-popular.txt",
+      "ms": 3,
+      "charsIn": 282,
+      "charsOut": 278,
+      "detectBefore": 39,
+      "detectAfter": 35,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 90,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C3-tech-popular.humanized.txt"
+    },
+    {
+      "file": "rc-C4-product-copy.txt",
+      "ms": 3,
+      "charsIn": 267,
+      "charsOut": 260,
+      "detectBefore": 36,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 91,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C4-product-copy.humanized.txt"
+    },
+    {
+      "file": "rc-C5-news-release.txt",
+      "ms": 4,
+      "charsIn": 198,
+      "charsOut": 198,
+      "detectBefore": 34,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C5-news-release.humanized.txt"
+    },
+    {
+      "file": "rc-C6-academic-abstract.txt",
+      "ms": 5,
+      "charsIn": 226,
+      "charsOut": 222,
+      "detectBefore": 38,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C6-academic-abstract.humanized.txt"
+    },
+    {
+      "file": "rc-C7-story-dialogue.txt",
+      "ms": 5,
+      "charsIn": 208,
+      "charsOut": 208,
+      "detectBefore": 18,
+      "detectAfter": 20,
+      "registerBefore": {
+        "index": 12,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 12,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C7-story-dialogue.humanized.txt"
+    },
+    {
+      "file": "rc-C8-social-post.txt",
+      "ms": 2,
+      "charsIn": 118,
+      "charsOut": 118,
+      "detectBefore": 3,
+      "detectAfter": 8,
+      "registerBefore": {
+        "index": 0,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 0,
+        "label": "口语"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C8-social-post.humanized.txt"
+    },
+    {
+      "file": "rc-C9-mixed-links.txt",
+      "ms": 7,
+      "charsIn": 334,
+      "charsOut": 331,
+      "detectBefore": 28,
+      "detectAfter": 23,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "eval-work\\ab-ai-full\\arms-engine\\rc-C9-mixed-links.humanized.txt"
+    }
+  ]
+}
