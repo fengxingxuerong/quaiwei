@@ -209,6 +209,8 @@ interface CliArgs {
   contest: number;
   /** v0.9.89：声口样本文件路径 */
   voiceSamplePath: string;
+  /** v0.9.92：关闭思考开关（布尔，不是带值选项） */
+  disableThinking: boolean;
   outFormat: string;
   explain: boolean;
   recursive: boolean;
@@ -302,6 +304,23 @@ describe("humanize-cli parseArgs", () => {
     expect(a.intensity).toBe(0.8);
   });
 
+  // v0.9.92：--no-think 是**布尔开关**，不能进 VALUED_OPTS（那里表示"后面还跟一个值"）。
+  // 一旦误放进去，`--no-think 稿.txt` 会把稿.txt 当它的值吞掉，输入变成"没给"→ 静默进 stdin。
+  it("v0.9.92：--no-think 不吞后面的输入路径，且置位 disableThinking", () => {
+    const a = parseArgs(base(["--no-think", "./docs/a.txt"]));
+    expect(a.input).toBe("./docs/a.txt");
+    expect(a.disableThinking).toBe(true);
+    // 放在路径之后同样生效
+    const b = parseArgs(base(["./docs/b.txt", "--no-think", "--intensity", "0.7"]));
+    expect(b.input).toBe("./docs/b.txt");
+    expect(b.disableThinking).toBe(true);
+    expect(b.intensity).toBe(0.7);
+  });
+
+  it("v0.9.92：不给 --no-think 时 disableThinking 默认 false（请求体逐字不变）", () => {
+    expect(parseArgs(base(["./docs"])).disableThinking).toBe(false);
+  });
+
   it("v0.9.38：未知短选项仍走用法错误（humanize-cli 没有 -s，强度是 --intensity）", () => {
     expect(() => parseArgs(base(["-", "-s", "0.8"]))).toThrow("__CLI_EXIT__:1");
   });
@@ -385,9 +404,7 @@ describe("humanize-cli parseArgs", () => {
   // v0.9.89：声口样本 CLI 化。解析层只收路径，不读文件、不影响任何默认值。
   it("--voice-sample：默认空串；显式路径原样收下，不吞掉后续参数", () => {
     expect(parseArgs(base(["./in"])).voiceSamplePath).toBe("");
-    const a = parseArgs(
-      base(["./in", "--voice-sample", "./my-writing.txt", "--intensity", "0.9"]),
-    );
+    const a = parseArgs(base(["./in", "--voice-sample", "./my-writing.txt", "--intensity", "0.9"]));
     expect(a.voiceSamplePath).toBe("./my-writing.txt");
     expect(a.intensity).toBe(0.9);
     expect(a.outFormat).toBe("follow");

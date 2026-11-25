@@ -57,6 +57,18 @@ export interface ApiConfig {
    * 只影响请求体序列化，不影响判据。不填 = nested，既有网关行为逐字不变。
    */
   reasoningEffortFormat?: "nested" | "top-level";
+  /**
+   * v0.9.92：显式关闭模型思考（`thinking: { type: "disabled" }`）。
+   *
+   * 为什么需要：部分"flash"型号是思考型（如 discovery 网关的 deepseek-v4.1-flash-1017），
+   * `reasoning` 会把 max_tokens 整个吃光——实测 4096 tokens 全为 reasoning、正文 0 字节、
+   * 单请求 29.9s，翻倍预算只让思考更长。带上这个字段后同一提示词 3.6s 出 513 字。
+   *
+   * 边界：不是所有网关都认。OFM 中继的 glm/glm-5.3-flash 对 thinking.* 直接报 1210
+   * 「不支持关闭思考」；那类通道请改用 reasoningEffort=low。默认 false = 不附加字段，
+   * 既有网关请求体逐字不变。
+   */
+  disableThinking?: boolean;
   /** 单次 LLM 请求超时（毫秒）。不传 = 90 秒（保持旧行为）。
    *  2026-11-05 实测：思考型模型 + 长 system prompt + 8000/16000 max_tokens 在部分网关上
    *  单次要 88~180 秒，90 秒硬编码会把可用请求掐断，最终被误报成「模型返回空内容」。
@@ -287,6 +299,7 @@ export const DEFAULT_API: ApiConfig = {
   style: "plain",
   reasoningEffort: undefined,
   reasoningEffortFormat: "nested",
+  disableThinking: false,
   maxWaitSeconds: 0,
   maxApiCalls: 0,
   contestSamples: 1,

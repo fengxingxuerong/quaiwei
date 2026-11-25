@@ -88,6 +88,9 @@ export function loadApi(): ApiConfig {
     // 白名单漏读会让「面板选了、刷新回默认」，与 reasoningEffort 成对透传。
     reasoningEffortFormat:
       o.reasoningEffortFormat === "top-level" ? "top-level" : ("nested" as const),
+    // v0.9.92：关闭思考开关。同一模式：白名单漏读会「设了刷新就丢」，
+    // 与 reasoningEffort / reasoningEffortFormat 成对透传。
+    disableThinking: o.disableThinking === true,
     maxWaitSeconds:
       typeof o.maxWaitSeconds === "number" && o.maxWaitSeconds >= 0 ? o.maxWaitSeconds : 0,
     maxApiCalls: typeof o.maxApiCalls === "number" && o.maxApiCalls >= 0 ? o.maxApiCalls : 0,

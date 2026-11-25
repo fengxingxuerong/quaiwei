@@ -70,6 +70,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--llm-timeout <sec>` | 请求超时 | 单次 LLM 请求超时，默认 90 秒（上限 600）；慢思考型网关可调到 180~300，避免被误报成「模型返回空内容」 |
 | `--reasoning-effort <档>` | 推理强度 | low/medium/high/max/x-high，只作用 `--api` 推理模型；不配就不附加该参数 |
 | `--reasoning-format nested\|top-level` | 推理参数线格式 | `nested`（默认）= `reasoning:{effort}`，OpenRouter 系；`top-level` = `reasoning_effort`，OFM 中继 `glm/glm-5.3-flash` 直连专用（该模型始终思考，传 nested 报 1210）。须配 `--reasoning-effort` 才生效 |
+| `--no-think` | 关闭模型思考 | 请求体加 `thinking:{type:"disabled"}`。思考型 flash 型号（如 `deepseek-v4.1-flash-1017`）会把 `max_tokens` 全烧在 reasoning 上、正文恒空（实测 4096 tokens / 29.9s / 0 字节），加此参数后 3.6s 出稿。**不是所有网关都认**：OFM 中继 `glm/glm-5.3-flash` 对 `thinking.*` 报 1210，那类通道改用 `--reasoning-effort low`。默认不开 |
 | `--voice-sample <文件>` | 本人写作样本 | 只作用 `--api` 通道：给 2~3 段自己的写作（≥100 可见字符，上限 5000），抽出句长节奏/标点习惯/口气注入提示词，让改写跟随你的声口。样本过短或读不到就原样出稿；本地引擎不消费此参数 |
 | `--docx-inplace` | 开关 | **docx 富文本原地编辑**：只改 `word/document.xml` 的 `<w:t>`，样式/批注/修订/公式/文本框/图片逐字节保留；改写单位是段落、不跨段。保格式但去味强度受限（不做跨段结构重排）。只吃 `.docx`，与 `--api` / `--pin` / `--variant` 互斥 |
 | `--pin <文件>` | 事实钉住 | 每行一段原文片段（数字、引文、承诺、专名），这些片段改写前后逐字不变（私有占位符在 CLI 层做，引擎看不见）。任一段没保住就**整篇回退原文**。空行与 `#` 注释忽略，单段 ≥4 可见字符，单篇 ≤64 段。`--report` 记 `pins` 段与 `totals.pinApplied`/`pinFallback` |

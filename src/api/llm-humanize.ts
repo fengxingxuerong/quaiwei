@@ -255,6 +255,8 @@ async function chatNonEmpty(
   // 2026-11-05 实测：全档失败只回空串，上层一律报「思考预算耗尽」，
   // 把网关故障伪装成模型问题，用户无从判断该换网关还是调 max_tokens。
   let lastFailure = "";
+  /** v0.9.92：是否已确认"思考吃满预算"（正文空、reasoning 非空）。确认后跳过翻倍档。 */
+  let thinkingExhausted = false;
   const attempts: { model?: string; maxTokens: number; label: string }[] = [
     { model: opts.model, maxTokens: opts.maxTokens, label: "" },
     { model: opts.model, maxTokens: Math.min(32000, opts.maxTokens * 2), label: "token 预算翻倍" },
@@ -264,6 +266,11 @@ async function chatNonEmpty(
   }
   for (let i = 0; i < attempts.length; i++) {
     if (i > 0 && isOverBudget()) break;
+    // v0.9.92：上一档明确"思考吃满"（正文空、reasoning 有内容）时跳过翻倍档。
+    // 依据（2026-11-26 实测 discovery deepseek-v4.1-flash-1017）：512 tokens → 4.1s
+    // reasoning 786 字、4096 tokens → 29.9s reasoning 4096 tokens，正文两次都是 0 字节。
+    // 翻倍预算只会让思考更长，白等一轮；换模型（altModel）才有意义，所以只跳过翻倍。
+    if (thinkingExhausted && attempts[i].label.includes("翻倍")) continue;
     try {
       const r = await chat(
         cfg,
@@ -279,6 +286,13 @@ async function chatNonEmpty(
         isOverBudget,
       );
       if (r.content) return { content: r.content, via: attempts[i].label };
+      const reasoningChars = r.reasoning.trim().length;
+      if (reasoningChars > 0) {
+        thinkingExhausted = true;
+        lastFailure =
+          `思考占满 token 预算（reasoning ${reasoningChars} 字、正文 0），` +
+          `该模型是思考型，加预算无效——请换非思考模型或关闭思考`;
+      }
     } catch (e) {
       lastFailure = errMsg(e).slice(0, 200);
       // 单档失败交给下一档降级；全部失败由调用方按空内容处理。

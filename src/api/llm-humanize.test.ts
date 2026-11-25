@@ -68,6 +68,55 @@ describe("LLM 空输出防护", () => {
     expect(calls).toBe(2);
   });
 
+  // v0.9.92：思考型模型把 max_tokens 全烧在 reasoning 上时，正文恒空。
+  // 实测 discovery deepseek-v4.1-flash-1017：512 tokens → reasoning 786 字 / 0 正文，
+  // 4096 tokens → reasoning 4096 tokens / 仍是 0 正文。翻倍预算只会让思考更长，
+  // 白等一轮（单请求 4.1s → 29.9s），所以识别出来后直接跳过翻倍档。
+  it("单轮：正文空但 reasoning 非空 → 判为思考吃满，跳过翻倍档（只调 1 次）", async () => {
+    let calls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        calls++;
+        return okJson({
+          choices: [{ message: { content: "", reasoning_content: "先分析原文的机器味特征……" } }],
+        });
+      }),
+    );
+    const p = humanizeViaApi("值得注意的是，人工智能很重要。", cfg);
+    await expect(p).rejects.toThrow(/思考占满 token 预算/);
+    // 只发 1 个请求：翻倍档被跳过，不再白等一轮
+    expect(calls).toBe(1);
+  });
+
+  it("正文空 + reasoning 非空 + 配了 altModel → 仍试 altModel（换模型才有救）", async () => {
+    const models: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body)) as { model: string };
+        models.push(body.model);
+        if (body.model === "alt-model") {
+          return okJson({
+            choices: [
+              {
+                message: { content: "改写后的文本，字数足够过本地硬门槛，读起来也不像机器写的。" },
+              },
+            ],
+          });
+        }
+        return okJson({ choices: [{ message: { content: "", reasoning_content: "思考中……" } }] });
+      }),
+    );
+    const r = await humanizeViaApi("值得注意的是，人工智能很重要。", {
+      ...cfg,
+      altModel: "alt-model",
+    });
+    expect(r.length).toBeGreaterThan(10);
+    // 主力模型只发 1 次（翻倍档被跳过），然后换 altModel
+    expect(models).toEqual([cfg.model, "alt-model"]);
+  });
+
   it("单轮：首轮空、token 翻倍后成功 → 返回改写稿（不再一次失败就回退本地）", async () => {
     const tokens: number[] = [];
     vi.stubGlobal(

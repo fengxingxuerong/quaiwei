@@ -601,3 +601,50 @@ describe("resolveRequestTimeoutMs（单次请求超时可配）", () => {
     expect(resolveRequestTimeoutMs({ requestTimeoutMs: 9_999_999 })).toBe(600_000);
   });
 });
+
+describe("disableThinking（v0.9.92：显式关闭思考）", () => {
+  const msgs: { role: "user"; content: string }[] = [{ role: "user", content: "原文" }];
+  const opts = { temperature: 0.9, maxTokens: 100 };
+
+  it("开启 → 请求体带 thinking:{type:'disabled'}", async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return resp(200);
+      }),
+    );
+    await chat({ ...cfg, disableThinking: true }, msgs, opts);
+    expect(body.thinking).toEqual({ type: "disabled" });
+  });
+
+  it("缺省/关闭 → 请求体不含 thinking 字段（既有网关逐字不变）", async () => {
+    for (const c of [cfg, { ...cfg, disableThinking: false }]) {
+      let body: Record<string, unknown> = {};
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (_url: string, init: RequestInit) => {
+          body = JSON.parse(String(init.body)) as Record<string, unknown>;
+          return resp(200);
+        }),
+      );
+      await chat(c, msgs, opts);
+      expect("thinking" in body).toBe(false);
+    }
+  });
+
+  it("与 reasoningEffort 可并存：两个字段各走各的，不互相顶掉", async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return resp(200);
+      }),
+    );
+    await chat({ ...cfg, disableThinking: true, reasoningEffort: "low" }, msgs, opts);
+    expect(body.thinking).toEqual({ type: "disabled" });
+    expect(body.reasoning).toEqual({ effort: "low" });
+  });
+});

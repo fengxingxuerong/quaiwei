@@ -176,6 +176,18 @@ interface Args {
   reasoningEffort: string;
   /** 推理参数线格式：nested（OpenRouter，默认）/ top-level（OFM GLM 直连） */
   reasoningEffortFormat: "nested" | "top-level";
+  /**
+   * v0.9.92：显式关闭模型思考（`thinking:{type:"disabled"}`）。
+   *
+   * 实测触发（2026-11-26 完整回归）：discovery 网关的 `deepseek-v4.1-flash-1017` 是思考型，
+   * `reasoning` 把 max_tokens 全吃掉——512 tokens 时 reasoning 786 字、4096 tokens 时
+   * reasoning 4096 tokens，正文两次都是 0 字节，单请求 29.9s。CLI 当时没有任何关闭开关，
+   * 空内容重试把单篇拖到 14 分钟无产出。加开这个字段后同一提示词 3.6s 出 513 字。
+   *
+   * 不是所有网关都认：OFM 中继 glm/glm-5.3-flash 对 thinking.* 报 1210「不支持关闭思考」，
+   * 那类通道用 `--reasoning-effort low`。默认关 = 请求体逐字不变。
+   */
+  disableThinking: boolean;
   /** v0.9.62 深度模式达标线：LLM 评判 ≤ 此分即收手。0 = 沿用默认（DEEP_TARGET_SCORE） */
   target: number;
   strict: boolean;
@@ -276,7 +288,7 @@ const USAGE =
   " [--api [--base-url <url>] [--model <name>] [--api-key <key>] [--judge-model <name>]]" +
   " [--alt-model <name>] [--no-deep] [--contest <n>] [--max-calls <n>] [--max-wait <sec>]" +
   " [--llm-timeout <sec>] [--reasoning-effort low|medium|high|max|x-high]" +
-  " [--reasoning-format nested|top-level]" +
+  " [--reasoning-format nested|top-level] [--no-think]" +
   " [--voice-sample <本人写作样本.txt>] [--pin <逐字保留清单.txt>] [--docx-inplace]" +
   " [--target <1-100>] [--strict] [--persona default|netgen|classic] [--report <file.json>]" +
   " [--out-format follow|txt|docx] [--explain] [--detect-only] [--variant none|zh-TW]" +
@@ -294,6 +306,10 @@ const USAGE =
   "  --reasoning-format nested|top-level：推理参数的线格式。nested=reasoning:{effort}（OpenRouter，" +
   "默认）；top-level=reasoning_effort（OFM 中继 glm/glm-5.3-flash 直连专用——该模型始终思考，" +
   "传 nested 报 1210）。配 --reasoning-effort 才生效。\n" +
+  '  --no-think：显式关闭模型思考（请求体加 thinking:{type:"disabled"}）。思考型 flash 型号会把' +
+  "max_tokens 全烧在 reasoning 上、正文恒空（实测 4096 tokens / 29.9s / 0 字节），翻倍预算无效；" +
+  "加这个字段后同一提示词 3.6s 出稿。**不是所有网关都认**——OFM 中继 glm/glm-5.3-flash 对 thinking.* " +
+  "直接报 1210「不支持关闭思考」，那类通道改用 --reasoning-effort low。默认不开，请求体逐字不变。\n" +
   "  --detector-url：接**任意**外部检测器（把 {text} POST 过去，按 --detector-path 取分，" +
   "默认 0-100 刻度）。原文与产出各送一次，前后分与降幅写进 --report 的 detector 段；" +
   "**可重复**——给多个 --detector-url 就逐档送检、横向对比（紧跟其后的 key/path/scale 只作用在这一档）。" +
@@ -374,6 +390,7 @@ function parseArgs(argv: string[]): Args {
     llmTimeout: 0,
     reasoningEffort: "",
     reasoningEffortFormat: "nested",
+    disableThinking: false,
     target: 0,
     strict: false,
     structural: false,
@@ -550,6 +567,9 @@ function parseArgs(argv: string[]): Args {
       case "--reasoning-format":
         args.reasoningEffortFormat = a[++i] === "top-level" ? "top-level" : "nested";
         break;
+      case "--no-think":
+        args.disableThinking = true;
+        break;
       case "--target":
         // 1~100：0 与负数留给"不设、走默认"，>100 等于永不达标之外的反效果
         args.target = Math.max(0, Math.min(100, Math.floor(num(a[++i], 0))));
@@ -686,6 +706,7 @@ function buildApiConfig(args: Args): ApiConfig {
     cfg.reasoningEffort = args.reasoningEffort as ApiConfig["reasoningEffort"];
     cfg.reasoningEffortFormat = args.reasoningEffortFormat;
   }
+  if (args.disableThinking) cfg.disableThinking = true;
   if (args.model) cfg.model = args.model;
   if (args.judgeModel) cfg.judgeModel = args.judgeModel;
   if (args.altModel) cfg.altModel = args.altModel;

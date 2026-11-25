@@ -123,6 +123,11 @@ export async function chat(
               ? { reasoning_effort: cfg.reasoningEffort }
               : { reasoning: { effort: cfg.reasoningEffort } }
             : {}),
+          // v0.9.92：显式关闭思考。思考型 flash 型号会把 max_tokens 全烧在 reasoning 上，
+          // 正文恒空（实测 4096 tokens / 29.9s / content 0 字节），翻倍预算无效。
+          // 只认这个字段的网关（OpenAI 兼容 + thinking 扩展）才生效；OFM 中继会报 1210。
+          // 默认不开 → 既有请求体逐字不变。
+          ...(cfg.disableThinking ? { thinking: { type: "disabled" } } : {}),
         }),
       });
     } catch (e: unknown) {
