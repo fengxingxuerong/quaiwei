@@ -151,10 +151,6 @@
     "AI 稿改写方向正确（改写被判更像 AI 仅 2/6）但样本小、两席一致率 1/3，不足以定性。",
     "缺陷：思考型模型走 --api 会静默挂死（reasoning 吃满 token，content 空，CLI 无空内容快速失败/无 thinking 关闭参数）。"
   ],
-  "defectFixed": {
-    "title": "--report 明文落盘网关凭证",
-    "detail": "args.apiKey / detectorKey / detectors[].key 原样写进 --report JSON，报告作为对外附件时直接泄漏凭证。已改为只留 *** 占位，附 2 条回归测试（撤销修复即变红）。"
-  },
   "afterFixGates": {
     "vitest": {
       "files": 128,
@@ -167,5 +163,21 @@
     },
     "tsc": 0,
     "eslint": 0
-  }
+  },
+  "defects": [
+    {
+      "id": 1,
+      "title": "--report 明文落盘网关凭证",
+      "status": "fixed",
+      "commit": "380591b",
+      "detail": "args.apiKey / detectorKey / detectors[].key 原样写进 --report JSON。已改为 *** 占位 + 2 条回归测试（撤销修复即红）。"
+    },
+    {
+      "id": 2,
+      "title": "思考型模型走 --api 空转/挂起",
+      "status": "fixed",
+      "commit": "15625c3",
+      "detail": "reasoning 吃满 max_tokens、正文恒空，翻倍预算只让思考更长，单篇挂起 14 分钟无产出。改：识别「正文空 + reasoning 非空」跳过翻倍档 + 新增 --no-think（thinking:{type:disabled}）。实测同一篇 2178 字：14 分钟无产出 → 152.3s 完成 → 加 --no-think 21.6s 完成。口径：速度/质量权衡，21.6s 那次被保真门禁否决回原文。"
+    }
+  ]
 }
