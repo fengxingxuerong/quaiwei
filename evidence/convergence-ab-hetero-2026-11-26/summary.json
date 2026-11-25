@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-11-25T19:49:26.242Z",
+  "task": "convergence A/B 异源双席配对强制选择",
+  "arms": {
+    "A": "humanize(0.6, seed 20260905) 默认碎句版",
+    "B": "同参数 + convergence:true 收敛版"
+  },
+  "corpus": {
+    "total": 21,
+    "truncated": 8,
+    "maxChars": 9000,
+    "source": "artifacts/human-corpus"
+  },
+  "judges": {
+    "seatA": {
+      "endpoint": "https://discovery-api.intern-ai.org.cn/v1",
+      "model": "deepseek-v4.1-flash-1017",
+      "clean": 14,
+      "total": 21
+    },
+    "seatB": {
+      "endpoint": "https://bailucode.com/openapi/v1",
+      "model": "bailu-2.8",
+      "clean": 21,
+      "total": 21
+    }
+  },
+  "votes": {
+    "total": 42,
+    "clean": 35,
+    "httpErrors": 2,
+    "nonStrict": 5
+  },
+  "intersection": {
+    "articles": 14,
+    "votes": 28,
+    "bArmChosenAsAi": 6,
+    "rate": 0.214,
+    "pValue": 0.00372
+  },
+  "perSeat": {
+    "A": {
+      "bArmChosen": 0,
+      "n": 14,
+      "p": 0.000122
+    },
+    "B": {
+      "bArmChosen": 7,
+      "n": 21,
+      "p": 0.189
+    }
+  },
+  "heterogeneity": {
+    "fisherP": 0.0272
+  },
+  "consistency": {
+    "bothSayB": 0,
+    "bothSayA": 8,
+    "agreeRate": 0.571
+  }
+}

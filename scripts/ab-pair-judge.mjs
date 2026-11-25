@@ -31,9 +31,20 @@ const KEY_A = process.env.KEY_A;
 const KEY_B = process.env.KEY_B;
 if (!KEY_A || !KEY_B) throw new Error("need KEY_A / KEY_B");
 
+// URL_A / URL_B 可分别指定端点，用于「异源双席」；缺省回落到 URL，保持旧行为。
 const SEATS = [
-  { seat: "A", model: process.env.MODEL_A || "bailu-2.8", key: KEY_A },
-  { seat: "B", model: process.env.MODEL_B || "yuyu-air", key: KEY_B },
+  {
+    seat: "A",
+    model: process.env.MODEL_A || "bailu-2.8",
+    key: KEY_A,
+    url: process.env.URL_A || URL,
+  },
+  {
+    seat: "B",
+    model: process.env.MODEL_B || "yuyu-air",
+    key: KEY_B,
+    url: process.env.URL_B || URL,
+  },
 ];
 // STRICT=1（默认）：只认严格格式输出——纯「甲」/「乙」或 {"pick":"甲"}，
 // 非严格输出一律记无效票（绝不猜字）。复刻项目纪律：抠字=噪声，不得当有效票。
@@ -87,7 +98,7 @@ async function call(up, user) {
   let formatRetries = 0;
   for (let i = 0; i < 6; i++) {
     try {
-      const r = await fetch(URL, {
+      const r = await fetch(up.url || URL, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + up.key },
         body,

@@ -1,0 +1,134 @@
+{
+  "maxChars": 9000,
+  "total": 21,
+  "same": 0,
+  "truncated": 8,
+  "rows": [
+    {
+      "id": "人物-历史-诸葛亮",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "人物-现代作家-老舍",
+      "chars": 2178,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "人物-现代作家-鲁迅",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "人物-科学家-屠呦呦",
+      "chars": 2160,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "人物-科学家-钱学森",
+      "chars": 4276,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "医学-公共卫生-疫苗",
+      "chars": 3798,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "历史-文字-甲骨文",
+      "chars": 5027,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "历史-朝代-明朝",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "历史-贸易-丝绸之路",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "地理-城市-北京市",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "地理-山川-黄山",
+      "chars": 2619,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "地理-水体-长江",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "文学-古典-红楼梦",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "文学-现当代-骆驼祥子",
+      "chars": 2488,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "法律-中华人民共和国民法典",
+      "chars": 4198,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "生物-生命科学-光合作用",
+      "chars": 4592,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "生物-细胞-细胞",
+      "chars": 6954,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "科技-工程-集成电路",
+      "chars": 3432,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "科技-物理-量子力学",
+      "chars": 9000,
+      "truncated": true,
+      "same": false
+    },
+    {
+      "id": "科技-通信-5G",
+      "chars": 3999,
+      "truncated": false,
+      "same": false
+    },
+    {
+      "id": "艺术-书法-书法",
+      "chars": 2540,
+      "truncated": false,
+      "same": false
+    }
+  ]
+}
