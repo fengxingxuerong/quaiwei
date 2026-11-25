@@ -1,0 +1,27 @@
+{
+  "samples": 14,
+  "languages": { "en": 14 },
+  "sources": [
+    {
+      "name": "kjmagnan1s/anti-slop",
+      "repository": "https://github.com/kjmagnan1s/anti-slop",
+      "license": "MIT",
+      "licenseFile": "licenses/anti-slop-MIT.txt",
+      "samples": 9,
+      "selection": "evals/slop 全部夹具；frontmatter 的 profile 与 expected_flags 作为元数据保留，正文作为待改写输入。"
+    },
+    {
+      "name": "lynote-ai/humanize-text",
+      "repository": "https://github.com/lynote-ai/humanize-text",
+      "license": "MIT",
+      "licenseFile": "licenses/lynote-humanize-text-MIT.txt",
+      "samples": 5,
+      "selection": "examples/showcase 的 Original Input 段落。"
+    }
+  ],
+  "caveats": [
+    "anti-slop golden 集为作者私人文本，仓库未公开，因此本轮没有新增真人英文样本。",
+    "Lynote showcase 的最终检测结果来自其自身流程，不作为本项目的官方真值。",
+    "前后对比必须使用相同模型、提示词、token 预算和参数。"
+  ]
+}

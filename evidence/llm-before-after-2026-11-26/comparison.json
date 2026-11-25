@@ -1,0 +1,103 @@
+{
+  "generatedAt": "2026-11-26T02:48:45+08:00",
+  "model": "bailu-2.8",
+  "baseUrl": "https://bailucode.com/openapi/v1",
+  "promptMode": "concise",
+  "intensity": 0.9,
+  "style": "plain",
+  "temperature": 0.9,
+  "maxTokens": 4096,
+  "samples": 14,
+  "sampleSha256": "be0fa51cf8c7fb13b5c02d416ccd44d073e7f955937e4713fb6093eccee4fe99",
+  "arms": {
+    "before": {
+      "kind": "frozen-api-output",
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "originalCheckerHardFlags": 2,
+      "manuallyConfirmedHardDefects": 1,
+      "checkerFalsePositives": 1,
+      "deliveredHardDefects": 1,
+      "effectiveRewrites": 14,
+      "avgLatencyMs": 27171,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "writesSha256": "bfef2a46d5df7a2790f695b808a2e648a9cd15e20bfe44259b673f99387f5e27"
+    },
+    "afterLive": {
+      "kind": "new-api-call-with-output-guard",
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "rawHardFailures": 0,
+      "deliveredHardDefects": 0,
+      "guardFallbacks": 0,
+      "effectiveRewrites": 14,
+      "avgLatencyMs": 14180,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "writesSha256": "97232e02414164b057e297e8fc14b33ed77b2aafb1b16880dabe97fb5b0f0a08"
+    },
+    "afterReplay": {
+      "kind": "deterministic-replay-of-frozen-before-output-through-new-guard",
+      "apiCalls": 0,
+      "rawHardFailures": 1,
+      "deliveredHardDefects": 0,
+      "guardFallbacks": 1,
+      "effectiveRewrites": 13,
+      "fallbackRatePct": 7.14,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0.1,
+      "writesSha256": "3f579a356b3384861358fc653bd8e017f075b57f426c163f02efad132ecb9412"
+    },
+    "afterRepair": {
+      "kind": "frozen-before-output-with-one-targeted-repair-call-on-guard-failure",
+      "initialApiSuccess": 14,
+      "repairCalls": 1,
+      "repairSuccesses": 1,
+      "repairLatencyMs": 5199,
+      "rawHardFailures": 1,
+      "deliveredHardDefects": 0,
+      "guardFallbacks": 0,
+      "effectiveRewrites": 14,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "writesSha256": "60b61271484e2281b1316c1ccf89c3a7b9e477fba86632d953ac9bb9c5cfb402"
+    }
+  },
+  "confirmedExamples": [
+    {
+      "id": "anti-slop/slop-03-technical-blog",
+      "inputFact": "dependency resolution consumed forty percent of every run",
+      "beforeOutputClaim": "Dependency resolution consumed 40% of every run.",
+      "guardIssue": "added-numbers:40%",
+      "guardOnlyBehavior": "passthrough-original",
+      "repairBehavior": "targeted-repair-accepted",
+      "repairedClaim": "Dependency resolution consumed forty percent of every run.",
+      "repairLatencyMs": 5199
+    },
+    {
+      "id": "anti-slop/slop-05-docs",
+      "input": "most integrations only need the /export endpoint",
+      "beforeOutput": "most integrations only need the `/export` endpoint",
+      "oldCheckerIssue": "markdown-inlineCode",
+      "manualClassification": "false-positive",
+      "newGuardBehavior": "accepted"
+    }
+  ],
+  "conclusions": [
+    "同一份冻结稿的确定性回放证明新增数字硬缺陷从 1 降至 0；只保留原文的方案会回退 1/14。",
+    "加入一次定向修复后，真实 Bailu 调用把 40% 改回 forty percent，14/14 均保留有效改写，0 回退，只有失败样本多一次 5.2 秒调用。",
+    "实时复跑 14/14 成功且 0 硬缺陷，但温度 0.9 下模型输出有随机性，不能把这次改善全部归因于门禁。",
+    "本轮证明的是客观保真收口，不是去 AI 效果提升；本地代理分前后均为 0 差值。"
+  ],
+  "limitations": [
+    "仅 14 个英文 AI 样本、单一模型，不代表官方检测通过率或全语种能力。",
+    "本地 aiScore 与固定 AI-ism 词表只是代理指标，不是官方检测器真值。",
+    "确定性门禁覆盖数字、单位、语言、结构、引用、代码、链接和篇幅，不能替代完整语义审查。",
+    "回放汇总中的 avgLatencyMs 沿用旧 API 调用记录，不是回放处理耗时。"
+  ]
+}

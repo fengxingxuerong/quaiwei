@@ -99,6 +99,13 @@ describe("开源同类测试 · Humanizer-zh 语义边界", () => {
     const output = humanize(input, { intensity: 0.9, seed: 42 });
     expect(hardFidelityIssues(input, output), output).toEqual([]);
   });
+
+  it("新增行内代码不算保真损坏，删除原文行内代码必须拦截", () => {
+    expect(hardFidelityIssues("调用 /export 接口。", "调用 `/export` 接口。")).toEqual([]);
+    expect(hardFidelityIssues("调用 `/export` 接口。", "调用 /export 接口。")).toContain(
+      "markdown-inlineCode",
+    );
+  });
 });
 
 describe("开源同类测试 · sgaofen 中文草稿", () => {

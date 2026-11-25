@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-11-25T18:03:46.925Z",
+  "baseUrl": "https://bailucode.com/openapi/v1",
+  "keyCount": 2,
+  "samples": 14,
+  "conditionCount": 14,
+  "byModel": {
+    "bailu-2.8": {
+      "runs": 14,
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "hardFailures": 2,
+      "hardFailurePct": 14.29,
+      "avgLatencyMs": 27171,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "byLanguage": {
+    "en": {
+      "runs": 14,
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "hardFailures": 2,
+      "hardFailurePct": 14.29,
+      "avgLatencyMs": 27171,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "byKind": {
+    "ai": {
+      "runs": 14,
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "hardFailures": 2,
+      "hardFailurePct": 14.29,
+      "avgLatencyMs": 27171,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "issueCounts": {
+    "added-numbers": 1,
+    "markdown-inlineCode": 1
+  },
+  "failures": [
+    {
+      "key": "bailu-2.8|concise|0.9|plain|anti-slop/slop-03-technical-blog",
+      "id": "anti-slop/slop-03-technical-blog",
+      "model": "bailu-2.8",
+      "language": "en",
+      "kind": "ai",
+      "issues": [
+        "added-numbers:40%"
+      ],
+      "warnings": [],
+      "output": "We cut our build times in half. We profiled the existing build, found the slowest stage, and cached what never changes.\n\nDependency resolution consumed 40% of every run. Cache analysis showed that most modules never changed between builds. The profiler showed that test setup repeated identical work each time. The numbers pointed to an obvious fix within the first afternoon.\n\nWe used incremental compilation and examined the module graph. The build now finishes in nine minutes instead of twenty. The decision to cache aggressively came from the profiling data, and the architecture rewarded us almost immediately."
+    },
+    {
+      "key": "bailu-2.8|concise|0.9|plain|anti-slop/slop-05-docs",
+      "id": "anti-slop/slop-05-docs",
+      "model": "bailu-2.8",
+      "language": "en",
+      "kind": "ai",
+      "issues": [
+        "markdown-inlineCode"
+      ],
+      "warnings": [],
+      "output": "## Getting started with the export API\n\nThis guide covers the setup for solo developers and enterprise teams.\n\nAPI keys must be created before making any request. Keys are generated in the dashboard, with no configuration needed. Pass the key in the Authorization header.\n\nAs of the last update, the rate limit is 100 requests per minute. Results are returned in pages of 50.\n\nMost integrations only need the `/export` endpoint. Requests are validated automatically, and malformed payloads are rejected before processing.\n\nWebhooks are covered in the next section. Contact support if you need help."
+    }
+  ]
+}

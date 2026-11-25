@@ -59,6 +59,12 @@ export function hardFidelityIssues(input: string, output: string): string[] {
   const afterParts = protectedMarkdownParts(output);
   for (const key of Object.keys(beforeParts) as Array<keyof typeof beforeParts>) {
     if (key === "orderedStepMarkers" && beforeParts[key].length === 0) continue;
+    if (key === "inlineCode") {
+      const after = new Set(afterParts.inlineCode);
+      if (beforeParts.inlineCode.some((code) => !after.has(code)))
+        issues.push("markdown-inlineCode");
+      continue;
+    }
     if (JSON.stringify(beforeParts[key]) !== JSON.stringify(afterParts[key])) {
       issues.push(`markdown-${key}`);
     }

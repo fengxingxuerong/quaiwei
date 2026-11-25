@@ -23,13 +23,23 @@ const SAMPLE =
 
 /** 改写专家角色判定（质检员/检测员不在 runHumanize 单轮路径出现） */
 function stubRewrite(reply: string | (() => Response)) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (_u: string, init?: { body?: string }) => {
-      void init;
-      return typeof reply === "string" ? okJson(reply) : reply();
-    }),
-  );
+  const fetchSpy = vi.fn(async (_u: string, init?: { body?: string }) => {
+    void init;
+    return typeof reply === "string" ? okJson(reply) : reply();
+  });
+  vi.stubGlobal("fetch", fetchSpy);
+  return fetchSpy;
+}
+
+function stubRewriteSequence(...replies: (string | Response)[]) {
+  let index = 0;
+  const fetchSpy = vi.fn(async (_u: string, init?: { body?: string }) => {
+    void init;
+    const reply = replies[Math.min(index++, replies.length - 1)];
+    return typeof reply === "string" ? okJson(reply) : reply;
+  });
+  vi.stubGlobal("fetch", fetchSpy);
+  return fetchSpy;
 }
 
 describe("runHumanize 分发", () => {
@@ -44,7 +54,9 @@ describe("runHumanize 分发", () => {
   });
 
   it("API 启用单轮：走 LLM，输出经 crossChunkCleanup 后返回", async () => {
-    stubRewrite("时间往前倒几年，这类工具还没几个人用，现在情况已经完全不一样了，值得慢慢琢磨。");
+    const fetchSpy = stubRewrite(
+      "时间往前倒几年，AI 写作工具还没几个人用。现在情况已经完全不一样了，内容生产、办公协作和团队沟通都离不开这类工具。它确实提高了效率，也降低了成本，但同质化、原创性和使用规范的问题也随之而来，怎么在创新和风险之间找平衡，仍然需要慢慢摸索。",
+    );
     // DEFAULT_API.deepMode 默认 true，单轮路径须显式关闭
     const cfg = { ...DEFAULT_API, enabled: true, apiKey: "k", deepMode: false };
     const r = await runHumanize(SAMPLE, 0.7, cfg);
@@ -53,6 +65,103 @@ describe("runHumanize 分发", () => {
     expect(r.degrade).toEqual([]); // 全程 LLM，不得留降级痕迹
     expect(r.text).toContain("时间往前倒几年");
     expect(r.note).toBe("");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("深度模式：交付稿标题被改时定向修复一次", async () => {
+    const input =
+      "# 项目计划\n\n团队已经仔细审查了这项提案，经过讨论，大家都认为计划切实可行，但也希望在正式开始工作之前进一步明确各自的责任，并把进度安排得更加简单清楚。";
+    const repaired =
+      "# 项目计划\n\n团队审查了提案。大家都认为计划可行，但希望开工前明确责任，把进度安排得更简单。";
+    let repairCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_u: string, init?: { body?: string }) => {
+        const body = JSON.parse(init?.body ?? "{}") as { messages: { content: string }[] };
+        const user = body.messages[1]?.content ?? "";
+        if (user.startsWith("下面这版改写未通过客观保真门禁")) {
+          repairCalls++;
+          return okJson(repaired);
+        }
+        const sys = body.messages[0]?.content ?? "";
+        if (sys.includes("质检员")) return okJson("PASS");
+        if (sys.includes("改写专家"))
+          return okJson(
+            "# 方案说明\n\n团队已经仔细审查了这项提案，经过讨论，大家都认为计划切实可行，但也希望在正式开始工作之前进一步明确各自的责任，并把进度安排得更加简单清楚。",
+          );
+        return okJson("句长过于均匀\n15");
+      }),
+    );
+    const cfg = {
+      ...DEFAULT_API,
+      enabled: true,
+      apiKey: "k",
+      deepMode: true,
+      deepTargetScore: 100,
+    };
+    const r = await runHumanize(input, 0.7, cfg);
+    expect(r.usedApi).toBe(true);
+    expect(r.engine).toBe("llm");
+    expect(r.text).toBe(repaired);
+    expect(r.note).toContain("保真修复 1 次");
+    expect(r.note).toContain("headings-changed");
+    expect(repairCalls).toBe(1);
+  });
+
+  it("单轮 LLM 新增数字：定向修复成功则交付修复稿", async () => {
+    const input = "这套方案稳定可靠、快速响应、易于维护。";
+    const fetchSpy = stubRewriteSequence(
+      "这套方案运行稳定，响应快，维护方便，效率提升40%。",
+      "这套方案运行稳定，响应快，维护起来也方便。",
+    );
+    const cfg = { ...DEFAULT_API, enabled: true, apiKey: "k", deepMode: false };
+    const r = await runHumanize(input, 0.7, cfg);
+    expect(r.usedApi).toBe(true);
+    expect(r.engine).toBe("llm");
+    expect(r.text).toBe("这套方案运行稳定，响应快，维护起来也方便。");
+    expect(r.degrade).toEqual([]);
+    expect(r.note).toContain("保真修复 1 次");
+    expect(r.note).toContain("added-numbers:40%");
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const repairBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body ?? "{}") as {
+      messages: { content: string }[];
+    };
+    expect(repairBody.messages[1].content).toContain("added-numbers:40%");
+    expect(repairBody.messages[1].content).toContain("【原文】");
+    expect(repairBody.messages[1].content).toContain("【待修复改写】");
+  });
+
+  it("单轮 LLM 新增数字：修复仍失败则保留原文", async () => {
+    const input = "这套方案稳定可靠、快速响应、易于维护。";
+    const fetchSpy = stubRewriteSequence(
+      "这套方案运行稳定，响应快，维护方便，效率提升40%。",
+      "这套方案运行稳定，响应快，维护方便，效率提升40%。",
+    );
+    const cfg = { ...DEFAULT_API, enabled: true, apiKey: "k", deepMode: false };
+    const r = await runHumanize(input, 0.7, cfg);
+    expect(r.usedApi).toBe(true);
+    expect(r.engine).toBe("passthrough");
+    expect(r.text).toBe(input);
+    expect(r.degrade.join("")).toContain("LLM 保真否决");
+    expect(r.degrade.join("")).toContain("定向修复失败");
+    expect(r.note).toContain("added-numbers:40%");
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("单轮 LLM 新增数字：修复 API 失败也保留原文，不转本地引擎", async () => {
+    const input = "这套方案稳定可靠、快速响应、易于维护。";
+    const fetchSpy = stubRewriteSequence(
+      "这套方案运行稳定，响应快，维护方便，效率提升40%。",
+      new Response("down", { status: 404 }),
+    );
+    const cfg = { ...DEFAULT_API, enabled: true, apiKey: "k", deepMode: false };
+    const r = await runHumanize(input, 0.7, cfg);
+    expect(r.usedApi).toBe(true);
+    expect(r.engine).toBe("passthrough");
+    expect(r.text).toBe(input);
+    expect(r.degrade.join("")).toContain("定向修复失败");
+    expect(r.note).toContain("API 返回 404");
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
   it("API 失败（404 无退避）：回退本地引擎，note 注明原因，结果不丢", async () => {
@@ -96,12 +205,45 @@ describe("runHumanize 分发", () => {
     const unit =
       "值得注意的是，随着人工智能技术的快速发展，AI 写作工具应运而生，并且在内容生产领域获得了广泛的应用场景，成为了许多从业者日常工作中不可或缺的辅助手段之一，无论是新闻稿件的初稿撰写，还是营销文案的多版本迭代，都能看到这类工具活跃的身影。综上所述，数字化办公不仅极大地提升了工作效率，而且有效地降低了运营成本，同时还推动了组织内部协作方式的整体变革与持续演进，让跨部门的信息流转变得更加顺畅透明。然而，技术的变革也带来了一系列值得关注的挑战，比如内容同质化的隐忧、原创性判定的争议，以及对从业者技能结构的重塑压力。与此同时，如何平衡创新与风险，成为至关重要的课题，既不能因噎废食地拒绝新工具，也不能不加甄别地全盘接受，需要在实践探索中逐步建立相应的使用规范与质量标准。";
     const long = Array.from({ length: 4 }, () => unit).join("\n\n");
-    stubRewrite("这是改写后的段落内容，读起来像人写的，节奏也更自然了一些。");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_u: string, init?: { body?: string }) => {
+        const body = JSON.parse(init?.body ?? "{}") as { messages: { content: string }[] };
+        return okJson(body.messages[1].content);
+      }),
+    );
     const cfg = { ...DEFAULT_API, enabled: true, apiKey: "k", deepMode: false };
     const r = await runHumanize(long, 0.7, cfg);
     expect(r.usedApi).toBe(true);
     expect(r.note).toMatch(/长文分块处理（\d+ 块）/);
-    expect(r.text).toContain("这是改写后的段落内容");
+    expect(r.text).toContain("写作工具应运而生");
+    expect(r.text).not.toContain("这是改写后的段落内容");
+  });
+
+  it("长文分块：拼接稿门禁失败后整篇定向修复一次", async () => {
+    const unit =
+      "值得注意的是，随着人工智能技术的快速发展，AI 写作工具应运而生，并且在内容生产领域获得了广泛的应用场景，成为了许多从业者日常工作中不可或缺的辅助手段之一，无论是新闻稿件的初稿撰写，还是营销文案的多版本迭代，都能看到这类工具活跃的身影。综上所述，数字化办公不仅极大地提升了工作效率，而且有效地降低了运营成本，同时还推动了组织内部协作方式的整体变革与持续演进，让跨部门的信息流转变得更加顺畅透明。然而，技术的变革也带来了一系列值得关注的挑战，比如内容同质化的隐忧、原创性判定的争议，以及对从业者技能结构的重塑压力。与此同时，如何平衡创新与风险，成为至关重要的课题，既不能因噎废食地拒绝新工具，也不能不加甄别地全盘接受，需要在实践探索中逐步建立相应的使用规范与质量标准。";
+    const long = Array.from({ length: 4 }, () => unit).join("\n\n");
+    let repairCalls = 0;
+    const fetchSpy = vi.fn(async (_u: string, init?: { body?: string }) => {
+      const body = JSON.parse(init?.body ?? "{}") as { messages: { content: string }[] };
+      const user = body.messages[1].content;
+      if (user.startsWith("下面这版改写未通过客观保真门禁")) {
+        repairCalls++;
+        return okJson(long);
+      }
+      return okJson(`${user}效率提升40%。`);
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    const cfg = { ...DEFAULT_API, enabled: true, apiKey: "k", deepMode: false };
+    const r = await runHumanize(long, 0.7, cfg);
+    expect(r.usedApi).toBe(true);
+    expect(r.engine).toBe("llm");
+    expect(r.note).toContain("保真修复 1 次");
+    expect(r.note).toContain("added-numbers:40%");
+    expect(r.text).toContain("写作工具应运而生");
+    expect(repairCalls).toBe(1);
+    expect(fetchSpy.mock.calls.length).toBeGreaterThan(2);
   });
 
   it("深度模式：走 humanizeViaApiDeep 闭环，note 汇总各轮评分", async () => {

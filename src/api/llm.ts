@@ -22,9 +22,16 @@ import { aggregateStages, type PipelineTrace } from "../engine/pipeline-trace";
 import type { StageTrace } from "../engine/humanize-primitives";
 import { ApiConfig, DEEP_MAX_ROUNDS, DEEP_TARGET_SCORE, effectiveKeys } from "./llm-config";
 import { CHUNK_THRESHOLD, splitIntoChunks } from "./llm-chunk";
-import { humanizeViaApi, humanizeViaApiDeep, FabricationVetoError } from "./llm-humanize";
-import { resetApiCallCount } from "./llm-chat";
+import {
+  humanizeViaApi,
+  humanizeViaApiDeep,
+  buildSystemPrompt,
+  FabricationVetoError,
+} from "./llm-humanize";
+import { chat, resetApiCallCount } from "./llm-chat";
 import { errMsg } from "./llm-judge";
+import { llmOutputIssues } from "./llm-output-guard";
+import { restoreMixedSpacing } from "../engine/humanize-shuffle.ts";
 
 /** 实际产出这一稿的引擎。`usedApi` 只回答"有没有调用过 API"，
  *  分块路径里单块失败会本地补位而 usedApi 仍为 true——它不足以说明
@@ -122,6 +129,73 @@ function runLocal(
     structural: local?.structural,
   });
   return { text: out, after: aiScore(out), bestOf: undefined };
+}
+
+interface LlmGuardResult {
+  text: string;
+  issues: string[];
+  initialIssues: string[];
+  repaired: boolean;
+  repairError?: string;
+}
+
+export async function enforceLlmOutputGuard(
+  original: string,
+  candidate: string,
+  cfg: ApiConfig,
+  intensity: number,
+): Promise<LlmGuardResult> {
+  const initialIssues = llmOutputIssues(original, candidate);
+  if (!initialIssues.length) {
+    return { text: candidate, issues: [], initialIssues, repaired: false };
+  }
+  try {
+    const response = await chat(
+      cfg,
+      [
+        { role: "system", content: buildSystemPrompt(cfg, intensity, original) },
+        {
+          role: "user",
+          content:
+            `下面这版改写未通过客观保真门禁，请只修复列出的问题，尽量保留其余改写。\n` +
+            `问题清单：\n${initialIssues.map((issue) => `- ${issue}`).join("\n")}\n\n` +
+            `数字缺失、新增或单位变化必须按原文恢复；语言漂移必须改回原文语言；引语、代码、标题、链接、表格和步骤必须保住原文内容与结构；严重缩水或增殖必须恢复到合理篇幅。\n` +
+            `不要新增事实、例子、数据或观点，只输出修复后的全文。\n\n` +
+            `【原文】\n${original}\n\n【待修复改写】\n${candidate}`,
+        },
+      ],
+      { temperature: 0.2, maxTokens: 16000 },
+    );
+    if (!response.content.trim()) {
+      return {
+        text: original,
+        issues: initialIssues,
+        initialIssues,
+        repaired: false,
+        repairError: "模型无输出",
+      };
+    }
+    const repaired = crossChunkCleanup(restoreMixedSpacing(original, response.content));
+    const remainingIssues = llmOutputIssues(original, repaired);
+    if (!remainingIssues.length) {
+      return { text: repaired, issues: [], initialIssues, repaired: true };
+    }
+    return {
+      text: original,
+      issues: remainingIssues,
+      initialIssues,
+      repaired: false,
+      repairError: `修复稿仍未通过：${remainingIssues.join("；")}`,
+    };
+  } catch (error) {
+    return {
+      text: original,
+      issues: initialIssues,
+      initialIssues,
+      repaired: false,
+      repairError: errMsg(error),
+    };
+  }
 }
 
 /** 统一分发：优先 API（深度/单轮），失败回退本地引擎 */
@@ -226,6 +300,26 @@ export async function runHumanize(
         // 在块边界会累积成新指纹——拼接后做全文级限额去重（零改写）
         outText = crossChunkCleanup(outText);
         usedApi = true;
+        const guarded = await enforceLlmOutputGuard(text, outText, cfg, intensity);
+        outText = guarded.text;
+        if (guarded.issues.length) {
+          engine = "passthrough";
+          shrinkRatio = 1;
+          degrade.push(
+            `LLM 保真否决：${guarded.initialIssues[0]}；定向修复失败（${guarded.repairError ?? "仍未通过"}） —— 已保留原文`,
+          );
+          note = `LLM 稿未通过客观保真门禁（${guarded.initialIssues.join("；")}）；定向修复失败（${guarded.repairError ?? "仍未通过"}），已保留原文`;
+          return {
+            text: outText,
+            before,
+            after: aiScore(outText),
+            usedApi,
+            engine,
+            degrade,
+            note: (degrade.length ? `⚠️ ${degrade.join("；")}。` : "") + note,
+            roundScores: allScores,
+          };
+        }
         engine = localChunks === 0 ? "llm" : "mixed";
         const fid = checkFidelityLocal(text, outText);
         // v0.9.4 P2：整篇压缩率（含单块本地回退的混拼结果，按最终拼稿算）
@@ -243,7 +337,8 @@ export async function runHumanize(
           (allQc.length ? ` · 质检 ${allQc.filter(Boolean).length}/${allQc.length} 通过` : "") +
           (fid.pass ? "" : ` · ⚠️忠实度：${fid.problems[0]}`) +
           (anyIssue ? " · 部分块有未修复质检问题" : "") +
-          shrinkNote;
+          shrinkNote +
+          (guarded.repaired ? ` · 保真修复 1 次（${guarded.initialIssues[0]}）` : "");
         // v0.8.6 LLM 主导：API 输出即最终稿，不再叠加本地表达特征（方言/自问自答/错别字
         // 注入会污染 LLM 的语义级改写）。反检测特征由提示词 19 条战术原生产出。
         // 混拼（部分块本地补位）同样要把原因顶到最前，理由同下
@@ -278,19 +373,13 @@ export async function runHumanize(
         const qcSummary = deep.qcPassed.length
           ? ` · 质检 ${qcOk}/${deep.qcPassed.length} 轮通过${deep.qcIssues.length ? "（最后一轮候选被弃用：" + deep.qcIssues[0] + "…，交付稿为通过全部检查的最优稿）" : ""}`
           : "";
-        // v0.9.4 P2：压缩超 20% 时显式告知（LLM 改写系统性缩水，用户需知情）
-        const shrinkNote =
-          deep.shrinkRatio !== undefined && deep.shrinkRatio < 0.8
-            ? ` · 字数压缩 ${Math.round((1 - deep.shrinkRatio) * 100)}%`
-            : "";
         note =
           (deep.hitTarget
             ? `深度去味达标：AI 味评分（越低越好）${shown}`
             : deep.note
               ? `${deep.note}：AI 味评分（越低越好）${shown}`
               : `深度去味完成（未压到 ${deep.targetUsed} 以下）：AI 味评分（越低越好）${shown}`) +
-          qcSummary +
-          shrinkNote;
+          qcSummary;
         shrinkRatio = deep.shrinkRatio;
       } else {
         outText = await humanizeViaApi(text, cfg, intensity);
@@ -327,6 +416,25 @@ export async function runHumanize(
         } else if (numWarn) {
           note = note ? `${note}；${numWarn}` : numWarn;
         }
+      }
+      if (engine !== "local") {
+        const guarded = await enforceLlmOutputGuard(text, outText, cfg, intensity);
+        outText = guarded.text;
+        if (guarded.issues.length) {
+          engine = "passthrough";
+          shrinkRatio = 1;
+          degrade.push(
+            `LLM 保真否决：${guarded.initialIssues[0]}；定向修复失败（${guarded.repairError ?? "仍未通过"}） —— 已保留原文`,
+          );
+          note = `LLM 稿未通过客观保真门禁（${guarded.initialIssues.join("；")}）；定向修复失败（${guarded.repairError ?? "仍未通过"}），已保留原文`;
+        } else if (guarded.repaired) {
+          const rc = (s: string) => s.replace(/\s+/g, "").length;
+          shrinkRatio = rc(text) > 0 ? +(rc(outText) / rc(text)).toFixed(2) : undefined;
+          note = `${note}${note ? " · " : ""}保真修复 1 次（${guarded.initialIssues[0]}）`;
+        }
+      }
+      if (engine !== "local" && shrinkRatio !== undefined && shrinkRatio < 0.8) {
+        note = `${note}${note ? " · " : ""}字数压缩 ${Math.round((1 - shrinkRatio) * 100)}%`;
       }
     } catch (e: unknown) {
       // 回退本地引擎时同样尊重择优设置

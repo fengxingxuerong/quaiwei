@@ -5,18 +5,22 @@ import { fileURLToPath } from "node:url";
 import { chat } from "../src/api/llm-chat.ts";
 import { buildSystemPrompt } from "../src/api/llm-humanize.ts";
 import { splitKeys, type ApiConfig } from "../src/api/llm-config.ts";
+import { llmOutputIssues } from "../src/api/llm-output-guard.ts";
+import { enforceLlmOutputGuard } from "../src/api/llm.ts";
 import { aiScore } from "../src/engine/humanize-metrics.ts";
 import { hardFidelityIssues } from "./open-source-humanizer-checks.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const FIXTURES = path.join(ROOT, "scripts/fixtures/llm-capability");
-const OUT = path.join(ROOT, "evidence/llm-capability-2026-11-25");
-const RESULTS = path.join(OUT, "writes.jsonl");
 const args = process.argv.slice(2);
 const argOf = (name: string, fallback: string) => {
   const index = args.indexOf(`--${name}`);
   return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
 };
+const FIXTURES = path.resolve(
+  argOf("fixtures", path.join(ROOT, "scripts/fixtures/llm-capability")),
+);
+const OUT = path.resolve(argOf("out", path.join(ROOT, "evidence/llm-capability-2026-11-25")));
+const RESULTS = path.join(OUT, "writes.jsonl");
 const MODEL = argOf("model", "glm-5.3");
 const PROMPT_MODE = argOf("prompt-mode", "concise");
 const INTENSITY = Number(argOf("intensity", "0.9"));
@@ -27,6 +31,12 @@ const OFFSET = Math.max(0, Number(argOf("offset", "0")) || 0);
 const TOKEN_ARG = argOf("max-tokens", "auto");
 const RETRY = args.includes("--retry-failures");
 const SUMMARIZE = args.includes("--summarize-only");
+const REPLAY_FROM = argOf("replay-from", "");
+const REPAIR_FROM = argOf("repair-from", "");
+const IDS = argOf("ids", "")
+  .split(",")
+  .map((id) => id.trim())
+  .filter(Boolean);
 
 interface Sample {
   id: string;
@@ -54,6 +64,14 @@ interface WriteRow {
   status: "ok" | "api-failure";
   input: string;
   output: string;
+  rawOutput?: string;
+  rawHardIssues?: string[];
+  guardIssues?: string[];
+  repairAttempted?: boolean;
+  repaired?: boolean;
+  repairError?: string;
+  repairLatencyMs?: number;
+  engine?: "llm" | "passthrough";
   error?: string;
   latencyMs: number;
   reasoningLength: number;
@@ -104,20 +122,21 @@ const cjkRatio = (text: string) => {
 const autoTokens = (text: string) => (text.length <= 900 ? 1024 : 2048);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const keyRaw =
+  process.env.QUAIWEI_LLM_KEYS?.trim() ||
   process.env.SENSENOVA_KEYS?.trim() ||
   (fs.existsSync(path.join(ROOT, "scripts/.sensenova-keys"))
     ? fs.readFileSync(path.join(ROOT, "scripts/.sensenova-keys"), "utf8").trim()
     : "");
 const keys = splitKeys(keyRaw);
-if (!keys.length) throw new Error("没有可用 Key");
+if (!keys.length && !REPLAY_FROM) throw new Error("没有可用 Key");
 if (!["concise", "full"].includes(PROMPT_MODE)) throw new Error("prompt-mode 必须 concise/full");
 if (![0.6, 0.9, 1].includes(INTENSITY)) throw new Error("intensity 仅支持 0.6/0.9/1");
 if (!["plain", "academic", "casual"].includes(STYLE)) throw new Error("style 非法");
 
 const cfg: ApiConfig = {
   enabled: true,
-  baseUrl: "https://token.sensenova.cn/v1",
-  apiKey: keys[0],
+  baseUrl: argOf("base-url", process.env.QUAIWEI_LLM_BASE_URL || "https://token.sensenova.cn/v1"),
+  apiKey: keys[0] ?? "",
   apiKeys: keyRaw,
   model: MODEL,
   temperature: 0.9,
@@ -149,10 +168,79 @@ if (fs.existsSync(RESULTS)) {
     latest.set(row.key, row);
   }
 }
-const candidates = RETRY
-  ? samples.filter((sample) => latest.get(rowKey(sample))?.status !== "ok")
-  : samples;
-const pending = SUMMARIZE ? [] : candidates.slice(OFFSET, LIMIT ? OFFSET + LIMIT : undefined);
+if (REPLAY_FROM || REPAIR_FROM) {
+  const sourcePath = REPAIR_FROM || REPLAY_FROM;
+  const sourceRows = fs
+    .readFileSync(path.resolve(sourcePath), "utf8")
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as WriteRow);
+  const sourceById = new Map(sourceRows.map((row) => [row.id, row]));
+  for (const sample of samples) {
+    const source = sourceById.get(sample.id);
+    if (!source || source.model !== MODEL || source.status !== "ok")
+      throw new Error(`回放源缺少成功样本：${sample.id}`);
+    if (source.input !== sample.text) throw new Error(`回放源输入与冻结样本不一致：${sample.id}`);
+    const rawOutput = source.rawOutput ?? source.output;
+    const rawHardIssues = hardFidelityIssues(sample.text, rawOutput);
+    const repairStartedAt = Date.now();
+    const guarded = REPAIR_FROM
+      ? await enforceLlmOutputGuard(sample.text, rawOutput, cfg, INTENSITY)
+      : (() => {
+          const issues = llmOutputIssues(sample.text, rawOutput);
+          return {
+            text: issues.length ? sample.text : rawOutput,
+            issues,
+            initialIssues: issues,
+            repaired: false,
+            repairError: undefined,
+          };
+        })();
+    const repairLatencyMs = REPAIR_FROM ? Date.now() - repairStartedAt : 0;
+    const guardIssues = guarded.initialIssues;
+    const output = guarded.text;
+    latest.set(rowKey(sample), {
+      ...source,
+      key: rowKey(sample),
+      input: sample.text,
+      output,
+      rawOutput,
+      rawHardIssues,
+      guardIssues,
+      repairAttempted: Boolean(REPAIR_FROM && guardIssues.length),
+      repaired: guarded.repaired,
+      repairError: guarded.repairError,
+      repairLatencyMs,
+      engine: guarded.issues.length ? "passthrough" : "llm",
+      charsOut: output.length,
+      changedRatio: Number(
+        (sample.text.length ? output.length / sample.text.length : 0).toFixed(3),
+      ),
+      localScoreIn: aiScore(sample.text).score,
+      localScoreOut: aiScore(output).score,
+      localDelta: aiScore(output).score - aiScore(sample.text).score,
+      aiIsmsIn: countAiIsms(sample.text),
+      aiIsmsOut: countAiIsms(output),
+      hardIssues: guardIssues.length ? [] : rawHardIssues,
+    });
+  }
+  fs.writeFileSync(
+    RESULTS,
+    [...latest.values()].map((row) => JSON.stringify(row)).join("\n") + "\n",
+  );
+}
+const candidates = IDS.length
+  ? IDS.map((id) => samples.find((sample) => sample.id === id)).filter((sample): sample is Sample =>
+      Boolean(sample),
+    )
+  : RETRY
+    ? samples.filter((sample) => latest.get(rowKey(sample))?.status !== "ok")
+    : samples;
+const pending =
+  SUMMARIZE || REPLAY_FROM || REPAIR_FROM
+    ? []
+    : candidates.slice(OFFSET, LIMIT ? OFFSET + LIMIT : undefined);
 let completed = 0;
 for (const sample of pending) {
   const key = rowKey(sample);
@@ -209,6 +297,10 @@ for (const sample of pending) {
         if (!rule.test(response.content)) issues.push(`semantic-rule:${rule.source}`);
       }
     }
+    const guardIssues = llmOutputIssues(sample.text, response.content);
+    const delivered = guardIssues.length ? sample.text : response.content;
+    const deliveredIssues = guardIssues.length ? [] : issues;
+    const deliveredRatio = sample.text.length ? delivered.length / sample.text.length : 0;
     row = {
       key,
       id: sample.id,
@@ -223,18 +315,22 @@ for (const sample of pending) {
       maxTokens,
       status: "ok",
       input: sample.text,
-      output: response.content,
+      output: delivered,
+      rawOutput: response.content,
+      rawHardIssues: issues,
+      guardIssues,
+      engine: guardIssues.length ? "passthrough" : "llm",
       latencyMs: Date.now() - startedAt,
       reasoningLength: response.reasoning.length,
       charsIn: sample.text.length,
-      charsOut: response.content.length,
-      changedRatio: Number(ratio.toFixed(3)),
+      charsOut: delivered.length,
+      changedRatio: Number(deliveredRatio.toFixed(3)),
       localScoreIn: aiScore(sample.text).score,
-      localScoreOut: aiScore(response.content).score,
-      localDelta: aiScore(response.content).score - aiScore(sample.text).score,
+      localScoreOut: aiScore(delivered).score,
+      localDelta: aiScore(delivered).score - aiScore(sample.text).score,
       aiIsmsIn: countAiIsms(sample.text),
-      aiIsmsOut: countAiIsms(response.content),
-      hardIssues: issues,
+      aiIsmsOut: countAiIsms(delivered),
+      hardIssues: deliveredIssues,
       warnings,
     };
   } catch (error) {
@@ -289,6 +385,14 @@ const groupSummary = (group: WriteRow[]) => {
     apiSuccess: ok.length,
     apiFailure: group.length - ok.length,
     hardFailures: ok.filter((row) => row.hardIssues.length > 0).length,
+    rawHardFailures: ok.filter((row) => (row.rawHardIssues ?? row.hardIssues).length > 0).length,
+    guardAttempts: ok.filter((row) => row.repairAttempted).length,
+    guardRepairs: ok.filter((row) => row.repaired).length,
+    guardFallbacks: ok.filter((row) => (row.guardIssues?.length ?? 0) > 0 && !row.repaired).length,
+    avgRepairLatencyMs: Math.round(
+      average(ok.filter((row) => row.repairAttempted).map((row) => row.repairLatencyMs ?? 0)),
+    ),
+    effectiveRewrites: ok.filter((row) => row.output !== row.input).length,
     hardFailurePct: ok.length
       ? Number(
           ((100 * ok.filter((row) => row.hardIssues.length > 0).length) / ok.length).toFixed(2),
@@ -322,20 +426,30 @@ const byKind = Object.fromEntries(
   ]),
 );
 const issueCounts: Record<string, number> = {};
+const rawIssueCounts: Record<string, number> = {};
 for (const row of okRows) {
   for (const issue of row.hardIssues) {
     const reason = issue.split(":")[0];
     issueCounts[reason] = (issueCounts[reason] ?? 0) + 1;
   }
+  for (const issue of row.rawHardIssues ?? row.hardIssues) {
+    const reason = issue.split(":")[0];
+    rawIssueCounts[reason] = (rawIssueCounts[reason] ?? 0) + 1;
+  }
 }
 const summary = {
   generatedAt: new Date().toISOString(),
+  baseUrl: cfg.baseUrl,
+  replayFrom: REPLAY_FROM || null,
+  repairFrom: REPAIR_FROM || null,
+  keyCount: REPLAY_FROM ? 0 : keys.length,
   samples: samples.length,
-  keyCount: rows.length,
+  conditionCount: rows.length,
   byModel,
   byLanguage,
   byKind,
   issueCounts,
+  rawIssueCounts,
   failures: okRows
     .filter((row) => row.hardIssues.length > 0)
     .map((row) => ({
@@ -352,13 +466,21 @@ const summary = {
 fs.writeFileSync(path.join(OUT, "summary.json"), JSON.stringify(summary, null, 2) + "\n");
 console.log(
   JSON.stringify(
-    { samples: samples.length, keyCount: rows.length, byModel, byLanguage, byKind, issueCounts },
+    {
+      samples: samples.length,
+      conditionCount: rows.length,
+      byModel,
+      byLanguage,
+      byKind,
+      issueCounts,
+      rawIssueCounts,
+    },
     null,
     2,
   ),
 );
 process.exitCode =
-  rows.length < samples.length * 2 ||
+  rows.length < samples.length ||
   rows.some((row) => row.status !== "ok") ||
   okRows.some((row) => row.hardIssues.length > 0)
     ? 1

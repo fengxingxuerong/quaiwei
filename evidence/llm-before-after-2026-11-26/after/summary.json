@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-11-25T18:27:09.656Z",
+  "baseUrl": "https://bailucode.com/openapi/v1",
+  "keyCount": 2,
+  "samples": 14,
+  "conditionCount": 14,
+  "byModel": {
+    "bailu-2.8": {
+      "runs": 14,
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "hardFailures": 0,
+      "rawHardFailures": 0,
+      "guardFallbacks": 0,
+      "effectiveRewrites": 14,
+      "hardFailurePct": 0,
+      "avgLatencyMs": 14180,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "byLanguage": {
+    "en": {
+      "runs": 14,
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "hardFailures": 0,
+      "rawHardFailures": 0,
+      "guardFallbacks": 0,
+      "effectiveRewrites": 14,
+      "hardFailurePct": 0,
+      "avgLatencyMs": 14180,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "byKind": {
+    "ai": {
+      "runs": 14,
+      "apiSuccess": 14,
+      "apiFailure": 0,
+      "hardFailures": 0,
+      "rawHardFailures": 0,
+      "guardFallbacks": 0,
+      "effectiveRewrites": 14,
+      "hardFailurePct": 0,
+      "avgLatencyMs": 14180,
+      "avgLocalDelta": 0,
+      "avgAiIsmsIn": 0.7,
+      "avgAiIsmsOut": 0,
+      "humanOverEditWarnings": 0
+    }
+  },
+  "issueCounts": {},
+  "rawIssueCounts": {},
+  "failures": []
+}
