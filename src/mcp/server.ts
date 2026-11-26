@@ -14,10 +14,9 @@
  * 协议：JSON-RPC 2.0，按行分隔（MCP stdio 传输的规定），一个消息一行。
  * 本文件只依赖 Node 内置模块 + 本仓引擎，打包后是单文件 `dist-cli/quaiwei-mcp.mjs`。
  */
-import fs from "node:fs";
-import path from "node:path";
 import readline from "node:readline";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
+import { readPackageVersion } from "../pkg-version";
 import { humanize, adviceFor } from "../engine/humanize";
 import { aiScore, checkFidelityLocal } from "../engine/humanize-metrics";
 import { detectAI } from "../engine/detector";
@@ -60,21 +59,11 @@ const DEFAULT_SEED = 20260905;
 const SUPPORTED_PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const LATEST_PROTOCOL = SUPPORTED_PROTOCOLS[0];
 
-/** 服务端版本：从最近的 package.json 读，读不到就报 unknown（不猜） */
-function readVersion(): string {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  for (const rel of ["../package.json", "../../package.json"]) {
-    try {
-      const v = JSON.parse(fs.readFileSync(path.join(here, rel), "utf8")).version;
-      if (typeof v === "string" && v.trim()) return v.trim();
-    } catch {
-      // 换下一个候选路径：源码树下是 ../../，打包产物下是 ../
-    }
-  }
-  return "unknown";
-}
-
-export const SERVER_INFO = { name: "quaiwei", version: readVersion() };
+/**
+ * 服务端版本：统一走 `src/pkg-version.ts`（与 CLI `--version` 同一实现），
+ * 读不到就报 unknown——**不猜、不回落成 0.0.0**。
+ */
+export const SERVER_INFO = { name: "quaiwei", version: readPackageVersion() };
 
 /** 初始化时回给客户端的说明：让 agent 一开始就知道这套工具的边界 */
 const INSTRUCTIONS = [

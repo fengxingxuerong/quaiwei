@@ -23,10 +23,16 @@ const PKG_VERSION = (
 /** 三个 `---` 之间的 frontmatter 原文 */
 const frontmatter = /^---\n([\s\S]*?)\n---/.exec(SKILL)?.[1] ?? "";
 
-/** CLI 真实认的参数：来自 parseArgs 的 case 分支 */
-const cliFlags = new Set(
-  [...CLI.matchAll(/case "(--[a-z][a-z-]*)"/g)].map((m) => m[1] as string),
-);
+/**
+ * CLI 真实认的参数，两个来源：
+ *  · `case "--x":` —— 常规开关/带值选项（parseArgs 里按值分发）
+ *  · `a.includes("--x")` —— 最前面就 return 的布尔拦截（--help / --version，不进 switch）
+ * 只统计第一个来源时，文档里写 `--help` / `--version` 会被误判成「造参数」。
+ */
+const cliFlags = new Set([
+  ...[...CLI.matchAll(/case "(--[a-z][a-z-]*)"/g)].map((m) => m[1] as string),
+  ...[...CLI.matchAll(/a\.includes\("(--[a-z][a-z-]*)"\)/g)].map((m) => m[1] as string),
+]);
 /** SKILL.md 里出现过的全部 --参数（含命令示例与表格里的） */
 const skillFlags = new Set([...SKILL.matchAll(/--[a-z][a-z-]*/g)].map((m) => m[0]));
 

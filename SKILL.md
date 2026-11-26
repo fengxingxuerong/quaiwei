@@ -53,6 +53,7 @@ QUAIWEI_API_KEY=sk-xxx npx tsx scripts/humanize-cli.ts ./in --out ./out --api \
 | `--suffix <s>` | 默认 `.humanized` | 输出文件后缀 |
 | `--out-format` | `follow` \| `txt` \| `docx` | 强制输出格式 |
 | `--report <file>` | JSON 路径 | 逐篇运行报告 |
+| `--version` / `-v` | 开关 | 打印版本号（退出码 0），值直接读 `package.json`；同给 `--help` 时以 `--help` 为准 |
 | `--explain` | 开关 | 附「为什么这么改」清单：逐条标注属于哪类规则、依据哪张表（事后反查，判不准的标「推断」） |
 | `--detect-only` | 开关 | **审题模式**：只输出「AI 味痕迹地图」（第几句、风险多少、命中哪类特征、该怎么改），**一个字都不改、不落盘**。改之前先看一遍用它；不需要 API Key |
 | `--variant` | `none`（默认）\| `zh-TW` | 台湾用词校正：换词（软件→软体、信息→资讯）+ 半角标点转全角。**不做简繁转换**，输入简体、输出简体；代码块与链接不动 |

@@ -11,6 +11,7 @@ import vm from "vm";
 import { readGitState, dirtyBuildAllowed } from "./build-stamp.mjs";
 import { runAsync } from "./run-async";
 import { VOCAB } from "../src/engine/humanize-vocab";
+import { readPackageVersion } from "../src/pkg-version";
 import { FORMULAIC_EXTRA } from "../src/engine/humanize-vocab-extra";
 import { GUARD_AFTER, VERB_PHRASE_AFTER } from "../src/engine/humanize-guard";
 import { LOW_YIELD_FORMAL_PER_1K } from "../src/engine/low-yield";
@@ -218,6 +219,10 @@ interface CliArgs {
   dryRun: boolean;
   /** v0.9.38：stdin 管道模式 */
   stdin: boolean;
+  /** v0.9.40：--help / -h 置位 */
+  help: boolean;
+  /** v0.9.93：--version / -v 置位 */
+  version: boolean;
 }
 
 function loadCliFns(): {
@@ -319,6 +324,20 @@ describe("humanize-cli parseArgs", () => {
 
   it("v0.9.92：不给 --no-think 时 disableThinking 默认 false（请求体逐字不变）", () => {
     expect(parseArgs(base(["./docs"])).disableThinking).toBe(false);
+  });
+
+  // v0.9.93：--version / -v 必须和 --help 同层拦截。此前它落进「未知参数」分支 →
+  // 打印整屏 USAGE + 退出码 1，而「装完先查版本」是 npm 用户的第一个动作。
+  it("v0.9.93：--version / -v 置位 version，不再算未知参数", () => {
+    expect(parseArgs(base(["--version"])).version).toBe(true);
+    expect(parseArgs(base(["-v"])).version).toBe(true);
+    expect(parseArgs(base(["./docs/a.txt"])).version).toBe(false);
+  });
+
+  it("v0.9.93：--help 与 --version 同时给，以 --help 为准（help 分支先判且直接 return）", () => {
+    const a = parseArgs(base(["--version", "--help"]));
+    expect(a.help).toBe(true);
+    expect(a.version).toBe(false);
   });
 
   it("v0.9.38：未知短选项仍走用法错误（humanize-cli 没有 -s，强度是 --intensity）", () => {
@@ -711,5 +730,19 @@ describe("构建产物脏检查（sync-dist.mjs 的 dirty 硬失败）", () => {
     // 逃生口的精确匹配必须在两处都在（实现里写错成 truthy 判定就抓得到）
     expect(impl).toContain('QUAIWEI_ALLOW_DIRTY_BUILD === "1"');
     expect(decl).toContain("boolean | null");
+  });
+});
+
+/**
+ * v0.9.93：版本号读取的唯一入口。
+ * 这条断言的价值在「不是 unknown」：一旦 esbuild 内联后 `import.meta.url` 指错目录、
+ * 或有人把候选路径改坏，CLI `--version` 会静默打出 unknown 而没有任何门禁发现。
+ */
+describe("版本号读取（src/pkg-version.ts）", () => {
+  it("在源码树下读到 package.json 的真实版本，且与包版本逐字一致", () => {
+    const pkg = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    const v = readPackageVersion();
+    expect(v).not.toBe("unknown");
+    expect(v).toBe(pkg.version);
   });
 });

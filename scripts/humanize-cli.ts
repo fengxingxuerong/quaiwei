@@ -57,6 +57,7 @@
  */
 import fs from "fs";
 import path from "path";
+import { readPackageVersion } from "../src/pkg-version.ts";
 import { humanize, adviceFor } from "../src/engine/humanize";
 import { aiScore } from "../src/engine/humanize-metrics.ts";
 import { registerIndex, type RegisterReport } from "../src/engine/register-metrics.ts";
@@ -229,6 +230,12 @@ interface Args {
   /** v0.9.40：--help / -h。打印用法后正常退出（0），不再落进「未知参数」的错误分支 */
   help: boolean;
   /**
+   * v0.9.93：--version / -v。打印版本号后退出 0。
+   * 此前传 `--version` 会落进 `--help` 之前的「未知参数」分支（打印整屏 USAGE），
+   * 对 npm 分发来说这是「装完先查版本」的第一个动作，必须给个正常回答。
+   */
+  version: boolean;
+  /**
    * v0.9.52：审题模式。只输出「AI 味痕迹地图」（哪些句、为什么、怎么改），
    * **一个字都不改、一个文件都不落盘**。与 `--dry-run` 的区别：后者列的是待处理文件清单，
    * 这里列的是本文的问题清单。
@@ -320,6 +327,7 @@ const USAGE =
   "\n  --detect-only 审题模式：只给「AI 味痕迹地图」（哪句、为什么命中、怎么改），" +
   "一个字都不改也不落盘，无需 API Key。与 --dry-run（列待处理文件清单）不是一回事。" +
   "\n  --help / -h 打印本用法（退出码 0）。" +
+  "\n  --version / -v 打印版本号（退出码 0）。" +
   "\n  --voice-sample <文件>：本人写作样本（2~3 段，≥100 可见字符），只作用 --api 通道。" +
   "把你的句长节奏/标点习惯/口气抽成画像注入提示词，让改写跟随你的声口而非通用默认；" +
   "样本过短或文件读不到就原样出稿（不瞎画像）。本地引擎不消费这个参数。" +
@@ -407,6 +415,7 @@ function parseArgs(argv: string[]): Args {
     dryRun: false,
     stdin: false,
     help: false,
+    version: false,
     detectOnly: false,
     detectors: [],
     detectorUrl: "",
@@ -421,6 +430,12 @@ function parseArgs(argv: string[]): Args {
   // process 的 argv/stdin 可依赖），打印统一交给 main。
   if (a.includes("--help") || a.includes("-h")) {
     args.help = true;
+    return args;
+  }
+  // v0.9.93：--version / -v 同理。只在 help 之后判，两个都给以 --help 为准（信息量更大）。
+  // 同样只置位不输出：版本号的读取涉及 fs，留在 main 里，parseArgs 保持纯函数。
+  if (a.includes("--version") || a.includes("-v")) {
+    args.version = true;
     return args;
   }
   // v0.9.38：stdin 管道模式。输入参数给 `-`（Unix 惯例）或**没有任何位置参数**时置位
@@ -1181,6 +1196,11 @@ async function main() {
   // v0.9.40：--help / -h → 用法走 stdout + 退出 0（诊断才走 stderr，帮助不是错误）
   if (args.help) {
     process.stdout.write(`${USAGE}\n`);
+    return;
+  }
+  // v0.9.93：--version / -v → 只打版本号本身（不带包名前缀），方便 `V=$(ai-humanizer --version)` 直接用
+  if (args.version) {
+    process.stdout.write(`${readPackageVersion()}\n`);
     return;
   }
 
