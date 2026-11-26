@@ -28,7 +28,9 @@
  *
  * 退出码：0 = 通过；1 = 覆盖率不达标/测试失败/意外错误；2 = 环境错（拿不到报告依据）。
  *
- * 用法：npx tsx scripts/coverage-gate.ts [--keep]   （--keep 保留上次报告，仍会清）
+ * 用法：npx tsx scripts/coverage-gate.ts [--keep] [--serial]
+ *       --keep   保留上次报告，仍会清
+ *       --serial 串行跑（透传 --no-file-parallelism），用于本机内存不足时的确定性复跑
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -49,6 +51,18 @@ const ROOT = ROOT_RAW.replace(/^([a-z]):/, (_m, c: string) => c.toUpperCase() + 
 const REPORT = path.join(ROOT, "coverage", "coverage-final.json");
 const REPORTS_DIR = path.join(ROOT, "coverage");
 const VITEST_BIN = path.join(ROOT, "node_modules", "vitest", "vitest.mjs");
+/**
+ * `--serial`：串行跑测试文件（透传 `--no-file-parallelism`）。
+ *
+ * 为什么需要：本机可用内存常年 2.5~3GB，12 核并行起 11 个 worker 时，
+ * 几条「spawn 子进程 + 已贴着 30s testTimeout」的重用例会随机超时 ——
+ * 实测 `humanize-cli-stdin` 的强度透传、`scripts-logic` 的 git 用例、
+ * `humanize-perf-budget` 都中过，**单跑全过**。这是环境假红，不是代码坏。
+ *
+ * 门禁宁可慢 4 倍也不受假红：判据一个字没动（阈值、计数校验、退出码归因全同），
+ * 变的只有 worker 数量。默认仍并行；要一个「确定跑得完」的结果时加 --serial。
+ */
+const SERIAL = process.argv.includes("--serial");
 
 /** 全部 CSI 形式，含带 ? 参数的（漏了 \u001b[?25l 这类会留残渣） */
 const ANSI_RE =
@@ -243,7 +257,16 @@ function runVitest(timeoutMs: number): Promise<RunResult> {
     // root 参数用正斜杠（反斜杠进 cac 解析器会被当转义吞字符，实测同挂），
     // 盘符已在 ROOT 定义处大写化（见那里的注释：小写盘符 broker 匹配失败）。
     const rootArg = ROOT.split(path.sep).join("/");
-    const child = spawn(process.execPath, [VITEST_BIN, "run", "--coverage", "--root", rootArg],
+    const child = spawn(
+      process.execPath,
+      [
+        VITEST_BIN,
+        "run",
+        "--coverage",
+        "--root",
+        rootArg,
+        ...(SERIAL ? ["--no-file-parallelism"] : []),
+      ],
       {
         cwd: os.tmpdir(),
         env: childEnv,
@@ -304,6 +327,7 @@ async function main(): Promise<void> {
   }
 
   console.log("══════════ 覆盖率门禁（从产物派生判定）══════════");
+  if (SERIAL) console.log("   模式：串行（--serial，本机内存不足时消除并行假红；阈值不变）");
   // 先扫历史遗留的 stale 副本（cleanReportsDir 第三通道「挪走」的产物），再清本次的 coverage/。
   // 放在 cleanReportsDir 之前：万一本次又要挪走，新旧两批一起扫，不用等下一轮。
   const swept = sweepStaleReports({

@@ -101,17 +101,33 @@ function git(args, opts = {}) {
   });
 }
 
-/** 从 CHANGELOG 抽出本版章节正文（GitHub 支持 markdown，直接当 release notes） */
-function changelogBody(tag) {
-  const md = fs.readFileSync(CHANGELOG, "utf-8");
+/**
+ * 从 CHANGELOG 文本里抽出某版章节正文（纯函数，不读文件）。
+ *
+ * 抽出来是为了让两条边界能被验证 —— 它们在真跑里几乎撞不到，却是 Release 正文的真实风险：
+ *   · 末版章节后面没有下一个 `## `，不能因为 `indexOf` 返回 -1 就切空；
+ *   · 正文超过 6000 字要截断并标注，否则 GitHub Release 页会被塞爆。
+ *
+ * @param {string} md CHANGELOG.md 全文
+ * @param {string} tag 形如 `v0.9.93`
+ * @returns {string|null} 章节正文；找不到该版返回 null（调用方据此 die）
+ */
+function extractSection(md, tag) {
   const start = md.indexOf(`## ${tag} 更新`);
   if (start < 0) return null;
   const next = md.indexOf("\n## ", start + 4);
   const body = md.slice(start, next < 0 ? undefined : next);
-  const trimmed =
-    body.length > 6000 ? body.slice(0, 6000) + "\n\n…（完整内容见仓库 CHANGELOG.md）" : body;
+  return body.length > 6000
+    ? body.slice(0, 6000) + "\n\n…（完整内容见仓库 CHANGELOG.md）"
+    : body;
+}
+
+/** 从 CHANGELOG 抽出本版章节正文（GitHub 支持 markdown，直接当 release notes） */
+function changelogBody(tag) {
+  const section = extractSection(fs.readFileSync(CHANGELOG, "utf-8"), tag);
+  if (!section) return null;
   return (
-    trimmed +
+    section +
     `\n\n---\n\n完整历史见 [CHANGELOG.md](https://github.com/${REPO}/blob/master/CHANGELOG.md)。`
   );
 }
@@ -158,6 +174,63 @@ function planAsset(exists, replace) {
   return replace ? "replace" : "skip";
 }
 
+/**
+ * 从 `git status --porcelain` 输出里挑出**进产物指纹的**改动行。
+ *
+ * 判据：只认 src/ 与 electron-app/ 下的改动。docs/README/scripts 改了不影响产物新鲜度
+ * （产物里没有它们），所以只提示、不拦。
+ *
+ * @param {string} porcelain `git status --porcelain` 原样输出
+ * @returns {string[]} 命中指纹面的行；空数组 = 不影响产物
+ */
+function dirtyCodeLines(porcelain) {
+  if (!porcelain) return [];
+  return porcelain.split("\n").filter((l) => /^\s*\S+\s+(src\/|electron-app\/)/.test(l));
+}
+
+/**
+ * 从 credential helper 的 stdout 里取 password。
+ *
+ * trim 不是洁癖：helper 在 Windows 上可能吐 CRLF，`(.+)` 会把 `\r` 一并吃进捕获组，
+ * 于是 Authorization 头尾部带一个回车 —— 请求直接被拒（或更糟：401 但看不出来为什么）。
+ *
+ * @param {string} text helper 原始输出（形如 `username=...\npassword=...\n`）
+ * @returns {string|null} 取不到就是 null，由调用方 die
+ */
+function parseCredentialToken(text) {
+  const m = String(text || "").match(/^password=(.+)$/m);
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * 生成 sha256 校验码行。格式与 `sha256sum -c` 兼容：`<64 hex>␠␠<filename>\n`
+ * （两个空格是 coreutils 的二进制/文本标记位，少一个 `sha256sum -c` 就认不了）。
+ *
+ * @param {Buffer} buf 包体内容
+ * @param {string} filename 包名（不含目录）
+ * @returns {string}
+ */
+function sha256Line(buf, filename) {
+  return `${crypto.createHash("sha256").update(buf).digest("hex")}  ${filename}\n`;
+}
+
+/**
+ * 从 GitHub `git/ref` 响应里取 commit sha。
+ *
+ * 抽出来的理由不是好看：此前写成 `(await apiCall(...)).object.sha`，响应形状一变
+ * （或 GET 返回了意外结构）就得到 `undefined`，而随后的比对是
+ * `if (remoteSha !== localHead)` —— undefined 永远不等于 localHead，会走 die 分支报一个
+ * 「推送后远端 undefined ≠ 本地 HEAD」的误导性消息。宁可在这里就炸，把原因说清。
+ *
+ * @param {unknown} ref `GET /git/ref/heads/<branch>` 的 JSON
+ * @returns {string} 40 位 sha
+ */
+function remoteShaOf(ref) {
+  const sha = ref && ref.object && ref.object.sha;
+  if (!sha) throw new Error("远端 ref 响应里没有 object.sha —— 拒绝用它做比对");
+  return sha;
+}
+
 /* ---------- 1. 前置自检（异步：要在 async 上下文里取 git 状态） ---------- */
 // CJS 没有顶层 await，所以自检整段包成一个 async 函数，由下面的 IIFE 第一步调用。
 let head;
@@ -184,9 +257,7 @@ async function precheck() {
   if (stampErrs.length) die(stampErrs.join("\n  "));
 
   if (porcelain) {
-    const codeDirty = porcelain
-      .split("\n")
-      .filter((l) => /^\s*\S+\s+(src\/|electron-app\/)/.test(l));
+    const codeDirty = dirtyCodeLines(porcelain);
     if (codeDirty.length)
       die(`进产物指纹的代码有未提交改动，先提交再 repack：\n${codeDirty.join("\n")}`);
     log(
@@ -270,7 +341,7 @@ async function main() {
     });
 
   const cred = await readToken();
-  const token = (cred.match(/^password=(.+)$/m) || [])[1];
+  const token = parseCredentialToken(cred);
   if (!token) die("没取到 GitHub 凭据（Git Credential Manager 里没有？）");
 
   const apiCall = async (method, url, payload) => {
@@ -293,8 +364,9 @@ async function main() {
   log(`\n== [3] push ${branch} ==`);
   const localHead = await git(["rev-parse", "HEAD"]);
   const remoteRef = async () =>
-    (await apiCall("GET", `https://api.github.com/repos/${REPO}/git/ref/heads/${branch}`)).object
-      .sha;
+    remoteShaOf(
+      await apiCall("GET", `https://api.github.com/repos/${REPO}/git/ref/heads/${branch}`),
+    );
   const remoteBefore = await remoteRef();
   if (remoteBefore === localHead) {
     log("  远端已是最新，跳过 push");
@@ -496,7 +568,7 @@ async function main() {
    * 用户拿不到校验文件、没法验文件真假。格式兼容 sha256sum -c：<hex>␠␠<filename>\n，
    * 同时在 electron-dist/ 落盘一份，便于打完 zip 连校验码一起复制到仓库外。 */
   const shaName = `${name}.sha256`;
-  const shaText = `${crypto.createHash("sha256").update(buf).digest("hex")}  ${name}\n`;
+  const shaText = sha256Line(buf, name);
   fs.writeFileSync(`${ZIP}.sha256`, shaText, "ascii");
   log(`\n== [6] 校验码 ${shaName} ==\n  ${shaText.trim()}`);
   const shaDup = assets.find((a) => a.name === shaName);
@@ -531,9 +603,32 @@ async function main() {
 }
 
 /**
- * 只导出**纯判定逻辑**给回归测试用（scripts/publish-logic.test.ts）。
- * 刻意不导出 apiCall / git / token —— 发布器的网络与凭据面不进测试进程。
+ * 导出面（消费方：`scripts/publish-logic.test.ts`）。
+ *
+ * 底线不动：**不导出** apiCall / readToken / token —— 发布器的网络与凭据面不进测试进程。
+ *
+ * v0.9.93 起额外导出两样本地能力，因为它们的性质与上面不同：
+ *   · git()      —— 测试只跑 rev-parse / hash-object 这类只读本地子命令，不 push
+ *   · probeTcp() —— 测试只连 127.0.0.1 的临时端口，不碰 GitHub
+ *
+ * 为什么必须开这个口子：发布器 263 条语句此前只有 44 条被覆盖（16.7%），
+ * 把总覆盖率从 96.3% 拖到 93.9%，`test:cov` 门禁三项不达标。
+ * 而「再多抽几个纯函数」这条路已到头 —— 剩下的未覆盖语句全在本地 IO 与网络路径上。
+ * 与其为网络写 mock（违反本文件头部的既定纪律），不如给本地 IO 一个真跑的口子。
  */
-module.exports = { checkBuildInfo, planAsset, changelogBody, DRY_RUN, REPLACE_ASSETS };
+module.exports = {
+  checkBuildInfo,
+  planAsset,
+  changelogBody,
+  extractSection,
+  dirtyCodeLines,
+  parseCredentialToken,
+  sha256Line,
+  remoteShaOf,
+  git,
+  probeTcp,
+  DRY_RUN,
+  REPLACE_ASSETS,
+};
 
 if (require.main === module) main();
