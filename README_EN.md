@@ -14,7 +14,7 @@ passing any detector. See [the full evaluation](docs/eval-dual-2026-11-06.md),
 [the cross-family replication](evidence/cap-hetero-2026-11-26/) and [SCORECARD](SCORECARD.md) §4.
 
 Unlike most projects in this space (a list of rules handed to an LLM), this is a compiled
-TypeScript engine with a **2,240-case regression suite** — every rule is anchored to a real text
+TypeScript engine with a **2,259-case regression suite** — every rule is anchored to a real text
 sample and locked by a test.
 
 > 中文完整文档：[README.md](README.md) · [成绩页 SCORECARD](SCORECARD.md) · [CHANGELOG](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
@@ -48,7 +48,7 @@ useful for before/after trend on the same text, **not** calibrated to any vendor
 
 | | Rule-list skills (blader/humanizer, Humanizer-zh, stop-slop…) | QuAiWei |
 |---|---|---|
-| Engine | A markdown file the LLM reads | TypeScript engine, **2,240 test cases**, CI on every push |
+| Engine | A markdown file the LLM reads | TypeScript engine, **2,259 test cases**, CI on every push |
 | Runs offline | No (needs an LLM) | **Yes** — default path is local, costs nothing, sends nothing |
 | Reproducible | No | **Yes** — fixed seed; same input + same seed → same output (CLI / MCP) |
 | Built-in scoring | No | Yes — heuristic proxy score + explainable per-item trace (`--explain`) |
