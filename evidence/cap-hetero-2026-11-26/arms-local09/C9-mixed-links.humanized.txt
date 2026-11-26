@@ -1,0 +1,10 @@
+本次 API 升级说明如下：
+
+接口地址变更为 https://api.example.com/v2/gateway。旧地址将于 2026-12-31 停止服务。技术对接请联系 dev-support@example.com。
+
+调用示例：
+
+const resp = await fetch(url, { method: "POST", headers: { "X-Token": token } });
+if (!resp.ok) throw new Error("gateway 5xx");
+
+需要注意的是，新版本对请求频率做了限制。QPS 上限为 20。返回结果中的 user_id 字段类型由 number 调整为 string。请一定做好兼容处理。

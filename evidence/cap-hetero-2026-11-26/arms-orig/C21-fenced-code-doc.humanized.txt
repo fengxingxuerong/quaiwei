@@ -1,0 +1,25 @@
+本次 SDK 接入说明如下：
+
+首先，需要说明的是，本次升级对初始化流程做了调整，旧版写法仍然兼容，无需改动业务代码。
+
+初始化示例：
+
+```js
+// 此外，需要说明的是，这里传的是应用 ID，不是密钥
+const client = new Client({ appId: "demo-app", timeout: 3000 });
+await client.connect(); // 建立长连接
+```
+
+其次，关于错误重试，建议采用指数退避；由于网关侧做了限流，连续失败三次后应暂停 10 秒再试。
+
+```python
+# 综上所述，重试策略如下（最多 5 次）
+for i in range(5):
+    try:
+        client.ping()
+        break
+    except GatewayError:
+        time.sleep(2 ** i)
+```
+
+总的来看，本次调整不会破坏既有集成；此外，我们会在下个版本提供更细的观测指标与告警能力。

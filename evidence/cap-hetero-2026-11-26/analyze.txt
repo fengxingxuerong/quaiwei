@@ -1,0 +1,32 @@
+记录 42 | 干净票 42 | 格式失败 0 | 网络错 0
+
+改写稿被判更像 AI：11/42 = 26.2%
+⇒ engineWin（改写更不像 AI）：31/42 = 73.8%  p=2.89e-3
+归档基线（GLM 双席）：40/46 = 87.0%（p≈1.55e-07）
+  A 席 deepseek-v4.1-flash-1017: engineWin 17/21 = 81.0%
+  B 席 bailu-2.8: engineWin 14/21 = 66.7%
+  两席异质性 Fisher p=0.4841
+  两席都说改写更像人：13/21 | 两席都说改写更像 AI：3/21 | 分歧：5
+
+逐篇（改写被判更像 AI 的票数 / 该篇有效票）：
+  C1-work-summary          0/2
+  C10-tiny-input           0/2
+  C11-admin-notice         1/2
+  C12-paper-abstract       1/2
+  C13-manual-steps         2/2
+  C14-finance-flash        1/2
+  C15-policy-qa            0/2
+  C16-prospectus-risk      0/2
+  C17-verdict-labor        0/2
+  C19-kids-essay           1/2
+  C2-opinion-wechat        0/2
+  C20-speech-opening       0/2
+  C21-fenced-code-doc      0/2
+  C22-markdown-struct      0/2
+  C23-frontmatter-indent   0/2
+  C3-tech-popular          0/2
+  C4-product-copy          0/2
+  C6-academic-abstract     0/2
+  C7-story-dialogue        2/2
+  C8-social-post           2/2
+  C9-mixed-links           1/2

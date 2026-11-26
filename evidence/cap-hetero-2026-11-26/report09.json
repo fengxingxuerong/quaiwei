@@ -1,0 +1,508 @@
+{
+  "ts": "2026-11-25T23:59:58.399Z",
+  "args": {
+    "input": "D:/projects/_quaiwei-tmp/cap-hetero-2026-11-26/in",
+    "out": "D:/projects/_quaiwei-tmp/cap-hetero-2026-11-26/arms/09",
+    "intensity": 0.9,
+    "enhancement": false,
+    "style": "plain",
+    "variant": "none",
+    "academicCheck": false,
+    "auditStructure": false,
+    "metrics": false,
+    "against": "",
+    "styleExplicit": false,
+    "suffix": ".humanized",
+    "seed": 20260905,
+    "api": false,
+    "baseUrl": "",
+    "model": "",
+    "apiKey": "",
+    "judgeModel": "",
+    "altModel": "",
+    "deep": true,
+    "contest": 1,
+    "maxCalls": 0,
+    "maxWait": 0,
+    "llmTimeout": 0,
+    "reasoningEffort": "",
+    "reasoningEffortFormat": "nested",
+    "disableThinking": false,
+    "target": 0,
+    "strict": false,
+    "structural": false,
+    "skipLowRisk": false,
+    "persona": "default",
+    "report": "D:/projects/_quaiwei-tmp/cap-hetero-2026-11-26/report09.json",
+    "voiceSamplePath": "",
+    "pinFile": "",
+    "docxInplace": false,
+    "outFormat": "follow",
+    "explain": false,
+    "recursive": false,
+    "jobs": 1,
+    "dryRun": false,
+    "stdin": false,
+    "help": false,
+    "detectOnly": false,
+    "detectors": [],
+    "detectorUrl": "",
+    "detectorKey": "",
+    "detectorPath": "score",
+    "detectorScale": "0-100"
+  },
+  "totals": {
+    "files": 23,
+    "ok": 23,
+    "fail": 0,
+    "skippedSuffix": 0,
+    "lowYieldRisk": 10,
+    "skippedLowRisk": 0,
+    "structuralApplied": 0,
+    "pinApplied": 0,
+    "pinFallback": 0,
+    "pinRetried": 0,
+    "charsIn": 5507,
+    "charsOut": 5465,
+    "msTotal": 125
+  },
+  "reports": [
+    {
+      "file": "C1-work-summary.txt",
+      "ms": 46,
+      "charsIn": 274,
+      "charsOut": 265,
+      "detectBefore": 33,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C1-work-summary.humanized.txt"
+    },
+    {
+      "file": "C10-tiny-input.txt",
+      "ms": 4,
+      "charsIn": 53,
+      "charsOut": 51,
+      "detectBefore": 28,
+      "detectAfter": 24,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C10-tiny-input.humanized.txt"
+    },
+    {
+      "file": "C11-admin-notice.txt",
+      "ms": 6,
+      "charsIn": 292,
+      "charsOut": 292,
+      "detectBefore": 40,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C11-admin-notice.humanized.txt"
+    },
+    {
+      "file": "C12-paper-abstract.txt",
+      "ms": 4,
+      "charsIn": 244,
+      "charsOut": 244,
+      "detectBefore": 25,
+      "detectAfter": 22,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C12-paper-abstract.humanized.txt"
+    },
+    {
+      "file": "C13-manual-steps.txt",
+      "ms": 3,
+      "charsIn": 224,
+      "charsOut": 224,
+      "detectBefore": 32,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 87,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 87,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C13-manual-steps.humanized.txt"
+    },
+    {
+      "file": "C14-finance-flash.txt",
+      "ms": 3,
+      "charsIn": 253,
+      "charsOut": 251,
+      "detectBefore": 29,
+      "detectAfter": 29,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C14-finance-flash.humanized.txt"
+    },
+    {
+      "file": "C15-policy-qa.txt",
+      "ms": 4,
+      "charsIn": 216,
+      "charsOut": 216,
+      "detectBefore": 44,
+      "detectAfter": 42,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C15-policy-qa.humanized.txt"
+    },
+    {
+      "file": "C16-prospectus-risk.txt",
+      "ms": 3,
+      "charsIn": 209,
+      "charsOut": 210,
+      "detectBefore": 47,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C16-prospectus-risk.humanized.txt"
+    },
+    {
+      "file": "C17-verdict-labor.txt",
+      "ms": 3,
+      "charsIn": 291,
+      "charsOut": 291,
+      "detectBefore": 28,
+      "detectAfter": 27,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C17-verdict-labor.humanized.txt"
+    },
+    {
+      "file": "C18-tender-spec.txt",
+      "ms": 2,
+      "charsIn": 273,
+      "charsOut": 273,
+      "detectBefore": 26,
+      "detectAfter": 26,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C18-tender-spec.humanized.txt"
+    },
+    {
+      "file": "C19-kids-essay.txt",
+      "ms": 2,
+      "charsIn": 146,
+      "charsOut": 144,
+      "detectBefore": 15,
+      "detectAfter": 15,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C19-kids-essay.humanized.txt"
+    },
+    {
+      "file": "C2-opinion-wechat.txt",
+      "ms": 4,
+      "charsIn": 213,
+      "charsOut": 217,
+      "detectBefore": 45,
+      "detectAfter": 23,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C2-opinion-wechat.humanized.txt"
+    },
+    {
+      "file": "C20-speech-opening.txt",
+      "ms": 2,
+      "charsIn": 233,
+      "charsOut": 228,
+      "detectBefore": 33,
+      "detectAfter": 31,
+      "registerBefore": {
+        "index": 81,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 81,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C20-speech-opening.humanized.txt"
+    },
+    {
+      "file": "C21-fenced-code-doc.txt",
+      "ms": 7,
+      "charsIn": 453,
+      "charsOut": 455,
+      "detectBefore": 41,
+      "detectAfter": 40,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C21-fenced-code-doc.humanized.txt"
+    },
+    {
+      "file": "C22-markdown-struct.txt",
+      "ms": 5,
+      "charsIn": 248,
+      "charsOut": 243,
+      "detectBefore": 54,
+      "detectAfter": 39,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C22-markdown-struct.humanized.txt"
+    },
+    {
+      "file": "C23-frontmatter-indent.txt",
+      "ms": 4,
+      "charsIn": 252,
+      "charsOut": 246,
+      "detectBefore": 47,
+      "detectAfter": 39,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C23-frontmatter-indent.humanized.txt"
+    },
+    {
+      "file": "C3-tech-popular.txt",
+      "ms": 3,
+      "charsIn": 282,
+      "charsOut": 278,
+      "detectBefore": 39,
+      "detectAfter": 35,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 90,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C3-tech-popular.humanized.txt"
+    },
+    {
+      "file": "C4-product-copy.txt",
+      "ms": 3,
+      "charsIn": 267,
+      "charsOut": 260,
+      "detectBefore": 36,
+      "detectAfter": 28,
+      "registerBefore": {
+        "index": 89,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 91,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C4-product-copy.humanized.txt"
+    },
+    {
+      "file": "C5-news-release.txt",
+      "ms": 3,
+      "charsIn": 198,
+      "charsOut": 198,
+      "detectBefore": 34,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 50,
+        "label": "中性"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C5-news-release.humanized.txt"
+    },
+    {
+      "file": "C6-academic-abstract.txt",
+      "ms": 2,
+      "charsIn": 226,
+      "charsOut": 222,
+      "detectBefore": 38,
+      "detectAfter": 34,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C6-academic-abstract.humanized.txt"
+    },
+    {
+      "file": "C7-story-dialogue.txt",
+      "ms": 4,
+      "charsIn": 208,
+      "charsOut": 208,
+      "detectBefore": 18,
+      "detectAfter": 20,
+      "registerBefore": {
+        "index": 12,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 12,
+        "label": "口语"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C7-story-dialogue.humanized.txt"
+    },
+    {
+      "file": "C8-social-post.txt",
+      "ms": 2,
+      "charsIn": 118,
+      "charsOut": 118,
+      "detectBefore": 3,
+      "detectAfter": 8,
+      "registerBefore": {
+        "index": 0,
+        "label": "口语"
+      },
+      "ok": true,
+      "lowYieldRisk": true,
+      "registerAfter": {
+        "index": 0,
+        "label": "口语"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C8-social-post.humanized.txt"
+    },
+    {
+      "file": "C9-mixed-links.txt",
+      "ms": 6,
+      "charsIn": 334,
+      "charsOut": 331,
+      "detectBefore": 28,
+      "detectAfter": 23,
+      "registerBefore": {
+        "index": 100,
+        "label": "公文/书面腔浓"
+      },
+      "ok": true,
+      "lowYieldRisk": false,
+      "registerAfter": {
+        "index": 50,
+        "label": "中性"
+      },
+      "outPath": "D:\\projects\\_quaiwei-tmp\\cap-hetero-2026-11-26\\arms\\09\\C9-mixed-links.humanized.txt"
+    }
+  ]
+}
