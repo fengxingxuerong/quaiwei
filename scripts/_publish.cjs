@@ -3,8 +3,13 @@
  *
  * 用法：
  *   node scripts/_publish.cjs --check   # 只自检 + 网络探测，不推不发
+ *   node scripts/_publish.cjs --dry-run # 自检 + 探测 + 凭据 + 远端核对，再把将要执行的写操作逐条打出来，一条不执行
  *   node scripts/_publish.cjs           # 全流程：自检 → push → 建 Release（幂等）→ 上传 zip
  *   node scripts/_publish.cjs --replace # 重发包体：删同名 zip/sha256 资产再传，并刷新 Release 正文
+ *
+ * --check 与 --dry-run 的分界：--check 到网络探测就停；--dry-run 还会取凭据、核对远端 sha、
+ * 读一次 release/assets（全只读），因此能回答「这次 --replace 到底会删哪个资产、传多大」。
+ * 两者都不绕过前置自检——产物章对不上 HEAD 一律先 die。
  *
  * 顺序为什么是 push 在前：Release 的 tag 必须指向**已推送的** commit，
  * 先发 Release 会得到一个指向旧 master 的 tag（假发）。
@@ -37,6 +42,15 @@ process.env.NODE_USE_ENV_PROXY = process.env.NODE_USE_ENV_PROXY || "1";
 const CHECK_ONLY = process.argv.includes("--check");
 /** 重发包体用：同名 Release 资产先删后传。默认保持「已存在就跳过」的旧行为。 */
 const REPLACE_ASSETS = process.argv.includes("--replace");
+/**
+ * 预演模式：走完自检、网络探测、凭据与远端核对，把**将要执行的写操作**逐条打出来，
+ * 一条都不执行。比 `--check` 多走一段：--check 只到网络探测，
+ * --dry-run 会告诉你「这次 --replace 会删哪个资产、会传多大的包、正文多长」。
+ *
+ * 用途：`--replace` 重发前先看一眼要动什么，以及给 `scripts/publish-logic.test.ts`
+ * 一个不联网也能验证「dry-run 真的不写」的入口。
+ */
+const DRY_RUN = process.argv.includes("--dry-run");
 
 const log = (...a) => console.log(...a);
 const die = (msg) => {
@@ -102,6 +116,48 @@ function changelogBody(tag) {
   );
 }
 
+/**
+ * 产物新鲜度判定（纯函数，precheck 与回归测试共用）。
+ *
+ * 为什么抽出来：这四条是「发错包」的唯一防线，此前全埋在 precheck 里，只能靠真跑触发；
+ * 而真跑需要 209MB zip + 一份与当前 HEAD 匹配的产物章 —— 实际上等于没有回归测试。
+ * 抽成纯函数后，`scripts/publish-logic.test.ts` 能把每条判据逐个打穿。
+ *
+ * @param {object|null|undefined} info electron-app/build-info.json 的内容
+ * @param {{version: string, head: string}} ctx 当前 package.json 版本与 HEAD（短 sha）
+ * @returns {string[]} 空数组 = 可以发布；每条是一句「为什么不行」
+ */
+function checkBuildInfo(info, ctx) {
+  if (!info || typeof info !== "object")
+    return ["产物章缺失或不是对象，先跑 npm run build + repack"];
+  const errs = [];
+  if (info.version !== ctx.version)
+    errs.push(
+      `产物版本 ${info.version} ≠ package.json 的 ${ctx.version}，先跑 npm run build + repack`,
+    );
+  if (info.head !== ctx.head)
+    errs.push(`产物章 head=${info.head} ≠ 当前 HEAD=${ctx.head}，产物不是这次提交打的，先 repack`);
+  if (info.dirty)
+    errs.push("产物章 dirty=true —— 盖章时工作区有未提交改动，这份产物不对应任何提交，别发布");
+  return errs;
+}
+
+/**
+ * Release 资产重名决策（纯函数）。
+ *
+ * `--replace` 的语义只在这里定义一次：**exists + replace = 先删后传**，
+ * exists 不带 replace = 跳过（旧行为，幂等重跑安全），不存在 = 上传。
+ * 此前 zip 与 sha256 各写了一遍 if 链，两份逻辑漂移过一次（sha 忘记跟 replace）。
+ *
+ * @param {boolean} exists 远端已有同名资产
+ * @param {boolean} replace 命令行是否给了 --replace
+ * @returns {"upload"|"replace"|"skip"}
+ */
+function planAsset(exists, replace) {
+  if (!exists) return "upload";
+  return replace ? "replace" : "skip";
+}
+
 /* ---------- 1. 前置自检（异步：要在 async 上下文里取 git 状态） ---------- */
 // CJS 没有顶层 await，所以自检整段包成一个 async 函数，由下面的 IIFE 第一步调用。
 let head;
@@ -122,12 +178,10 @@ async function precheck() {
   );
   log(`  仓库：branch=${branch} HEAD=${head}`);
 
-  if (info.version !== VERSION)
-    die(`产物版本 ${info.version} ≠ package.json 的 ${VERSION}，先跑 npm run build + repack`);
-  if (info.head !== head)
-    die(`产物章 head=${info.head} ≠ 当前 HEAD=${head}，产物不是这次提交打的，先 repack`);
-  if (info.dirty)
-    die("产物章 dirty=true —— 盖章时工作区有未提交改动，这份产物不对应任何提交，别发布");
+  // 四条新鲜度判据抽在 checkBuildInfo 里（scripts/publish-logic.test.ts 逐条打穿），
+  // 这里只负责一次性把**全部**问题报出来——分三次 die 会让修完一个再撞下一个。
+  const stampErrs = checkBuildInfo(info, { version: VERSION, head });
+  if (stampErrs.length) die(stampErrs.join("\n  "));
 
   if (porcelain) {
     const codeDirty = porcelain
@@ -151,7 +205,6 @@ async function precheck() {
 }
 
 /* ---------- 2. 网络探测 ---------- */
-log("== [2] 网络探测 ==");
 const probeTcp = (host, port, ms = 8000) =>
   new Promise((resolve) => {
     const s = net.connect(port, host);
@@ -165,8 +218,13 @@ const probeTcp = (host, port, ms = 8000) =>
     s.on("error", (e) => done(e.code || "error"));
   });
 
-(async () => {
+/**
+ * 主流程。原本是顶层 IIFE，为了让 `scripts/publish-logic.test.ts` 能 require 本文件的
+ * 纯函数而不触发真实发版，改成具名函数 + `require.main === module` 守卫。
+ */
+async function main() {
   await precheck();
+  log("== [2] 网络探测 ==");
 
   const gh = await probeTcp("github.com", 443);
   const api = await probeTcp("api.github.com", 443);
@@ -240,6 +298,10 @@ const probeTcp = (host, port, ms = 8000) =>
   const remoteBefore = await remoteRef();
   if (remoteBefore === localHead) {
     log("  远端已是最新，跳过 push");
+  } else if (DRY_RUN) {
+    log(
+      `  [dry-run] 将 push ${branch}：远端 ${remoteBefore.slice(0, 7)} → 本地 ${localHead.slice(0, 7)}`,
+    );
   } else {
     // 本机环境实测（2026-09-27）：代理对 github.com 返回 502、直连反而正常。
     // 但环境会变，所以两条路都试：先清掉代理环境变量直连，失败再交给 git 自己读环境里的代理。
@@ -283,12 +345,59 @@ const probeTcp = (host, port, ms = 8000) =>
         "push 失败。可改用 `node scripts/_api-push.cjs`（Git Data API）推完再回来发版；不要改用其它协议/上游绕过",
       );
   }
-  const remoteSha = await remoteRef();
-  if (remoteSha !== localHead)
-    die(
-      `推送后远端 ${remoteSha.slice(0, 7)} ≠ 本地 HEAD ${localHead.slice(0, 7)}，别继续发 Release`,
-    );
-  log(`  ✅ 远端 ${branch} = ${remoteSha.slice(0, 7)}（经 API 核对，不依赖 git ls-remote）`);
+  // 预演模式跳过这条核对：dry-run 明确不写，远端本来就该停在旧 sha 上
+  if (!DRY_RUN) {
+    const remoteSha = await remoteRef();
+    if (remoteSha !== localHead)
+      die(
+        `推送后远端 ${remoteSha.slice(0, 7)} ≠ 本地 HEAD ${localHead.slice(0, 7)}，别继续发 Release`,
+      );
+    log(`  ✅ 远端 ${branch} = ${remoteSha.slice(0, 7)}（经 API 核对，不依赖 git ls-remote）`);
+  }
+
+  /* ---------- 4.5 --dry-run：把剩下的写操作逐条打出来，一条都不执行 ---------- */
+  /* 位置讲究：放在 push 核对之后、建 Release 之前。到这里自检、网络、凭据、远端一致
+   * 都已经真实走过（这四步全是只读），所以预演结果是「真会发生什么」，不是纸上推演。 */
+  if (DRY_RUN) {
+    log(`\n== [4] Release ${TAG} ==`);
+    let planned = null;
+    try {
+      planned = await apiCall("GET", `https://api.github.com/repos/${REPO}/releases/tags/${TAG}`);
+    } catch {
+      // tag 还没有 Release —— 预演里同样是「去新建」
+    }
+    if (planned) {
+      log(
+        `  [dry-run] 已存在 id=${planned.id}：将 PATCH 正文（${body.length} 字，取自 CHANGELOG ${TAG} 章节）`,
+      );
+    } else {
+      log(
+        `  [dry-run] 将 POST 新建 Release（tag=${TAG}, target=${branch}，正文 ${body.length} 字）`,
+      );
+    }
+    // 资产计划需要一次只读 GET：没有 Release 就没有资产，直接按「全都要上传」算
+    const plannedAssets = planned
+      ? await apiCall("GET", `https://api.github.com/repos/${REPO}/releases/${planned.id}/assets`)
+      : [];
+    const zipName = path.basename(ZIP);
+    for (const [n, label] of [
+      [zipName, "zip"],
+      [`${zipName}.sha256`, "sha256"],
+    ]) {
+      const hit = plannedAssets.find((a) => a.name === n);
+      const act = planAsset(Boolean(hit), REPLACE_ASSETS);
+      const sizeMB = hit ? (hit.size / 1048576).toFixed(1) : "—";
+      const text =
+        act === "upload"
+          ? "上传（远端无同名资产）"
+          : act === "replace"
+            ? `删除重传（远端已有 ${sizeMB} MB）`
+            : `跳过（远端已有 ${sizeMB} MB，未给 --replace）`;
+      log(`  [dry-run] ${label} ${n} → ${text}`);
+    }
+    log("\n--dry-run 结束：以上动作一条都没执行，zip/sha256 也未落盘。");
+    return;
+  }
 
   /* ---------- 5. 建 Release（幂等） ---------- */
   log(`\n== [4] Release ${TAG} ==`);
@@ -325,15 +434,16 @@ const probeTcp = (host, port, ms = 8000) =>
     `https://api.github.com/repos/${REPO}/releases/${release.id}/assets`,
   );
   const dup = assets.find((a) => a.name === name);
-  if (dup && REPLACE_ASSETS) {
+  const zipPlan = planAsset(Boolean(dup), REPLACE_ASSETS);
+  if (zipPlan === "replace") {
     await apiCall("DELETE", `https://api.github.com/repos/${REPO}/releases/assets/${dup.id}`);
     log(`\n== [5] 已删除同名旧资产 ${name}（${(dup.size / 1048576).toFixed(1)} MB），准备重传`);
-  } else if (dup) {
+  } else if (zipPlan === "skip") {
     log(
       `\n== [5] 资源 ${name} 已存在（${(dup.size / 1048576).toFixed(1)} MB），跳过上传；要覆盖加 --replace`,
     );
   }
-  if (!dup || REPLACE_ASSETS) {
+  if (zipPlan !== "skip") {
     log(`\n== [5] 上传 ${name}（${zipMB} MB）==`);
     // 为什么不用 fetch：209MB 上传实测在 285s 撞上 undici 固定的 300s headersTimeout，
     // 而 RequestInit 调不了这个值（不是 socket 空闲超时，是「请求发出后多久必须见到响应头」）。
@@ -390,13 +500,14 @@ const probeTcp = (host, port, ms = 8000) =>
   fs.writeFileSync(`${ZIP}.sha256`, shaText, "ascii");
   log(`\n== [6] 校验码 ${shaName} ==\n  ${shaText.trim()}`);
   const shaDup = assets.find((a) => a.name === shaName);
-  if (shaDup && REPLACE_ASSETS) {
+  const shaPlan = planAsset(Boolean(shaDup), REPLACE_ASSETS);
+  if (shaPlan === "replace") {
     await apiCall("DELETE", `https://api.github.com/repos/${REPO}/releases/assets/${shaDup.id}`);
     log("  已删除同名旧校验码，准备重传");
-  } else if (shaDup) {
+  } else if (shaPlan === "skip") {
     log("  已存在，跳过上传；要覆盖加 --replace");
   }
-  if (!shaDup || REPLACE_ASSETS) {
+  if (shaPlan !== "skip") {
     const upRes = await fetch(
       `https://uploads.github.com/repos/${REPO}/releases/${release.id}/assets?name=${encodeURIComponent(shaName)}`,
       {
@@ -417,4 +528,12 @@ const probeTcp = (host, port, ms = 8000) =>
 
   log(`\n🎉 ${TAG} 发布完成：https://github.com/${REPO}/releases/tag/${TAG}`);
   log(`   收尾：把 README 下载行的版本号改成 ${VERSION}，再提交推送。`);
-})();
+}
+
+/**
+ * 只导出**纯判定逻辑**给回归测试用（scripts/publish-logic.test.ts）。
+ * 刻意不导出 apiCall / git / token —— 发布器的网络与凭据面不进测试进程。
+ */
+module.exports = { checkBuildInfo, planAsset, changelogBody, DRY_RUN, REPLACE_ASSETS };
+
+if (require.main === module) main();
