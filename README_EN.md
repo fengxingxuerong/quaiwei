@@ -6,11 +6,12 @@
 
 Strips stock phrases and formulaic phrasing from AI-written Chinese prose **without inventing facts**.
 
-**Capability boundary, up front:** in a two-seat paired blind test, **87%** of votes judged the
-rewrite more human — but the absolute AI-likeness score only moved **76.2 → 68.9**, and 17 of 23
+**Capability boundary, up front:** in paired blind tests, **73.8%–87.0%** of votes judged the
+rewrite more human — the range tracks the judge model family (87.0% same-model two-seat, 73.8%
+cross-family two-seat) — but the absolute AI-likeness score only moved **76.2 → 68.9**, and 17 of 23
 samples still scored ≥60. It does **not** claim "reads just like a human" and does **not** promise
-passing any detector. See [the full evaluation](docs/eval-dual-2026-11-06.md) and
-[SCORECARD](SCORECARD.md) §4.
+passing any detector. See [the full evaluation](docs/eval-dual-2026-11-06.md),
+[the cross-family replication](evidence/cap-hetero-2026-11-26/) and [SCORECARD](SCORECARD.md) §4.
 
 Unlike most projects in this space (a list of rules handed to an LLM), this is a compiled
 TypeScript engine with a **2,375-case regression suite** — every rule is anchored to a real text
